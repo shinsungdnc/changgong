@@ -108,40 +108,37 @@
             #sidebar { width: 100%; height: calc(100vh - 120px); max-height: 480px; }
             #sidebar.hidden { transform: translateY(-600px); opacity: 0; }
             
+            /* 📱 [모바일 순정 동선 복원] 매물 클릭 시 하단에 가볍게 누워(height: 110px) 매물 상세를 가리지 않고 대기합니다 */
             #right-stats-panel { 
                 position: absolute; 
-                left: 5%;
-                top: 50%;
-                width: 90%; 
-                height: auto; 
-                max-height: 80vh;
-                border: 1px solid rgba(0, 0, 0, 0.15);
-                border-radius: 12px; 
-                box-shadow: 0 10px 30px rgba(0,0,0,0.25); 
-                background: rgba(255, 255, 255, 0.96) !important;
+                right: 16px; 
+                bottom: 16px; 
+                top: auto; 
+                width: calc(100% - 32px); 
+                height: 110px; 
+                max-height: none;
+                border: 2px solid #2b5c8f; 
+                border-radius: 8px; 
+                background: #ffffff " + "!" + "important;
                 z-index: 1010; 
-                opacity: 0;
-                transform: translate(0, -50%) scale(0.9); 
-                transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s;
-                pointer-events: none;
-            }
-            
-            #right-stats-panel.active { 
                 opacity: 1;
-                transform: translate(0, -50%) scale(1); 
-                pointer-events: auto;
+                transform: translateY(200px); 
+                transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            #right-stats-panel.active { 
+                transform: translateY(0); 
             }
             
-            /* 💡 [물결선 소독 마법] 느낌표와 important 문자열을 쪼개어 f-string 물결선 에러를 완벽히 제거합니다 */
+            /* 📱 [슬라이드 업 확장] 중개사님이 상자를 터치해 올리는 순간 화면 90% 높이로 솟구치며 실거래 표를 개방합니다 */
             #right-stats-panel.expanded { 
-                top: 50% " + "!" + "important; 
-                height: auto " + "!" + "important; 
-                bottom: auto " + "!" + "important;
-                width: 90% " + "!" + "important;
-                transform: translate(0, -50%) scale(1) " + "!" + "important;
+                top: 10% " + "!" + "important; 
+                height: 90% " + "!" + "important; 
+                bottom: 0 " + "!" + "important; 
+                width: calc(100% - 32px) " + "!" + "important; 
+                border-radius: 12px 12px 0 0;
             }
-
-            .stats-header { border-radius: 11px 11px 0 0; }
+            
+            .stats-header { border-radius: 6px 6px 0 0; }
             #top-header-row { display: block; width: 100%; padding-right: 50px; box-sizing: border-box; }
             #brand-master-btn { padding: 10px; font-size: 13px; }
             #mylocation-btn { position: absolute " + "!" + "important; right: 15px " + "!" + "important; top: auto " + "!" + "important; bottom: 30px " + "!" + "important; z-index: 1001 " + "!" + "important; }
@@ -564,7 +561,7 @@
         // 🌟 [최종 정밀 매칭] NaverReal_MapBuild.py [블록 10] selectProperty 최종 완결판
         // =========================================================================
         document.getElementById("stats-title").innerText = "📊 " + prop.town + " 실거래 분석";
-        var clickNotice = (window.innerWidth <= 768) ? '<p class="mobile-notice" style="text-align:center; color:#ff6e40; font-weight:bold; font-size:11px; margin-top:5px; animation: blink 1s infinite;">👆 여기를 터치하시면 전체 실거래 상세 분석 창이 열립니다.</p>' : '';
+        var clickNotice = "";
         var styleOpen = " { "; var styleClose = " } "; var styleBody = "display: none !important;";
 
         // 슬래시(/) 가이드라인을 기반으로 용도지역명과 지목 단어 정밀 튜닝 분리
