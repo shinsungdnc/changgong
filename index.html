@@ -511,9 +511,6 @@
         var targetPos = marker.getPosition(); map.setZoom(19); map.panTo(targetPos);            
         var prop = properties[index];
         
-        // 지번 제거한 주소
-        var cleanTownAddress = prop.name.split(" ")[0];
-        
         // [지번 오해 방지 동네 매칭] 국토부 데이터 세팅 방식 준수: 순수 동네명(prop.town)으로만 5개년 장부 조회
         var targetCategory = (prop.category === "토지") ? "토지" : "공장/창고";
         var statsArray = (realTradeStats[prop.town] && realTradeStats[prop.town][targetCategory]) ? realTradeStats[prop.town][targetCategory] : [];
@@ -549,12 +546,11 @@
 
         // 🌟 [지번 완전 도려내기 & 용도/지목 정제 마감] 중개사님 의도대로 매물상세 완전히 삭제하고 용도/지목만 표출
         document.getElementById("stats-content").innerHTML = [
-            '<div style="background: rgba(0,0,0,0.03); padding:10px; border-radius:4px; margin-bottom:8px; font-size:12px; line-height:1.5; text-align:left;">', 
-            '  <b>대상 지역:</b> ' + cleanTownAddress + '<br>', 
-            '  <b>용도/지목:</b> ' + prop.yongdo + '<br>', 
+            '<div style="background: rgba(0,0,0,0.03); padding:6px; border-radius:4px; margin-bottom:8px; font-size:12px; line-height:1.5; text-align:left;">', 
+            '  <b>용도지역/지목:</b> ' + prop.yongdo + '<br>', 
             '</div>', 
             clickNotice, 
-            '<div style="margin-top:12px; border-top:1px dashed #ccc; padding-top:10px;">', 
+            '<div style="margin-top:12px; border-top:1px dashed #ccc; padding-top:6px;">', 
             '  <p style="color:#2b5c8f; font-weight:bold; font-size:11px; margin:0 0 5px 0; border-left:3px solid #2b5c8f; padding-left:6px;">최근 5개년 실거래가 (평당가)</p>', 
                tableHtml, 
             '</div>'
