@@ -556,30 +556,39 @@
 
         var targetPos = marker.getPosition(); map.setZoom(19); map.panTo(targetPos);            
         var prop = properties[index];
-        document.getElementById("stats-title").innerText = "📊 " + prop.town + " 실거래 분석";
+        
+        // 🌟 세종시 행정구역 매칭 교정
+        var townKey = prop.town ? prop.town.replace("세종특별자치시", "").replace("세종시", "").trim() : "";
+        document.getElementById("stats-title").innerText = "📊 " + townKey + " 실거래 분석";
         var clickNotice = (window.innerWidth <= 768) ? '<p style="text-align:center; color:#ff6e40; font-weight:bold; font-size:11px; margin-top:5px; animation: blink 1s infinite;">👆 여기를 터치하시면 전체 실거래 상세 분석 창이 열립니다.</p>' : '';
 
-        // 🌟 [S25 Ultra 가로스크롤 대응] 5개년 실거래가 테이블 돔 동적 빌딩 시스템 
+        // 🌟 삼위일체 조합 키 조립부
         var statsHtml = '';
         var pnuKey = prop.pnu ? prop.pnu.trim() : '';
-        var townKey = prop.town ? prop.town.trim() : '';
+        
+        var rawYongdoToken = prop.yongdo ? prop.yongdo.split('/') : ['', ''];
+        var matchingYongdo = rawYongdoToken.replace('지역', '').trim();
+        var matchingJimok = rawYongdoToken ? rawYongdoToken.trim() : '';
+        
+        var compositeRegionKey = townKey + '_' + matchingYongdo + '_' + matchingJimok;
+        
         var tradeData = null;
         var isFallback = false;
 
-        if (pnuKey && realTradeStatsMaster.pnu_stats && realTradeStatsMaster.pnu_stats[pnuKey]) {
+        if (pnuKey && typeof realTradeStatsMaster !== 'undefined' && realTradeStatsMaster.pnu_stats && realTradeStatsMaster.pnu_stats[pnuKey]) {
             tradeData = realTradeStatsMaster.pnu_stats[pnuKey];
-        } else if (townKey && realTradeStatsMaster.region_stats && realTradeStatsMaster.region_stats[townKey]) {
-            tradeData = realTradeStatsMaster.region_stats[townKey];
+        } else if (compositeRegionKey && typeof realTradeStatsMaster !== 'undefined' && realTradeStatsMaster.region_stats && realTradeStatsMaster.region_stats[compositeRegionKey]) {
+            tradeData = realTradeStatsMaster.region_stats[compositeRegionKey];
             isFallback = true;
         }
 
         if (tradeData) {
-            var badgeText = isFallback ? '<span class="fallback-badge">📢 해당 리(동)전체 토지거래 데이터로 대체됨</span>' : '<span class="fallback-badge" style="background:#2e7d32;">✅ 본 필지 실거래 기록 매칭 완료</span>';
+            var badgeText = isFallback ? '<span class="fallback-badge">📢 주변 동일 조건(' + matchingYongdo + '/' + matchingJimok + ') 통계</span>' : '<span class="fallback-badge" style="background:#2e7d32;">✅ 본 필지 실거래 기록 매칭 완료</span>';
             
             statsHtml += badgeText;
             statsHtml += '<div class="trade-stats-table-wrapper">';
             statsHtml += '<table class="trade-stats-table">';
-            statsHtml += '<thead><tr><th>연도</th><th>건수</th><th>거래량(평)</th><th>최저가</th><th>평균가</th><th>최고가</th></tr></thead>';
+            statsHtml += '<thead><tr><th>연도</th><th>건수</th><th>거래량</th><th>최저가</th><th>평균가</th><th>최고가</th></tr></thead>';
             statsHtml += '<tbody>';
             
             var years =;
@@ -594,7 +603,7 @@
                     statsHtml += '<tr>';
                     statsHtml += '<td><b>' + yr + '</b></td>';
                     statsHtml += '<td>' + row['거래건수'] + '건</td>';
-                    statsHtml += '<td>' + (row['거래량'] ? row['거래량'].toLocaleString() : '0') + '평</td>';
+                    statsHtml += '<td>' + (row['거래량'] ? parseInt(row['거래량']).toLocaleString() : '0') + '평</td>';
                     statsHtml += '<td style="color:#2b5c8f;">' + formatPrice(row['최저가']) + '</td>';
                     statsHtml += '<td style="font-weight:bold; color:#e65100;">' + formatPrice(row['평균가']) + '</td>';
                     statsHtml += '<td style="color:#d32f2f;">' + formatPrice(row['최고가']) + '</td>';
@@ -605,7 +614,7 @@
             });
             statsHtml += '</tbody></table></div>';
         } else {
-            statsHtml += '<p style="color: #666; text-align: center; padding: 20px 0;">본 필지 및 해당 리(동) 주변 구역에<br>최근 5개년간 토지 실거래 기록이 없습니다.</p>';
+            statsHtml += '<p style="color: #666; text-align: center; padding: 20px 0; font-size:11px;">본 필지 및 해당 주변 구역[' + matchingYongdo + '/' + matchingJimok + ']에<br>최근 5개년간 토지 실거래 기록이 없습니다.</p>';
         }
 
         document.getElementById("stats-content").innerHTML = [
