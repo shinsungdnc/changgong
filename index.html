@@ -21,7 +21,7 @@
         #brand-master-btn { 
             width: 100%; padding: 12px; background: rgba(0, 191, 255, 0.65) !important; backdrop-filter: blur(5px); 
             color: #111111 !important; font-weight: 700 !important; font-family: 'Pretendard', sans-serif; 
-            border: 2px solid #ffffff; border-radius: 6px; font-size: 14px; text-align: center; cursor: pointer; 
+            border: 1px solid #ffffff; border-radius: 6px; font-size: 14px; text-align: center; cursor: pointer; 
             box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: all 0.2s; box-sizing: border-box; 
         }
         #brand-master-btn:hover { background: rgba(0, 150, 255, 0.8) !important; transform: scale(1.02); }
@@ -464,7 +464,7 @@
 
     function applyFilters() {
         if (currentBoundaryCircle) currentBoundaryCircle.setMap(null);
-        var visible = [];
+        var vis = [];
         var showM = document.getElementById("chk-maemae").checked;
         var showW = document.getElementById("chk-wolse").checked;
 
@@ -478,19 +478,19 @@
             var item = document.getElementById("item-" + i);
 
             if (mCat && mDet && mTown && mDeal) {
-                item.style.display = "block"; marker.setMap(map); visible.push(marker); 
+                item.style.display = "block"; marker.setMap(map); vis.push(marker); 
             } else {
                 item.style.display = "none"; var dEl = document.getElementById("detail-" + i); if(dEl) dEl.style.display = "none";
                 item.classList.remove("active"); marker.setMap(null); 
             }
         });
-        updateTownSelectorOptions(); updateClustering(visible); 
+        updateTownSelectorOptions(); updateClustering(vis); 
     }
 
-    function updateClustering(visible) {
+    function updateClustering(vis) {
         if (markerClustering) markerClustering.setMap(null);
         markerClustering = new MarkerClustering({
-            minClusterSize: 2, maxZoom: 16, map: map, markers: visible, gridSize: 120, disableClickZoom: false, 
+            minClusterSize: 2, maxZoom: 16, map: map, markers: vis, gridSize: 120, disableClickZoom: false, 
             icons: [
                 { content: '<div class="cluster-badge" style="cursor:pointer; width:44px; height:44px; line-height:44px; font-size:12px; color:#fff; text-align:center; font-weight:bold; background:rgba(0, 140, 180, 0.95); border:2px solid #fff; border-radius:50%; box-shadow:0 3px 10px rgba(0,0,0,0.35);"></div>', anchor: new naver.maps.Point(22, 22) },
                 { content: '<div class="cluster-badge" style="cursor:pointer; width:52px; height:52px; line-height:52px; font-size:13px; color:#fff; text-align:center; font-weight:bold; background:rgba(230, 70, 20, 0.95); border:2px solid #fff; border-radius:50%; box-shadow:0 4px 12px rgba(0,0,0,0.4);"></div>', anchor: new naver.maps.Point(26, 26) }
@@ -534,8 +534,8 @@
         var prop = properties[index];
 
         var yParts = prop.yongdo.split("/");
-        var mYongdo = (yParts ? yParts[0].trim() : "").replace("지역", "") + "지역"; 
-        var mJimok = yParts ? yParts[1].trim() : "";       
+        var mYongdo = (yParts ? yParts.trim() : "").replace("지역", "") + "지역"; 
+        var mJimok = yParts ? yParts.trim() : "";       
 
         var tableHtml = '';
         
@@ -543,18 +543,24 @@
             var townBook = (realTradeStats[prop.town] && realTradeStats[prop.town][mYongdo]) ? realTradeStats[prop.town][mYongdo][mJimok] : null;
             
             if (townBook) {
-                tableHtml += '<table class="trade-table"><tr><th style="width:18% !important; white-space:nowrap;">년도</th><th>리</th><th>건수</th><th>거래량</th><th>최저가</th><th>평균가</th><th>최고가</th></tr>';
+                // 💡 상단 헤더에 단위를 명시해 표 안의 중복 유해 텍스트를 제거하고 가로폭을 줄입니다.
+                tableHtml += '<table class="trade-table"><tr><th style="width:14% !important; white-space:nowrap;">년도</th><th>소속 리</th><th>건수</th><th>거래량(평)</th><th>최저(만)</th><th>평균(만)</th><th>최고(만)</th></tr>';
                 var sortedYears = Object.keys(townBook).sort(function(a, b){ return b - a; });
 
-                // 🌟 [의도 100% 반영] 특정 '리'로 제한하던 if 조건을 완전히 도려내고, 해당 읍면동 전체의 리 목록을 피벗식으로 쏟아냅니다!
                 sortedYears.forEach(function(yr) {
+                    var isFirst = true;
                     townBook[yr].forEach(function(row) {
-                        tableHtml += '<tr><td style="font-weight:bold; color:#2b5c8f; white-space:nowrap;">'+yr+'년</td><td style="font-weight:bold; color:#ff6e40;">'+row.ri+'</td><td>'+row.count+'건</td><td>'+row.volume.toLocaleString()+'평</td><td>'+row.min.toLocaleString()+'만</td><td style="font-weight:bold; color:#2b5c8f;">'+row.avg.toLocaleString()+'만</td><td style="font-weight:bold; color:#e65100;">'+row.max.toLocaleString()+'만</td></tr>';
+                        var yrTxt = isFirst ? yr : ""; // 연도 중복 제거 공백 처리
+                        var yrSty = isFirst ? 'style="font-weight:bold; color:#2b5c8f; white-space:nowrap; border-bottom:none;"' : 'style="border-top:none; border-bottom:none;"';
+                        isFirst = false;
+                        
+                        // 💡 [단위 제거 완결] 만, 평, 건, 년 글자를 싹 지우고 숫자만 정갈하게 노출시킵니다.
+                        tableHtml += '<tr><td ' + yrSty + '>' + yrTxt + '</td><td style="font-weight:bold; color:#ff6e40;">'+row.ri+'</td><td>'+row.count+'</td><td>'+row.volume.toLocaleString()+'</td><td>'+row.min.toLocaleString()+'</td><td style="font-weight:bold; color:#2b5c8f;">'+row.avg.toLocaleString()+'</td><td style="font-weight:bold; color:#e65100;">'+row.max.toLocaleString()+'</td></tr>';
                     });
                 });
                 tableHtml += '</table>';
             } else {
-                tableHtml += '<p style="color:#999; text-align:center; margin-top:20px; font-size:11px;">최근 5년간 해당 용도/지목 조건의<br>토지 실거래 내역 정보가 장부에 없습니다.</p>';
+                tableHtml += '<p style="color:#999; text-align:center; margin-top:20px; font-size:11px;">최근 5년간 토지 실거래 내역 정보가 장부에 없습니다.</p>';
             }
         } else {
             tableHtml += '<div style="text-align:center; color:#555; padding:20px 10px; background:#f8f9fa; border:1px solid #e9ecef; border-radius:4px; margin-top:10px; font-size:11px; line-height:1.4;">🏭 <b>공장/창고 매물 브리핑 안내</b><br>공장·창고는 도로망, 층고, 동력 등 개별 특성이 강해<br>본 매물의 상세 스펙을 바탕으로 상담 진행됩니다.</div>';
@@ -571,7 +577,7 @@
             '</div>', 
             clickNotice, 
             '<div style="margin-top:6px; border-top:1px dashed #ccc; padding-top:6px;">', 
-            '  <p style="color:#2b5c8f; font-weight:bold; font-size:11px; margin:0 0 5px 0; border-left:3px solid #2b5c8f; padding-left:6px;">최근 5개년 토지 실거래가 (평당가)</p>', 
+            '  <p style="color:#2b5c8f; font-weight:bold; font-size:11px; margin:0 0 5px 0; border-left:3px solid #2b5c8f; padding-left:6px;">최근 5개년 토지 실거래가</p>', 
                tableHtml, 
             '</div>'
         ].join('');
