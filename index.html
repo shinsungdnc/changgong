@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>창공공인중개사사무소</title>
-    <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
-    <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
+    <script type="text/javascript" src="https://naver.com"></script>
+    <script type="text/javascript" src="https://github.io"></script>
     <style>
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: 'Malgun Gothic', sans-serif; overflow: hidden; }
         #container { width: 100%; height: 100%; position: relative; overflow: hidden; }
@@ -34,9 +34,9 @@
         }
         #brand-master-btn:hover { background: rgba(0, 150, 255, 0.8) !important; transform: scale(1.02); }
         
-        /* [PC 기준] 내 위치 버튼을 우측 상단 지도 위에 절대 좌표로 독립 배치 */
+        /* 내 위치 버튼: PC/모바일 통합 절대 좌표 고정 및 z-index 최상위 보장 */
         #mylocation-btn { 
-            position: absolute; right: 15px; top: 15px; z-index: 999;
+            position: absolute; right: 15px; top: 15px; z-index: 1001;
             width: 40px; height: 40px; background: #ffffff; 
             border: 1px solid #ccc; border-radius: 4px; cursor: pointer; 
             box-shadow: 0 2px 6px rgba(0,0,0,0.2); 
@@ -87,13 +87,12 @@
             #right-stats-panel.active { transform: translateY(0); }
             #right-stats-panel.expanded { top: 10%; height: 90%; border-radius: 12px 12px 0 0; }
             
-            /* 모바일에서만 헤더 로우를 Flex 나란히 정렬 구조로 변경 */
-            #top-header-row { display: flex; gap: 8px; width: 100%; box-sizing: border-box; }
+            /* 모바일 헤더: 우측 내 위치 버튼 영역을 침범하지 않도록 padding-right 강제 부여 */
+            #top-header-row { display: block; width: 100%; padding-right: 50px; box-sizing: border-box; }
             
-            /* 상호명이 아무리 길어져도 내 위치 버튼 영역을 가리지 않도록 말줄임표 처리 및 안전 폭 확보 */
+            /* 상호명 글자가 길어지면 우측 영역을 침범하지 않고 이쁘게 흐려지거나 자르기 */
             #brand-master-btn { 
-                flex: 1; 
-                min-width: 0; 
+                width: 100%;
                 padding: 10px; 
                 font-size: 13px; 
                 white-space: nowrap; 
@@ -101,13 +100,13 @@
                 text-overflow: ellipsis; 
             }
             
-            /* 타이틀 너비에 밀려 찌그러지지 않도록 크기 감소 완전 차단 */
+            /* 모바일 전용 위치 보정: 우측 상단 레이어 위에 완벽 노출 및 크기 보장 */
             #mylocation-btn { 
-                position: static !important;
+                position: absolute !important;
+                right: 10px !important; top: 10px !important; z-index: 1001 !important;
                 width: 40px; height: 40px; background: #ffffff; 
                 border: 2px solid #ffffff; border-radius: 6px;
                 box-shadow: 0 4px 15px rgba(0,0,0,0.2); 
-                flex-shrink: 0 !important;
             }
             #mylocation-btn svg { width: 20px; height: 20px; }
         }
@@ -117,11 +116,6 @@
 <body>
 <div id="container">
     <div id="map"></div>
-    
-    <!-- 내 위치 버튼은 기본적으로 독립 객체로 지도 위에 띄워둡니다 (모바일 CSS에서만 헤더 옆 배치 제어) -->
-    <button id="mylocation-btn" onclick="toggleMyLocation()" title="내 위치 찾기">
-        <svg viewBox="0 0 24 24"><path d="M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4Z" /></svg>
-    </button>
 
     <div id="control-panel-wrapper">
         <div id="top-header-row">
@@ -154,6 +148,7 @@
             <div id="property-list"></div>
         </div>
     </div>
+    
     <div id="right-stats-panel" onclick="expandMobilePanel(event)">
         <div class="stats-header">
             <h3 id="stats-title">📊 주변 실거래 정보</h3>
@@ -163,6 +158,11 @@
             <p style="color: #666; text-align: center; margin-top: 30px;">좌측 매물을 선택하시면<br>해당 지역 실거래가 요약 통계가 연동됩니다.</p>
         </div>
     </div>
+
+    <!-- [위치 조정] 렌더링 최상위 우선순위를 확보하기 위해 컨테이너 내부 맨 마지막으로 이동 -->
+    <button id="mylocation-btn" onclick="toggleMyLocation()" title="내 위치 찾기">
+        <svg viewBox="0 0 24 24"><path d="M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4Z" /></svg>
+    </button>
 </div>
 
 <script>
