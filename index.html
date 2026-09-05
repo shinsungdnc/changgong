@@ -562,25 +562,36 @@
         document.getElementById("stats-title").innerText = "📊 " + townKey + " 실거래 분석";
         var clickNotice = (window.innerWidth <= 768) ? '<p style="text-align:center; color:#ff6e40; font-weight:bold; font-size:11px; margin-top:5px; animation: blink 1s infinite;">👆 여기를 터치하시면 전체 실거래 상세 분석 창이 열립니다.</p>' : '';
 
-        // 🌟 삼위일체 조합 키 조립부
+        // 🌟 [배열 문법 오류 전면 수정 및 정규화 완결판]
         var statsHtml = '';
         var pnuKey = prop.pnu ? prop.pnu.trim() : '';
         
-        var rawYongdoToken = prop.yongdo ? prop.yongdo.split('/') : ['', ''];
-        var matchingYongdo = rawYongdoToken.replace('지역', '').trim();
-        var matchingJimok = rawYongdoToken ? rawYongdoToken.trim() : '';
+        // "세종특별자치시 고운동"에서 앞 단어를 걷어내고 백엔드 DB와 동일한 "고운동", "연동면" 형식 확보
+        var townKey = prop.town ? prop.town.replace("세종특별자치시", "").replace("세종시", "").trim() : "";
         
-        var compositeRegionKey = townKey + '_' + matchingYongdo + '_' + matchingJimok;
+        // prop.yongdo 문자열을 '/' 기준으로 안전하게 쪼개어 배열 생성 (예: ["제1종전용주거지역 ", " 대"])
+        var rawYongdoToken = prop.yongdo ? prop.yongdo.split('/') : ['', ''];
+        
+        // 배열의 0번째(용도지역)와 1번째(지목)를 각각 정밀 파싱하여 유령 문자 제거
+        var matchingYongdo = rawYongdoToken[0] ? rawYongdoToken[0].replace('지역', '').trim() : ''; // "제1종전용주거"
+        var matchingJimok = rawYongdoToken[1] ? rawYongdoToken[1].trim() : ''; // "대"
+        
+        // 백엔드 파이썬 배치 파일과 100% 자석처럼 일치하는 복합 조합 키 조립
+        var compositeRegionKey = townKey + '_' + matchingYongdo + '_' + matchingJimok; // 예: "고운동_제1종전용주거_대"
         
         var tradeData = null;
         var isFallback = false;
 
+        // 1순위 검색: 필지 번호(PNU) 일치 기록 검증
         if (pnuKey && typeof realTradeStatsMaster !== 'undefined' && realTradeStatsMaster.pnu_stats && realTradeStatsMaster.pnu_stats[pnuKey]) {
             tradeData = realTradeStatsMaster.pnu_stats[pnuKey];
-        } else if (compositeRegionKey && typeof realTradeStatsMaster !== 'undefined' && realTradeStatsMaster.region_stats && realTradeStatsMaster.region_stats[compositeRegionKey]) {
+        } 
+        // 2순위 검색: 대안 방어선 [동네 + 용도지역 + 지목] 삼위일체 조합 기록 검증
+        else if (compositeRegionKey && typeof realTradeStatsMaster !== 'undefined' && realTradeStatsMaster.region_stats && realTradeStatsMaster.region_stats[compositeRegionKey]) {
             tradeData = realTradeStatsMaster.region_stats[compositeRegionKey];
             isFallback = true;
         }
+
 
         if (tradeData) {
             var badgeText = isFallback ? '<span class="fallback-badge">📢 주변 동일 조건(' + matchingYongdo + '/' + matchingJimok + ') 통계</span>' : '<span class="fallback-badge" style="background:#2e7d32;">✅ 본 필지 실거래 기록 매칭 완료</span>';
@@ -591,7 +602,7 @@
             statsHtml += '<thead><tr><th>연도</th><th>건수</th><th>거래량</th><th>최저가</th><th>평균가</th><th>최고가</th></tr></thead>';
             statsHtml += '<tbody>';
             
-            var years =;
+            var years = Object.keys(tradeData);
             years.forEach(function(yr) {
                 if (tradeData[yr]) {
                     var row = tradeData[yr];
