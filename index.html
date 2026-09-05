@@ -558,66 +558,86 @@
             tableHtml += '<p style="color:#999; text-align:center; margin-top:20px; font-size:11px;">최근 5년간 해당 지역 동일 조건의<br>실거래 내역 정보가 장부에 없습니다.</p>';
         }
 
-        // =========================================================================
-        // 🌟 [최종 정밀 매칭] NaverReal_MapBuild.py [블록 10] selectProperty 최종 완결판
+            // =========================================================================
+        // 🌟 [연도별+리별 피벗 렌더링] NaverReal_MapBuild.py [블록 10] selectProperty 최종 완결본
         // =========================================================================
         document.getElementById("stats-title").innerText = "📊 " + prop.town + " 실거래 분석";
-        var clickNotice = "";
+        var clickNotice = (window.innerWidth <= 768) ? '<p class="mobile-notice" style="text-align:center; color:#ff6e40; font-weight:bold; font-size:11px; margin-top:5px; animation: blink 1s infinite;">👆 여기를 터치하시면 전체 실거래 상세 분석 창이 열립니다.</p>' : '';
         var styleOpen = " { "; var styleClose = " } "; var styleBody = "display: none !important;";
 
-        // 슬래시(/) 가이드라인을 기반으로 용도지역명과 지목 단어 정밀 튜닝 분리
+        // 매물 주소(prop.name)에서 실제 매칭할 '리' 단어 파싱 추출
+        function getTargetRiName(addrStr) {
+            if (!addrStr) return "";
+            var tokens = addrStr.split(" ");
+            for (var i = 0; i < tokens.length; i++) {
+                if (tokens[i].endsWith("리")) return tokens[i].trim();
+            }
+            return "";
+        }
+        var currentPropRi = getTargetRiName(prop.name); // 예: "내판리" 혹은 "문주리"
+
         var yongdoParts = prop.yongdo.split("/");
-        var rawYongdo = yongdoParts[0] ? yongdoParts[0].trim() : "";
-        var matchYongdo = rawYongdo.replace("지역", "") + "지역"; // "계획관리지역" 형태로 동기화
-        var matchJimok = yongdoParts[1] ? yongdoParts[1].trim() : "";       // "전", "답", "임야" 형태로 동기화
+        var rawYongdo = yongdoParts ? yongdoParts[0].trim() : "";
+        var matchYongdo = rawYongdo.replace("지역", "") + "지역"; 
+        var matchJimok = yongdoParts ? yongdoParts[1].trim() : "";       
 
         var tableHtml = '';
         
-        // 💡 오직 토지 카테고리일 때만 4차원 계층 장부를 정밀 추적해 테이블을 생성합니다.
         if (prop.category === "토지") {
-            var statsArray = [];
-            if (realTradeStats[prop.town] && 
-                realTradeStats[prop.town][matchYongdo] && 
-                realTradeStats[prop.town][matchYongdo][matchJimok]) {
-                statsArray = realTradeStats[prop.town][matchYongdo][matchJimok];
-            }
-
-            if (statsArray.length > 0) {
-                statsArray.sort(function(a, b) { return b.year - a.year; });
-                
+            // 장부의 [읍면동] ➔ [용도지역] ➔ [지목] 경로 확보
+            var townBook = (realTradeStats[prop.town] && realTradeStats[prop.town][matchYongdo]) ? realTradeStats[prop.town][matchYongdo][matchJimok] : null;
+            
+            if (townBook) {
                 tableHtml += '<table class="trade-table">';
-                tableHtml += '  <tr><th style="width:18% !important; white-space:nowrap;">계약년도</th><th>건수</th><th>거래량</th><th>최저가</th><th>평균가</th><th>최고가</th></tr>';
-                statsArray.forEach(function(row) {
-                    tableHtml += '  <tr>';
-                    tableHtml += '    <td style="font-weight:bold; color:#2b5c8f; white-space:nowrap;">' + row.year + '년</td>';
-                    tableHtml += '    <td>' + row.count + '건</td>';
-                    tableHtml += '    <td>' + row.volume.toLocaleString() + '평</td>';
-                    tableHtml += '    <td style="color:#666;">' + row.min.toLocaleString() + '만</td>';
-                    tableHtml += '    <td style="font-weight:bold; color:#2b5c8f;">' + row.avg.toLocaleString() + '만</td>';
-                    tableHtml += '    <td style="font-weight:bold; color:#e65100;">' + row.max.toLocaleString() + '만</td>';
-                    tableHtml += '  </tr>';
+                tableHtml += '  <tr><th style="width:18% !important; white-space:nowrap;">계약년도</th><th>소속 리</th><th>거래건수</th><th>거래량(평)</th><th>최저평당</th><th>평균평당</th><th>최고평당</th></tr>';
+                
+                // 최신 연도순(2026 -> 2022)으로 정렬해 돌기 위해 키값을 역순 배열
+                var sortedYears = Object.keys(townBook).sort(function(a, b){ return b - a; });
+                var totalRowExist = false;
+
+                sortedYears.forEach(function(yearStr) {
+                    var riList = townBook[yearStr];
+                    
+                    // 연도 내부의 리 목록 중 내가 클릭한 매물과 똑맞아떨어지는 진짜 타깃 '리' 데이터만 핀포인트 선별
+                    riList.forEach(function(row) {
+                        if (row.ri === currentPropRi || currentPropRi === "") {
+                            totalRowExist = true;
+                            tableHtml += '  <tr>';
+                            tableHtml += '    <td style="font-weight:bold; color:#2b5c8f; white-space:nowrap;">' + yearStr + '년</td>';
+                            tableHtml += '    <td style="font-weight:bold; color:#ff6e40;">' + row.ri + '</td>'; // ➔ 💡 엑셀 피벗처럼 소속 리 노출
+                            tableHtml += '    <td>' + row.count + '건</td>';
+                            tableHtml += '    <td>' + row.volume.toLocaleString() + '평</td>';
+                            tableHtml += '    <td style="color:#666;">' + row.min.toLocaleString() + '만</td>';
+                            tableHtml += '    <td style="font-weight:bold; color:#2b5c8f;">' + row.avg.toLocaleString() + '만</td>';
+                            tableHtml += '    <td style="font-weight:bold; color:#e65100;">' + row.max.toLocaleString() + '만</td>';
+                            tableHtml += '  </tr>';
+                        }
+                    });
                 });
                 tableHtml += '</table>';
+                
+                if (!totalRowExist) {
+                    tableHtml = '<p style="color:#999; text-align:center; margin-top:20px; font-size:11px;">최근 5년간 해당 용도/지목 조건을 충족하는<br>[' + currentPropRi + '] 실거래 내역이 장부에 없습니다.</p>';
+                }
             } else {
-                tableHtml += '<p style="color:#999; text-align:center; margin-top:20px; font-size:11px;">최근 5년간 해당 용도지역/지목 조건의<br>토지 실거래 내역 정보가 장부에 없습니다.</p>';
+                tableHtml += '<p style="color:#999; text-align:center; margin-top:20px; font-size:11px;">최근 5년간 해당 용도/지목 조건의<br>토지 실거래 내역 정보가 장부에 없습니다.</p>';
             }
         } else {
-            // 💡 공장/창고 매물 클릭 시에는 개별성을 고안한 정중한 가이드 배너 표출로 유연한 방어
             tableHtml += '<div style="text-align:center; color:#555; padding:20px 10px; background:#f8f9fa; border:1px solid #e9ecef; border-radius:4px; margin-top:10px; font-size:11px; line-height:1.4;">';
             tableHtml += '  🏭 <b>공장/창고 매물 브리핑 안내</b><br>';
             tableHtml += '  공장·창고는 도로망, 건물 층고, 동력 용량 등<br>개별 특성이 강하므로 주변 평균가 통계 대신<br>본 매물의 상세 스펙을 바탕으로 상담 진행됩니다.';
             tableHtml += '</div>';
         }
 
-        // 화면 돔 오버레이 주입 레이어 마감
+        // 지번 노출을 완전히 숨긴 채, 순수 매물 주소 타이틀 바 표출
         document.getElementById("stats-content").innerHTML = [
             '<div style="background: rgba(0,0,0,0.03); padding:6px 10px; border-radius:4px; margin-bottom:6px; font-size:12px; line-height:1.4; text-align:left;">', 
-            '  <b>용도지역 / 지목:</b> ' + prop.yongdo + '<br>', 
+            '  <b>용도/지목:</b> ' + prop.yongdo + '<br>', 
             '</div>', 
             clickNotice, 
             '<div style="margin-top:6px; border-top:1px dashed #ccc; padding-top:6px;">', 
             '  <p style="color:#2b5c8f; font-weight:bold; font-size:11px; margin:0 0 5px 0; border-left:3px solid #2b5c8f; padding-left:6px;">최근 5개년 토지 실거래가 (평당가)</p>', 
-               tableHtml, 
+               tableHtml; 
             '</div>'
         ].join('');
         
