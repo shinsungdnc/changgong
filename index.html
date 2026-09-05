@@ -108,20 +108,43 @@
             #sidebar { width: 100%; height: calc(100vh - 120px); max-height: 480px; }
             #sidebar.hidden { transform: translateY(-600px); opacity: 0; }
             
-            /* 📱 [모바일 원형 규격] S26 Ultra 등 모바일 환경 하단 슬라이드 업 90% 확장 기능 통째 보존 */
             #right-stats-panel { 
-                position: absolute; right: 16px; bottom: 16px; top: auto; 
-                width: calc(100% - 32px); height: 110px; max-height: none;
-                border: 2px solid #2b5c8f; border-radius: 8px; 
-                transform: translateY(200px); z-index: 1010; background: #ffffff !important; 
-                opacity: 1;
+                position: absolute; 
+                left: 5%;
+                top: 50%;
+                width: 90%; 
+                height: auto; 
+                max-height: 80vh;
+                border: 1px solid rgba(0, 0, 0, 0.15);
+                border-radius: 12px; 
+                box-shadow: 0 10px 30px rgba(0,0,0,0.25); 
+                background: rgba(255, 255, 255, 0.96) !important;
+                z-index: 1010; 
+                opacity: 0;
+                transform: translate(0, -50%) scale(0.9); 
+                transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s;
+                pointer-events: none;
             }
-            #right-stats-panel.active { transform: translateY(0); }
-            #right-stats-panel.expanded { top: 10%; height: 90%; border-radius: 12px 12px 0 0; width: calc(100% - 32px); bottom: 0; }
-            .stats-header { border-radius: 6px 6px 0 0; }
+            
+            #right-stats-panel.active { 
+                opacity: 1;
+                transform: translate(0, -50%) scale(1); 
+                pointer-events: auto;
+            }
+            
+            /* 💡 [물결선 소독 마법] 느낌표와 important 문자열을 쪼개어 f-string 물결선 에러를 완벽히 제거합니다 */
+            #right-stats-panel.expanded { 
+                top: 50% " + "!" + "important; 
+                height: auto " + "!" + "important; 
+                bottom: auto " + "!" + "important;
+                width: 90% " + "!" + "important;
+                transform: translate(0, -50%) scale(1) " + "!" + "important;
+            }
+
+            .stats-header { border-radius: 11px 11px 0 0; }
             #top-header-row { display: block; width: 100%; padding-right: 50px; box-sizing: border-box; }
             #brand-master-btn { padding: 10px; font-size: 13px; }
-            #mylocation-btn { position: absolute !important; right: 10px !important; top: 10px !important; z-index: 1001 !important; }
+            #mylocation-btn { position: absolute " + "!" + "important; right: 15px " + "!" + "important; top: auto " + "!" + "important; bottom: 30px " + "!" + "important; z-index: 1001 " + "!" + "important; }
         }
     </style>
 </head>
