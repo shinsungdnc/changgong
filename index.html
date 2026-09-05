@@ -19,7 +19,7 @@
         }
         
         #top-header-row {
-            display: flex; width: 100%; pointer-events: auto;
+            display: flex; width: 100%; pointer-events: auto; box-sizing: border-box;
         }
         
         #brand-master-btn { 
@@ -88,16 +88,26 @@
             #right-stats-panel.expanded { top: 10%; height: 90%; border-radius: 12px 12px 0 0; }
             
             /* 모바일에서만 헤더 로우를 Flex 나란히 정렬 구조로 변경 */
-            #top-header-row { display: flex; gap: 8px; }
-            #brand-master-btn { flex: 1; padding: 10px; font-size: 13px; }
+            #top-header-row { display: flex; gap: 8px; width: 100%; box-sizing: border-box; }
             
-            /* 모바일에서만 내 위치 버튼을 타이틀 옆 인라인 플렉스로 강제 편입 및 오버레이 차단 */
+            /* 상호명이 아무리 길어져도 내 위치 버튼 영역을 가리지 않도록 말줄임표 처리 및 안전 폭 확보 */
+            #brand-master-btn { 
+                flex: 1; 
+                min-width: 0; 
+                padding: 10px; 
+                font-size: 13px; 
+                white-space: nowrap; 
+                overflow: hidden; 
+                text-overflow: ellipsis; 
+            }
+            
+            /* 타이틀 너비에 밀려 찌그러지지 않도록 크기 감소 완전 차단 */
             #mylocation-btn { 
                 position: static !important;
                 width: 40px; height: 40px; background: #ffffff; 
                 border: 2px solid #ffffff; border-radius: 6px;
                 box-shadow: 0 4px 15px rgba(0,0,0,0.2); 
-                flex-shrink: 0;
+                flex-shrink: 0 !important;
             }
             #mylocation-btn svg { width: 20px; height: 20px; }
         }
