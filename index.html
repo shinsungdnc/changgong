@@ -527,6 +527,47 @@
         });
     }
 
+    function applyFilters() {
+        if (currentBoundaryCircle) currentBoundaryCircle.setMap(null);
+        var visibleMarkers = [];
+        var showMaemae = document.getElementById("chk-maemae").checked;
+        var showWolse = document.getElementById("chk-wolse").checked;
+
+        markers.forEach(function(marker, i) {
+            var prop = properties[i];
+            var matchCat = (currentCategory === "전체" || marker.get("category") === currentCategory);
+            var matchDetail = (currentCategory === "전체" || currentDetail.indexOf(marker.get("detail_type")) !== -1); 
+            var matchTown = (currentTown === "전체" || marker.get("town") === currentTown);
+            var isWolseData = prop.price.indexOf("월세") !== -1;
+            var matchDealType = (showMaemae && !isWolseData) || (showWolse && isWolseData);
+            var item = document.getElementById("item-" + i);
+
+            if (matchCat && matchDetail && matchTown && matchDealType) {
+                item.style.display = "block"; marker.setMap(map); visibleMarkers.push(marker); 
+            } else {
+                item.style.display = "none"; var dEl = document.getElementById("detail-" + i); if(dEl) dEl.style.display = "none";
+                item.classList.remove("active"); marker.setMap(null); 
+            }
+        });
+        updateTownSelectorOptions(); updateClustering(visibleMarkers); 
+    }
+
+    function updateClustering(visibleMarkers) {
+        if (markerClustering) markerClustering.setMap(null);
+        markerClustering = new MarkerClustering({
+            minClusterSize: 2, maxZoom: 16, map: map, markers: visibleMarkers, gridSize: 120, disableClickZoom: false, 
+            icons: [
+                { content: '<div class="cluster-badge" style="cursor:pointer; width:44px; height:44px; line-height:44px; font-size:12px; color:#fff; text-align:center; font-weight:bold; background:rgba(0, 140, 180, 0.95); border:2px solid #fff; border-radius:50%; box-shadow:0 3px 10px rgba(0,0,0,0.35);"></div>', anchor: new naver.maps.Point(22, 22) },
+                { content: '<div class="cluster-badge" style="cursor:pointer; width:52px; height:52px; line-height:52px; font-size:13px; color:#fff; text-align:center; font-weight:bold; background:rgba(230, 70, 20, 0.95); border:2px solid #fff; border-radius:50%; box-shadow:0 4px 12px rgba(0,0,0,0.4);"></div>', anchor: new naver.maps.Point(26, 26) }
+            ],
+            indexGenerator: function(count) { return count < 15 ? 0 : 1; }, 
+            stylingFunction: function(clusterMarker, count) {
+                var element = clusterMarker.getElement();
+                if (element) { var badge = element.querySelector(".cluster-badge"); if (badge) badge.innerText = count; }
+            }
+        });
+    }
+
     function selectProperty(index, marker) {
         var sidebar = document.getElementById("sidebar");
         var listContainer = document.getElementById("property-list");
@@ -557,41 +598,28 @@
         var targetPos = marker.getPosition(); map.setZoom(19); map.panTo(targetPos);            
         var prop = properties[index];
         
-        // 🌟 세종시 행정구역 매칭 교정
         var townKey = prop.town ? prop.town.replace("세종특별자치시", "").replace("세종시", "").trim() : "";
         document.getElementById("stats-title").innerText = "📊 " + townKey + " 실거래 분석";
         var clickNotice = (window.innerWidth <= 768) ? '<p style="text-align:center; color:#ff6e40; font-weight:bold; font-size:11px; margin-top:5px; animation: blink 1s infinite;">👆 여기를 터치하시면 전체 실거래 상세 분석 창이 열립니다.</p>' : '';
 
-        // 🌟 [배열 문법 오류 전면 수정 및 정규화 완결판]
         var statsHtml = '';
         var pnuKey = prop.pnu ? prop.pnu.trim() : '';
         
-        // "세종특별자치시 고운동"에서 앞 단어를 걷어내고 백엔드 DB와 동일한 "고운동", "연동면" 형식 확보
-        var townKey = prop.town ? prop.town.replace("세종특별자치시", "").replace("세종시", "").trim() : "";
-        
-        // prop.yongdo 문자열을 '/' 기준으로 안전하게 쪼개어 배열 생성 (예: ["제1종전용주거지역 ", " 대"])
         var rawYongdoToken = prop.yongdo ? prop.yongdo.split('/') : ['', ''];
+        var matchingYongdo = rawYongdoToken ? rawYongdoToken.replace('지역', '').trim() : '';
+        var matchingJimok = rawYongdoToken ? rawYongdoToken.trim() : '';
         
-        // 배열의 0번째(용도지역)와 1번째(지목)를 각각 정밀 파싱하여 유령 문자 제거
-        var matchingYongdo = rawYongdoToken[0] ? rawYongdoToken[0].replace('지역', '').trim() : ''; // "제1종전용주거"
-        var matchingJimok = rawYongdoToken[1] ? rawYongdoToken[1].trim() : ''; // "대"
-        
-        // 백엔드 파이썬 배치 파일과 100% 자석처럼 일치하는 복합 조합 키 조립
-        var compositeRegionKey = townKey + '_' + matchingYongdo + '_' + matchingJimok; // 예: "고운동_제1종전용주거_대"
+        var compositeRegionKey = townKey + '_' + matchingYongdo + '_' + matchingJimok;
         
         var tradeData = null;
         var isFallback = false;
 
-        // 1순위 검색: 필지 번호(PNU) 일치 기록 검증
         if (pnuKey && typeof realTradeStatsMaster !== 'undefined' && realTradeStatsMaster.pnu_stats && realTradeStatsMaster.pnu_stats[pnuKey]) {
             tradeData = realTradeStatsMaster.pnu_stats[pnuKey];
-        } 
-        // 2순위 검색: 대안 방어선 [동네 + 용도지역 + 지목] 삼위일체 조합 기록 검증
-        else if (compositeRegionKey && typeof realTradeStatsMaster !== 'undefined' && realTradeStatsMaster.region_stats && realTradeStatsMaster.region_stats[compositeRegionKey]) {
+        } else if (compositeRegionKey && typeof realTradeStatsMaster !== 'undefined' && realTradeStatsMaster.region_stats && realTradeStatsMaster.region_stats[compositeRegionKey]) {
             tradeData = realTradeStatsMaster.region_stats[compositeRegionKey];
             isFallback = true;
         }
-
 
         if (tradeData) {
             var badgeText = isFallback ? '<span class="fallback-badge">📢 주변 동일 조건(' + matchingYongdo + '/' + matchingJimok + ') 통계</span>' : '<span class="fallback-badge" style="background:#2e7d32;">✅ 본 필지 실거래 기록 매칭 완료</span>';
@@ -602,7 +630,13 @@
             statsHtml += '<thead><tr><th>연도</th><th>건수</th><th>거래량</th><th>최저가</th><th>평균가</th><th>최고가</th></tr></thead>';
             statsHtml += '<tbody>';
             
-            var years = Object.keys(tradeData);
+            // 🌟 [영구 자동화 마스터 레이어] 실행 연도를 브라우저 날짜 객체로 낚아채 오차 없이 루프 처리
+            var currentYear = new Date().getFullYear();
+            var years = [];
+            for (var y = currentYear; y >= currentYear - 4; y--) {
+                years.push(y);
+            }
+
             years.forEach(function(yr) {
                 if (tradeData[yr]) {
                     var row = tradeData[yr];
