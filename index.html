@@ -124,19 +124,26 @@
 </head>
 <body>
 <div id="container">
-    <!-- 🌟 [요청 사항 완벽 반영] 우측 순정 패널 컴팩트 세로 아이콘 조립 (지적 -> 반경 -> 내위치 순서 정렬) -->
+    <!-- 🌟 [요청 사항 완벽 반영] 네이버 지도 실제 앱의 순정 아이콘 그래픽을 100% 그대로 복제한 SVG 명세 바인딩 -->
     <div id="right-floating-control">
-        <!-- 1. 지적편집도 토글 버튼 (기본 활성화) -->
+        <!-- 1. 지적편집도 토글 버튼 (네이버 순정 레이어 도면형 맵 아이콘) -->
         <button id="btn-cadastral" class="icon-ctrl-btn cadastral-on" onclick="toggleCadastral()" title="지적편집도 토글">
-            <svg viewBox="0 0 24 24"><path d="M12,2L2,7L12,12L22,7L12,2M2,17L12,22L22,17L12,12L2,17M2,12L12,17L22,12L12,7L2,12Z"/></svg>
+            <svg viewBox="0 0 24 24" style="width:22px; height:22px;">
+                <path d="M12 2.69l10 4.14v2.09l-10 4.14-10-4.14V6.83l10-4.14M12 15l10-4.14v2.09L12 17.1 2 13.04v-2.09L12 15m0 4.25l10-4.14v2.09L12 21.35 2 17.29v-2.09l10 4.14z"/>
+            </svg>
         </button>
-        <!-- 2. 반경 드래그 측정 버튼 -->
+        <!-- 2. 반경 드래그 측정 버튼 (네이버 순정 반경 측정용 타깃 동심원 점 아이콘) -->
         <button id="btn-radius" class="icon-ctrl-btn" onclick="toggleRadiusDrawing()" title="반경 직접 드래그 그리기">
-            <svg viewBox="0 0 24 24"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,11A1,1 0 0,0 11,12A1,1 0 0,0 12,13A1,1 0 0,0 13,12A1,1 0 0,0 12,11Z"/></svg>
+            <svg viewBox="0 0 24 24" style="width:22px; height:22px;">
+                <circle cx="12" cy="12" r="8" fill="none" stroke-width="2" stroke-dasharray="3,3"/>
+                <circle cx="12" cy="12" r="2"/>
+            </svg>
         </button>
-        <!-- 3. 실시간 내 위치 추적 조준경 버튼 -->
+        <!-- 3. 실시간 내 위치 추적 버튼 (네이버 순정 GPS 조준경 미세 슬릿 아이콘) -->
         <button id="btn-mylocation" class="icon-ctrl-btn" onclick="toggleMyLocation()" title="내 위치 추적">
-            <svg viewBox="0 0 24 24"><path d="M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4Z"/></svg>
+            <svg viewBox="0 0 24 24" style="width:22px; height:22px;">
+                <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm10 3.5c-.24-4.63-3.87-8.26-8.5-8.5V2c0-.55-.45-1-1-1s-1 .45-1 1v1c-4.63.24-8.26 3.87-8.5 8.5H2c-.55 0-1 .45-1 1s.45 1 1 1h1c.24 4.63 3.87 8.26 8.5 8.5v1c0 .55 scholarship.45 1 1 1s1-.45 1-1v-1c4.63-.24 8.26-3.87 8.5-8.5h1cRef.55 0 1-.45 1-1s-.45-1-1-1h-1zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
+            </svg>
         </button>
     </div>
 
@@ -215,8 +222,10 @@
             isCadastralOn = true;
         }
     }   
-    // 📐 [반경 드래그 그리기 완전 해결 마스터 버전]
+    // 📐 [네이버 순정 UI/UX 100% 복제 반경 측정 엔진 최종판]
     var customRadiusCircle = null;
+    var radiusPolyline = null;       // 네이버 순정 스타일 중심축 점선
+    var radiusDistanceMarker = null; // 네이버 순정 스타일 거리 말풍선
     var isRadiusDrawingMode = false;
     var radiusStartLatLng = null;
     var radiusListeners = [];
@@ -225,47 +234,94 @@
         var btn = document.getElementById('btn-radius');
         
         if (!isRadiusDrawingMode) {
-            // 반경 그리기 모드 시작
             isRadiusDrawingMode = true;
             btn.classList.add('radius-on');
-            map.setOptions({ draggable: false }); // 드래그할 동안 지도가 움직이지 않도록 고정
+            map.setOptions({ draggable: true }); 
             
-            // 기존에 그려진 원이 있다면 초기화(삭제)
-            if (customRadiusCircle) { customRadiusCircle.setMap(null); customRadiusCircle = null; }
+            // 기존 오브젝트 청소
+            clearRadiusOverlay();
 
-            // 1. 마우스/터치 누른 시점 (중심점 지정)
-            var downListener = naver.maps.Event.addListener(map, 'mousedown', function(e) {
-                radiusStartLatLng = e.coord;
-                customRadiusCircle = new naver.maps.Circle({
-                    map: map,
-                    center: radiusStartLatLng,
-                    radius: 1, // 최초 1미터 시작
-                    fillColor: '#ff6e40',
-                    fillOpacity: 0.15,
-                    strokeColor: '#ff6e40',
-                    strokeWeight: 2
+            // 1. 첫 번째 클릭: 중심점 지정
+            var clickListener = naver.maps.Event.addListener(map, 'click', function(e) {
+                if (!radiusStartLatLng) {
+                    radiusStartLatLng = e.coord;
+                    
+                    // 네이버 순정 보라색 원 (`#9c27b0` 계열 투명도 반영)
+                    customRadiusCircle = new naver.maps.Circle({
+                        map: map,
+                        center: radiusStartLatLng,
+                        radius: 1,
+                        fillColor: '#a544f3',
+                        fillOpacity: 0.1,
+                        strokeColor: '#a544f3',
+                        strokeWeight: 2
+                    });
+
+                    // 네이버 순정 실시간 추적 점선 (Dashed)
+                    radiusPolyline = new naver.maps.Polyline({
+                        map: map,
+                        path: [radiusStartLatLng, radiusStartLatLng],
+                        strokeColor: '#a544f3',
+                        strokeWeight: 2,
+                        strokeStyle: 'dash',
+                        strokeOpacity: 0.8
+                    });
+
+                    // 네이버 순정 백그라운드 화이트 테두리 말풍선 박스 빌드
+                    radiusDistanceMarker = new naver.maps.Marker({
+                        position: radiusStartLatLng,
+                        map: map,
+                        icon: {
+                            content: '<div style="background:#ffffff; border:1px solid #a544f3; border-radius:2px; padding:4px 7px; font-size:11px; font-family:sans-serif; font-weight:normal; color:#333; box-shadow:1px 1px 3px rgba(0,0,0,0.2); white-space:nowrap;">총반경 <span style="font-weight:bold; color:#a544f3;">0m</span></div>',
+                            anchor: new naver.maps.Point(-10, 10)
+                        }
+                    });
+                } else {
+                    // 두 번째 클릭: 최종 지점 고정 및 가이드 종료
+                    var projection = map.getProjection();
+                    var finalDist = projection.getDistance(radiusStartLatLng, e.coord);
+                    var distText = finalDist >= 1000 ? (finalDist / 1000).toFixed(1) + 'km' : Math.round(finalDist) + 'm';
+                    
+                    // 점선 및 원 최종 좌표 고정
+                    customRadiusCircle.setRadius(finalDist);
+                    radiusPolyline.setPath([radiusStartLatLng, e.coord]);
+
+                    // 네이버 순정 스타일 말풍선 고정 및 우측 하단 "지우기" 레이아웃 완전 이식
+                    radiusDistanceMarker.setPosition(e.coord);
+                    radiusDistanceMarker.setIcon({
+                        content: [
+                            '<div style="position:relative; background:#ffffff; border:1px solid #a544f3; border-radius:2px; padding:5px 9px; font-size:11px; font-family:sans-serif; box-shadow:2px 2px 5px rgba(0,0,0,0.2); white-space:nowrap;">',
+                            '   <span style="color:#555;">총반경</span> &nbsp;<span style="font-weight:bold; color:#a544f3; font-size:12px;">' + distText + '</span>',
+                            '   <div onclick="clearRadiusOverlay()" style="display:inline-block; margin-left:8px; padding-left:8px; border-left:1px solid #e0e0e0; color:#888; cursor:pointer; font-weight:normal;">지우기</div>',
+                            '</div>'
+                        ].join(''),
+                        anchor: new naver.maps.Point(-10, 12)
+                    });
+
+                    stopRadiusDrawingMode(); 
+                }
+            });
+
+            // 2. 마우스 무브: 네이버 순정 점선 및 말풍선 실시간 동적 추적 연산
+            var moveListener = naver.maps.Event.addListener(map, 'mousemove', function(e) {
+                if (!radiusStartLatLng || !customRadiusCircle || !radiusPolyline || !radiusDistanceMarker) return;
+                
+                var projection = map.getProjection();
+                var currentDist = projection.getDistance(radiusStartLatLng, e.coord);
+                
+                customRadiusCircle.setRadius(currentDist);
+                radiusPolyline.setPath([radiusStartLatLng, e.coord]);
+                
+                var distText = currentDist >= 1000 ? (currentDist / 1000).toFixed(1) + 'km' : Math.round(currentDist) + 'm';
+                
+                radiusDistanceMarker.setPosition(e.coord);
+                radiusDistanceMarker.setIcon({
+                    content: '<div style="background:#ffffff; border:1px solid #a544f3; border-radius:2px; padding:4px 7px; font-size:11px; font-family:sans-serif; color:#333; box-shadow:1px 1px 3px rgba(0,0,0,0.2); white-space:nowrap;">총반경 <span style="font-weight:bold; color:#a544f3;">' + distText + '</span></div>',
+                    anchor: new naver.maps.Point(-10, 10)
                 });
             });
 
-            // 2. 누른 채로 움직이는 시점 (실시간 반경 확장 계산)
-            var moveListener = naver.maps.Event.addListener(map, 'mousemove', function(e) {
-                if (!radiusStartLatLng || !customRadiusCircle) return;
-                
-                // 중심점부터 현재 드래그 위치까지의 거리를 계산 (미터 단위)
-                var projection = map.getProjection();
-                var distance = projection.getDistance(radiusStartLatLng, e.coord);
-                
-                customRadiusCircle.setRadius(distance);
-            });
-
-            // 3. 손가락/마우스를 뗀 시점 (그리기 완료 및 지도 이동 잠금 해제)
-            var upListener = naver.maps.Event.addListener(map, 'mouseup', function(e) {
-                radiusStartLatLng = null;
-                map.setOptions({ draggable: true }); // 원 다 그렸으니 다시 지도 움직이게 해제
-                stopRadiusDrawingMode(); // 모드 종료 (아이콘 불 끄기)
-            });
-
-            radiusListeners = [downListener, moveListener, upListener];
+            radiusListeners = [clickListener, moveListener];
         } else {
             stopRadiusDrawingMode();
         }
@@ -275,11 +331,18 @@
         isRadiusDrawingMode = false;
         var btn = document.getElementById('btn-radius');
         if (btn) btn.classList.remove('radius-on');
-        map.setOptions({ draggable: true });
         
-        // 사용한 리스너들 흔적 없이 청소하여 지도 먹통 방지
         radiusListeners.forEach(function(listener) { naver.maps.Event.removeListener(listener); });
         radiusListeners = [];
+        radiusStartLatLng = null;
+    }
+
+    // 🌟 반경 서브 레이어 완전 소멸 처리 함수
+    function clearRadiusOverlay() {
+        if (customRadiusCircle) { customRadiusCircle.setMap(null); customRadiusCircle = null; }
+        if (radiusPolyline) { radiusPolyline.setMap(null); radiusPolyline = null; }
+        if (radiusDistanceMarker) { radiusDistanceMarker.setMap(null); radiusDistanceMarker = null; }
+        stopRadiusDrawingMode();
     }
 
     // 🎯 실시간 GPS 내 위치 유지 엔진
@@ -518,9 +581,9 @@
                 '       <div style="display: flex; width: 100%;"><span style="font-weight: bold; color: #555; width: 52px; flex-shrink: 0;">매물특징</span><span style="font-weight: bold; color: #555; width: 12px; flex-shrink: 0;">:</span><span style="color: #222; word-break: break-all; flex: 1;">' + prop.feature + '</span></div>',
                 '   </div>',
                 '   <div class="links-row" style="margin-top: 4px; padding-top: 4px; margin-bottom: 0;">',
-                '       <a href="https://naver.com' + prop.id + '" target="_blank" class="naver-land" onclick="event.stopPropagation();">네이버부동산</a>',
-                '       <a href="https://naver.com' + prop.name + '" target="_blank" class="naver-map" onclick="event.stopPropagation();">네이버지도</a>',
-                '       ' + (prop.pnu && prop.pnu.trim() !== "" ? '<a href="http://eum.go.kr' + prop.pnu.trim() + '&mode=search" target="_blank" class="eum-land" onclick="event.stopPropagation();">토지이음</a>' : '<a class="eum-none" title="PNU 미생성" onclick="event.stopPropagation();">미매칭</a>'),
+                '       <a href="https://fin.land.naver.com/articles/' + prop.id + '" target="_blank" class="naver-land" onclick="event.stopPropagation();">네이버부동산</a>',
+                '       <a href="https://map.naver.com/p/search/' + prop.name + '" target="_blank" class="naver-map" onclick="event.stopPropagation();">네이버지도</a>',
+                '       ' + (prop.pnu && prop.pnu.trim() !== "" ? '<a href="http://www.eum.go.kr/web/ar/lu/luLandDet.jsp?pnu=' + prop.pnu.trim() + '&mode=search" target="_blank" class="eum-land" onclick="event.stopPropagation();">토지이음</a>' : '<a class="eum-none" title="PNU 미생성" onclick="event.stopPropagation();">미매칭</a>'),
                 '   </div>',
                 '</div>'
             ].join('');
