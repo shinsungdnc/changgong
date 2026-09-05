@@ -562,7 +562,7 @@
         var statsHtml = '';
         var pnuKey = prop.pnu ? prop.pnu.trim() : '';
         
-        // 🌟 [배열 인덱스 오류 완전 해결] 인덱스 [0]과 [1]을 명확히 지정하여 replace 및 문법 오류 완벽 차단
+        // 🌟 [교정 마스터 완료] 배열 인덱스를 명확히 명시하여 자바스크립트 폭사 오류 완벽하게 제거
         var rawYongdoToken = prop.yongdo ? prop.yongdo.split('/') : ['', ''];
         var matchingYongdo = rawYongdoToken[0] ? rawYongdoToken[0].replace('지역', '').trim() : '';
         var matchingJimok = rawYongdoToken[1] ? rawYongdoToken[1].trim() : '';
@@ -588,6 +588,7 @@
             statsHtml += '<thead><tr><th>연도</th><th>건수</th><th>거래량</th><th>최저가</th><th>평균가</th><th>최고가</th></tr></thead>';
             statsHtml += '<tbody>';
             
+            // 🌟 [영구 자동화] 기기 날짜 객체를 자동으로 호출하여 매년 알아서 슬라이딩 연산 루프 처리
             var currentYear = new Date().getFullYear();
             var years = [];
             for (var y = currentYear; y >= currentYear - 4; y--) {
