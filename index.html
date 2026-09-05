@@ -532,19 +532,10 @@
 
         var targetPos = marker.getPosition(); map.setZoom(19); map.panTo(targetPos);            
         var prop = properties[index];
-        
-        // [초정밀 리 단위 파싱 함수] 주소명세에서 번지수를 탈락시키고 순수 '리' 단위만 정밀 수확
-        var currentPropRi = "";
-        if (prop.name) {
-            var tk = prop.name.split(" ");
-            for (var i = 0; i < tk.length; i++) {
-                if (tk[i].endsWith("리")) { currentPropRi = tk[i].trim(); break; }
-            }
-        }
 
         var yParts = prop.yongdo.split("/");
-        var mYongdo = (yParts[0] ? yParts[0].trim() : "").replace("지역", "") + "지역"; 
-        var mJimok = yParts[1] ? yParts[1].trim() : "";       
+        var mYongdo = (yParts ? yParts[0].trim() : "").replace("지역", "") + "지역"; 
+        var mJimok = yParts ? yParts[1].trim() : "";       
 
         var tableHtml = '';
         
@@ -552,22 +543,18 @@
             var townBook = (realTradeStats[prop.town] && realTradeStats[prop.town][mYongdo]) ? realTradeStats[prop.town][mYongdo][mJimok] : null;
             
             if (townBook) {
-                tableHtml += '<table class="trade-table"><tr><th style="width:18% !important; white-space:nowrap;">계약년도</th><th>소속 리</th><th>거래건수</th><th>거래량(평)</th><th>최저평당</th><th>평균평당</th><th>최고평당</th></tr>';
+                tableHtml += '<table class="trade-table"><tr><th style="width:18% !important; white-space:nowrap;">년도</th><th>리</th><th>건수</th><th>거래량</th><th>최저가</th><th>평균가</th><th>최고가</th></tr>';
                 var sortedYears = Object.keys(townBook).sort(function(a, b){ return b - a; });
-                var rowExist = false;
 
+                // 🌟 [의도 100% 반영] 특정 '리'로 제한하던 if 조건을 완전히 도려내고, 해당 읍면동 전체의 리 목록을 피벗식으로 쏟아냅니다!
                 sortedYears.forEach(function(yr) {
                     townBook[yr].forEach(function(row) {
-                        if (row.ri === currentPropRi || currentPropRi === "") {
-                            rowExist = true;
-                            tableHtml += '<tr><td style="font-weight:bold; color:#2b5c8f; white-space:nowrap;">'+yr+'년</td><td style="font-weight:bold; color:#ff6e40;">'+row.ri+'</td><td>'+row.count+'건</td><td>'+row.volume.toLocaleString()+'평</td><td>'+row.min.toLocaleString()+'만</td><td style="font-weight:bold; color:#2b5c8f;">'+row.avg.toLocaleString()+'만</td><td style="font-weight:bold; color:#e65100;">'+row.max.toLocaleString()+'만</td></tr>';
-                        }
+                        tableHtml += '<tr><td style="font-weight:bold; color:#2b5c8f; white-space:nowrap;">'+yr+'년</td><td style="font-weight:bold; color:#ff6e40;">'+row.ri+'</td><td>'+row.count+'건</td><td>'+row.volume.toLocaleString()+'평</td><td>'+row.min.toLocaleString()+'만</td><td style="font-weight:bold; color:#2b5c8f;">'+row.avg.toLocaleString()+'만</td><td style="font-weight:bold; color:#e65100;">'+row.max.toLocaleString()+'만</td></tr>';
                     });
                 });
                 tableHtml += '</table>';
-                if (!rowExist) tableHtml = '<p style="color:#999; text-align:center; margin-top:20px; font-size:11px;">최근 5년간 ['+currentPropRi+'] 실거래 내역이 장부에 없습니다.</p>';
             } else {
-                tableHtml += '<p style="color:#999; text-align:center; margin-top:20px; font-size:11px;">최근 5년간 토지 실거래 내역 정보가 장부에 없습니다.</p>';
+                tableHtml += '<p style="color:#999; text-align:center; margin-top:20px; font-size:11px;">최근 5년간 해당 용도/지목 조건의<br>토지 실거래 내역 정보가 장부에 없습니다.</p>';
             }
         } else {
             tableHtml += '<div style="text-align:center; color:#555; padding:20px 10px; background:#f8f9fa; border:1px solid #e9ecef; border-radius:4px; margin-top:10px; font-size:11px; line-height:1.4;">🏭 <b>공장/창고 매물 브리핑 안내</b><br>공장·창고는 도로망, 층고, 동력 등 개별 특성이 강해<br>본 매물의 상세 스펙을 바탕으로 상담 진행됩니다.</div>';
@@ -578,7 +565,6 @@
         
         var styleOpen = " { ", styleClose = " } ", styleBody = "display: none !important;";
 
-        // 🌟 [최종 정제 마감] 콤팩트 패딩 적용 및 불필요한 행 완전 소독 조립
         document.getElementById("stats-content").innerHTML = [
             '<div style="background: rgba(0,0,0,0.03); padding:6px 10px; border-radius:4px; margin-bottom:6px; font-size:12px; line-height:1.4; text-align:left;">', 
             '  <b>용도/지목:</b> ' + prop.yongdo + '<br>', 
