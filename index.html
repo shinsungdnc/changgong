@@ -533,9 +533,10 @@
         var targetPos = marker.getPosition(); map.setZoom(19); map.panTo(targetPos);            
         var prop = properties[index];
 
+        // 💡 [배러 완치] 배열 인덱스를 지정하여 문자열을 분리하도록 정확하게 교정
         var yParts = prop.yongdo.split("/");
-        var mYongdo = (yParts ? yParts.trim() : "").replace("지역", "") + "지역"; 
-        var mJimok = yParts ? yParts.trim() : "";       
+        var mYongdo = (yParts && yParts[0] ? yParts[0].trim() : "").replace("지역", "") + "지역"; 
+        var mJimok = (yParts && yParts[1] ? yParts[1].trim() : "");       
 
         var tableHtml = '';
         
@@ -543,18 +544,16 @@
             var townBook = (realTradeStats[prop.town] && realTradeStats[prop.town][mYongdo]) ? realTradeStats[prop.town][mYongdo][mJimok] : null;
             
             if (townBook) {
-                // 💡 상단 헤더에 단위를 명시해 표 안의 중복 유해 텍스트를 제거하고 가로폭을 줄입니다.
                 tableHtml += '<table class="trade-table"><tr><th style="width:14% !important; white-space:nowrap;">년도</th><th>소속 리</th><th>건수</th><th>거래량(평)</th><th>최저(만)</th><th>평균(만)</th><th>최고(만)</th></tr>';
                 var sortedYears = Object.keys(townBook).sort(function(a, b){ return b - a; });
 
                 sortedYears.forEach(function(yr) {
                     var isFirst = true;
                     townBook[yr].forEach(function(row) {
-                        var yrTxt = isFirst ? yr : ""; // 연도 중복 제거 공백 처리
+                        var yrTxt = isFirst ? yr : ""; 
                         var yrSty = isFirst ? 'style="font-weight:bold; color:#2b5c8f; white-space:nowrap; border-bottom:none;"' : 'style="border-top:none; border-bottom:none;"';
                         isFirst = false;
                         
-                        // 💡 [단위 제거 완결] 만, 평, 건, 년 글자를 싹 지우고 숫자만 정갈하게 노출시킵니다.
                         tableHtml += '<tr><td ' + yrSty + '>' + yrTxt + '</td><td style="font-weight:bold; color:#ff6e40;">'+row.ri+'</td><td>'+row.count+'</td><td>'+row.volume.toLocaleString()+'</td><td>'+row.min.toLocaleString()+'</td><td style="font-weight:bold; color:#2b5c8f;">'+row.avg.toLocaleString()+'</td><td style="font-weight:bold; color:#e65100;">'+row.max.toLocaleString()+'</td></tr>';
                     });
                 });
