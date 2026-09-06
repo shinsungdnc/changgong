@@ -544,7 +544,7 @@
             var townBook = (realTradeStats[prop.town] && realTradeStats[prop.town][mYongdo]) ? realTradeStats[prop.town][mYongdo][mJimok] : null;
             
             if (townBook) {
-                tableHtml += '<table class="trade-table"><tr><th style="width:14% !important; white-space:nowrap;">년도</th><th>소속 리</th><th>건수</th><th>거래량(평)</th><th>최저(만)</th><th>평균(만)</th><th>최고(만)</th></tr>';
+                tableHtml += '<table class="trade-table"><tr><th style="width:14% !important; white-space:nowrap;">년도</th><th>리</th><th>건수</th><th>거래량</th><th>최저</th><th>평균</th><th>최고</th></tr>';
                 var sortedYears = Object.keys(townBook).sort(function(a, b){ return b - a; });
 
                 sortedYears.forEach(function(yr) {
@@ -572,11 +572,11 @@
 
         document.getElementById("stats-content").innerHTML = [
             '<div style="background: rgba(0,0,0,0.03); padding:6px 10px; border-radius:4px; margin-bottom:6px; font-size:12px; line-height:1.4; text-align:left;">', 
-            '  <b>용도/지목:</b> ' + prop.yongdo + '<br>', 
+            '  <b>용도지역/지목:</b> ' + prop.yongdo + '<br>', 
             '</div>', 
             clickNotice, 
             '<div style="margin-top:6px; border-top:1px dashed #ccc; padding-top:6px;">', 
-            '  <p style="color:#2b5c8f; font-weight:bold; font-size:11px; margin:0 0 5px 0; border-left:3px solid #2b5c8f; padding-left:6px;">최근 5개년 토지 실거래가</p>', 
+            '  <p style="color:#2b5c8f; font-weight:bold; font-size:11px; margin:0 0 5px 0; border-left:3px solid #2b5c8f; padding-left:6px;">최근 5개년 토지 실거래가 (평당가, 평, 만원)</p>', 
                tableHtml, 
             '</div>'
         ].join('');
