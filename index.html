@@ -444,21 +444,10 @@
             var danDisplayHtml = (prop.category === "토지") ? prop.py_price : '대지 ' + prop.py_price + ' / <span style="color:#2b5c8f; font-weight:bold;">연면적 ' + prop.year_price + '</span>';
             var itemDiv = document.createElement("div"); itemDiv.className = "property-item"; itemDiv.id = "item-" + index;
             
-            # =========================================================================
-            # 🌟 [최종 완결판] 주소 뼈대 및 따옴표 결합 에러를 완치한 하이브리드 분할 엔진
-            # 파이썬 f-string 및 자바스크립트 인용 부호 충돌을 원천 해결한 완벽한 규격입니다.
-            # =========================================================================
-            var tvRightFeatures = "'width=' + (screen.width/2) + ',height=' + screen.availHeight + ',left=' + (screen.width * 1.5) + ',top=0,scrollbars=yes,resizable=yes'";
-            
-            // 🟩 [네이버부동산 링크]
-            var naverLandLink = '<a href="#" class="naver-land" onclick="event.stopPropagation(); var fers = ' + tvRightFeatures + '; if(typeof window.changgongTVWorkspace === 'undefined' || window.changgongTVWorkspace.closed) { window.changgongTVWorkspace = window.open('https://fin.land.naver.com/articles/' + prop.id, 'changgongTVWorkspace', fers); } else { window.changgongTVWorkspace.window.open('https://fin.land.naver.com/articles/' + prop.id, '_blank'); window.changgongTVWorkspace.focus(); } return false;">네이버부동산</a>';
-
-            // 🟪 [네이버지도 링크]
-            var naverMapLink  = '<a href="#" class="naver-map" onclick="event.stopPropagation(); var fers = ' + tvRightFeatures + '; if(typeof window.changgongTVWorkspace === 'undefined' || window.changgongTVWorkspace.closed) { window.changgongTVWorkspace = window.open('https://map.naver.com/p/search/' + prop.name, 'changgongTVWorkspace', fers); } else { window.changgongTVWorkspace.window.open('https://map.naver.com/p/search/' + prop.name, '_blank'); window.changgongTVWorkspace.focus(); } return false;">네이버지도</a>';
-
-            // 🟧 [토지이음 링크]
+            var naverLandLink = '<a href="https://fin.land.naver.com/articles/' + prop.id + '" target="_blank" class="naver-land" onclick="event.stopPropagation();">네이버부동산</a>';
+            var naverMapLink  = '<a href="https://map.naver.com/p/search/' + prop.name + '" target="_blank" class="naver-map" onclick="event.stopPropagation();">네이버지도</a>';
             var eumLandLink   = (prop.pnu && prop.pnu.trim() !== "") 
-                ? '<a href="#" class="eum-land" onclick="event.stopPropagation(); var fers = ' + tvRightFeatures + '; if(typeof window.changgongTVWorkspace === 'undefined' || window.changgongTVWorkspace.closed) { window.changgongTVWorkspace = window.open('http://www.eum.go.kr/web/ar/lu/luLandDet.jsp?pnu=' + prop.pnu.trim() + '&mode=search', 'changgongTVWorkspace', fers); } else { window.changgongTVWorkspace.window.open('http://www.eum.go.kr/web/ar/lu/luLandDet.jsp?pnu=' + prop.pnu.trim() + '&mode=search', '_blank'); window.changgongTVWorkspace.focus(); } return false;">토지이음</a>' 
+                ? '<a href="http://www.eum.go.kr/web/ar/lu/luLandDet.jsp?pnu=' + prop.pnu.trim() + '&mode=search" target="_blank" class="eum-land" onclick="event.stopPropagation();">토지이음</a>' 
                 : '<a class="eum-none" title="PNU 미생성" onclick="event.stopPropagation();">미매칭</a>';
 
             itemDiv.innerHTML = [
