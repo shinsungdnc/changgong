@@ -26,11 +26,15 @@
         }
         #brand-master-btn:hover { background: rgba(0, 150, 255, 0.8) !important; transform: scale(1.02); }
         
-        #mylocation-btn { 
-            position: absolute; right: 15px; top: 15px; z-index: 1001; width: 40px; height: 40px; background: #ffffff; 
-            border: 1px solid #ccc; border-radius: 4px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.2); 
+        #mylocation-btn {
+            position: absolute; right: 15px; top: 15px; z-index: 1001; 
+            width: 40px; height: 40px; background: #ffffff;
+            border: 1px solid #ccc; 
+            border-radius: 50%; /* 🌟 기존 4px에서 50%로 변경하여 기본 원형으로 고정 */
+            cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.2);
             display: flex; align-items: center; justify-content: center; box-sizing: border-box;
         }
+
         #mylocation-btn:hover { background: #f4f4f4; }
         #mylocation-btn svg { width: 22px; height: 22px; fill: #333; }
         #mylocation-btn.tracking svg { fill: #00bfff; }
@@ -575,7 +579,7 @@
                 tableHtml += '<p style="color:#999; text-align:center; margin-top:20px; font-size:11px;">해당 지역은 실거래 정보가 준비되지 않았습니다.</p>';
             }
         } else {
-            tableHtml += '<div style="text-align:center; color:#555; padding:20px 10px; background:#f8f9fa; border:1px solid #e9ecef; border-radius:4px; margin-top:10px; font-size:11px; line-height:1.4;">🏭 <b>안내</b><br>공장/창고 매물은 개별성이 커서 실거래가 정보를 제공하지 않습니다.</div>';
+            tableHtml += '<div style="text-align:center; color:#555; padding:20px 10px; background:#f8f9fa; border:1px solid #e9ecef; border-radius:4px; margin-top:10px; font-size:11px; line-height:1.4;">🏭 <b>안내</b><br>공장/창고는 개별성이 커서 실거래가 정보를 제공하지 않습니다.</div>';
         }
 
         document.getElementById("stats-title").innerText = "📊 " + prop.town + " 실거래 분석";
