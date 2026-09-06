@@ -132,13 +132,10 @@
                 pointer-events: auto !important; 
             }
             
-            /* 📱 [터치 시 화면 가운데로 90% 솟구치는 상태] */
+            /* 📱 [모바일 패널 터치 확장 시] 가변 높이 및 최대 65% 제한 */
             #right-stats-panel.expanded { 
-                top: 10% !important; 
-                height: 90% !important; 
-                bottom: 0 !important; 
-                border-radius: 12px 12px 0 0 !important;
-                box-shadow: 0 -5px 25px rgba(0,0,0,0.3) !important;
+                top: auto !important; height: auto !important; max-height: 65vh !important; bottom: 16px !important; 
+                border-radius: 12px !important; box-shadow: 0 -5px 25px rgba(0,0,0,0.25) !important;
             }
             /* 내부 알맹이 표가 잘리지 않고 정상 스크롤되도록 제한 해제 */
             #right-stats-panel.expanded .stats-body { 
