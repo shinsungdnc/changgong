@@ -572,10 +572,10 @@
                 });
                 tableHtml += '</table>';
             } else {
-                tableHtml += '<p style="color:#999; text-align:center; margin-top:20px; font-size:11px;">최근 5년간 토지 실거래 내역 정보가 장부에 없습니다.</p>';
+                tableHtml += '<p style="color:#999; text-align:center; margin-top:20px; font-size:11px;">해당 지역은 실거래 정보가 준비되지 않았습니다.</p>';
             }
         } else {
-            tableHtml += '<div style="text-align:center; color:#555; padding:20px 10px; background:#f8f9fa; border:1px solid #e9ecef; border-radius:4px; margin-top:10px; font-size:11px; line-height:1.4;">🏭 <b>공장/창고 매물 브리핑 안내</b><br>공장·창고는 도로망, 층고, 동력 등 개별 특성이 강해<br>본 매물의 상세 스펙을 바탕으로 상담 진행됩니다.</div>';
+            tableHtml += '<div style="text-align:center; color:#555; padding:20px 10px; background:#f8f9fa; border:1px solid #e9ecef; border-radius:4px; margin-top:10px; font-size:11px; line-height:1.4;">🏭 <b>안내</b><br>공장/창고 매물은 개별성이 커서 실거래가 정보를 제공하지 않습니다.</div>';
         }
 
         document.getElementById("stats-title").innerText = "📊 " + prop.town + " 실거래 분석";
