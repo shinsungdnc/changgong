@@ -566,13 +566,12 @@
         }
 
         document.getElementById("stats-title").innerText = "📊 " + prop.town + " 실거래 분석";
-        var clickNotice = (window.innerWidth <= 768) ? '<p class="mobile-notice" style="text-align:center; color:#ff6e40; font-weight:bold; font-size:11px; margin-top:5px; animation: blink 1s infinite;">👆 여기를 터치하시면 전체 실거래 상세 분석 창이 열립니다.</p>' : '';
-        
+        var clickNotice = "";        
         var styleOpen = " { ", styleClose = " } ", styleBody = "display: none !important;";
 
         document.getElementById("stats-content").innerHTML = [
             '<div style="background: rgba(0,0,0,0.03); padding:6px 10px; border-radius:4px; margin-bottom:6px; font-size:12px; line-height:1.4; text-align:left;">', 
-            '  용도지역 / 지목 : <b>' + prop.yongdo + '</b><br>',  
+            '  용도지역/지목 : <b>' + prop.yongdo + '</b><br>',  
             '</div>', 
             clickNotice, 
             '<div style="margin-top:6px; border-top:1px dashed #ccc; padding-top:6px;">', 
@@ -588,10 +587,23 @@
         }
 
         if (panel) {
-            if (window.innerWidth <= 768) { panel.classList.remove("expanded"); }
-            panel.classList.add("active");
+            if (window.innerWidth <= 768) {
+                panel.style.pointerEvents = "auto"; 
+                panel.style.cursor = "pointer";
+                panel.classList.remove("expanded");
+
+                // 손가락으로 툭 치면 90% 화면으로 슥 차오르게 만드는 터치 복원 명령어
+                panel.onclick = function(e) {
+                    e.stopPropagation(); // 터치 신호가 네이버 지도로 유실되는 현상 방어
+                    if (!panel.classList.contains("expanded")) {
+                        panel.classList.add("expanded");
+                    }
+                };
+            } else {
+                panel.onclick = null;
+                panel.classList.add("active");
+            }
         }
-    }
 
     naver.maps.Event.addListener(map, "zoom_changed", function() {
         var currentZoom = map.getZoom();
