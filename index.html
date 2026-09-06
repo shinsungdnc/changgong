@@ -108,42 +108,51 @@
             #sidebar { width: 100%; height: calc(100vh - 120px); max-height: 480px; }
             #sidebar.hidden { transform: translateY(-600px); opacity: 0; }
             
-            /* 📱 [모바일 순정 동선 복원] 매물 클릭 시 하단에 가볍게 누워(height: 110px) 매물 상세를 가리지 않고 대기합니다 */
+            /* 📱 [모바일 순정 하단 대기 상태] PC 좌표 스타일 완전 무력화 */
             #right-stats-panel { 
-                position: absolute; 
-                right: 16px; 
-                bottom: 16px; 
-                top: auto; 
-                width: calc(100% - 32px); 
-                height: 110px; 
-                max-height: none;
-                border: 2px solid #2b5c8f; 
-                border-radius: 8px; 
-                background: #ffffff " + "!" + "important;
-                z-index: 1010; 
-                opacity: 1;
-                transform: translateY(200px); 
-                transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+                position: absolute !important; 
+                left: 16px !important; 
+                right: 16px !important; 
+                bottom: 16px !important; 
+                top: auto !important; 
+                width: calc(100% - 32px) !important; 
+                height: 110px !important; 
+                max-height: none !important;
+                border: 2px solid #2b5c8f !important; 
+                border-radius: 8px !important; 
+                background: #ffffff !important; 
+                z-index: 1010 !important; 
+                opacity: 1 !important;
+                transform: translateY(200px) !important; 
+                transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), height 0.23s ease-in-out !important;
+                overflow: hidden !important;
             }
             #right-stats-panel.active { 
-                transform: translateY(0); 
-                pointer-events: auto " + "!" + "important; 
+                transform: translateY(0) !important; 
+                pointer-events: auto !important; 
             }
             
-            /* 📱 [슬라이드 업 확장] 중개사님이 상자를 터치해 올리는 순간 화면 90% 높이로 솟구치며 실거래 표를 개방합니다 */
+            /* 📱 [터치 시 화면 가운데로 90% 솟구치는 상태] */
             #right-stats-panel.expanded { 
-                top: 10% " + "!" + "important; 
-                height: 90% " + "!" + "important; 
-                bottom: 0 " + "!" + "important; 
-                width: calc(100% - 32px) " + "!" + "important; 
-                border-radius: 12px 12px 0 0;
+                top: 10% !important; 
+                height: 90% !important; 
+                bottom: 0 !important; 
+                border-radius: 12px 12px 0 0 !important;
+                box-shadow: 0 -5px 25px rgba(0,0,0,0.3) !important;
+            }
+            /* 내부 알맹이 표가 잘리지 않고 정상 스크롤되도록 제한 해제 */
+            #right-stats-panel.expanded .stats-body { 
+                max-height: calc(100% - 50px) !important; 
+                overflow-y: auto !important; 
+                -webkit-overflow-scrolling: touch;
             }
             
             .stats-header { border-radius: 6px 6px 0 0; }
             #top-header-row { display: block; width: 100%; padding-right: 50px; box-sizing: border-box; }
             #brand-master-btn { padding: 10px; font-size: 13px; }
-            #mylocation-btn { position: absolute " + "!" + "important; right: 15px " + "!" + "important; top: auto " + "!" + "important; bottom: 30px " + "!" + "important; z-index: 1001 " + "!" + "important; }
+            #mylocation-btn { position: absolute !important; right: 15px !important; top: auto !important; bottom: 30px !important; z-index: 1001 !important; }
         }
+
     </style>
 </head>
 
@@ -289,7 +298,14 @@
     }
 
     function expandMobilePanel(event) {
-        if (window.innerWidth <= 768) { document.getElementById("right-stats-panel").classList.add("expanded"); }
+        // 우측 상단 닫기 'X' 버튼이나 외부 이동 링크(a 태그)를 누른 거라면 확장을 패스합니다.
+        if (event.target.closest('.stats-close') || event.target.closest('a')) return;
+        
+        if (window.innerWidth <= 768) { 
+            var panel = document.getElementById("right-stats-panel");
+            // 패널을 터치하면 화면 가운데로 확장(expanded 클래스 토글)
+            panel.classList.toggle("expanded"); 
+        }
     }
     function closeStatsPanel(event) {
         if (event) event.stopPropagation(); 
@@ -586,10 +602,12 @@
             document.head.appendChild(styleEl);
         }
 
-        if (panel) {
-            if (window.innerWidth <= 768) { panel.classList.remove("expanded"); }
+        if (panel) {{
+            // 매물을 새로 선택할 때마다 기존 확장 상태(expanded)를 초기화하여 바닥으로 내립니다.
+            panel.classList.remove("expanded");
             panel.classList.add("active");
-        }
+        }}
+
     }
 
     naver.maps.Event.addListener(map, "zoom_changed", function() {
