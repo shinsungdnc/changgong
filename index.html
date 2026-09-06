@@ -586,24 +586,12 @@
             document.head.appendChild(styleEl);
         }
 
-        if (panel) "{"
-            if (window.innerWidth <= 768) "{"
-                panel.style.pointerEvents = "auto"; 
-                panel.style.cursor = "pointer";
-                panel.classList.remove("expanded");
-                
-                panel.onclick = function(e) "{"
-                    e.stopPropagation(); 
-                    if (!panel.classList.contains("expanded")) "{"
-                        panel.classList.add("expanded");
-                    "}"
-                "}"
-            "}" else "{"
-                panel.onclick = null;
-                panel.classList.add("active");
-            "}"
-        "}"
-        
+        if (panel) {
+            if (window.innerWidth <= 768) { panel.classList.remove("expanded"); }
+            panel.classList.add("active");
+        }
+    }
+
     naver.maps.Event.addListener(map, "zoom_changed", function() {
         var currentZoom = map.getZoom();
         if (currentBoundaryCircle && currentBoundaryCircle.getMap()) {
