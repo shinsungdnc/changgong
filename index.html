@@ -586,25 +586,24 @@
             document.head.appendChild(styleEl);
         }
 
-        if (panel) {
-            if (window.innerWidth <= 768) {
+        if (panel) "{"
+            if (window.innerWidth <= 768) "{"
                 panel.style.pointerEvents = "auto"; 
                 panel.style.cursor = "pointer";
                 panel.classList.remove("expanded");
-
-                // 손가락으로 툭 치면 90% 화면으로 슥 차오르게 만드는 터치 복원 명령어
-                panel.onclick = function(e) {
-                    e.stopPropagation(); // 터치 신호가 네이버 지도로 유실되는 현상 방어
-                    if (!panel.classList.contains("expanded")) {
+                
+                panel.onclick = function(e) "{"
+                    e.stopPropagation(); 
+                    if (!panel.classList.contains("expanded")) "{"
                         panel.classList.add("expanded");
-                    }
-                };
-            } else {
+                    "}"
+                "}"
+            "}" else "{"
                 panel.onclick = null;
                 panel.classList.add("active");
-            }
-        }
-
+            "}"
+        "}"
+        
     naver.maps.Event.addListener(map, "zoom_changed", function() {
         var currentZoom = map.getZoom();
         if (currentBoundaryCircle && currentBoundaryCircle.getMap()) {
