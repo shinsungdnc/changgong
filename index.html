@@ -635,9 +635,14 @@
         var targetPos = marker.getPosition(); map.setZoom(19); map.panTo(targetPos);            
         var prop = properties[index];
 
-        var yParts = prop.yongdo.split("/");
-        var mYongdo = (yParts && yParts[0] ? yParts[0].trim() : "").replace("지역", "") + "지역"; 
-        var mJimok = (yParts && yParts[1] ? yParts[1].trim() : "");       
+        // 🔍 [버그 교정] 안전한 용도지역/지목 파싱 (배열 검증 추가)
+        var mYongdo = "기타지역";
+        var mJimok = "-";
+        if (prop.yongdo && prop.yongdo.indexOf('/') !== -1) {
+            var yParts = prop.yongdo.split("/");
+            if (yParts.length > 0) mYongdo = (yParts[0] ? yParts[0].trim() : "").replace("지역", "") + "지역";
+            if (yParts.length > 1) mJimok = yParts[1] ? yParts[1].trim() : "-";
+        }       
 
         // -----------------------------------------------------------------
         // [2층 구역] 기존 국토부 5개년 토지 실거래가 테이블 연산 유지
@@ -668,12 +673,16 @@
         // -----------------------------------------------------------------
         // [1층 구역] 동적 실시간 연산: 동일 관내 일치하는 [용도지역+지목] 매물의 리(Ri)별 리스트
         // -----------------------------------------------------------------
+        // 🔍 [버그 교정] split() 결과 배열의 인덱스를 명시하여 자바스크립트 폭발 차단
         var currentRiName = "기타";
-        if (prop.name.indexOf(prop.town) !== -1) {
-            var remainAddr = prop.name.split(prop.town)[1].trim();
-            var tokens = remainAddr.split(" ");
-            if (tokens.length > 0 && tokens[0].endsWith("리")) {
-                currentRiName = tokens[0].trim();
+        if (prop.name && prop.town && prop.name.indexOf(prop.town) !== -1) {
+            var splitParts = prop.name.split(prop.town);
+            if (splitParts.length > 1) {
+                var remainAddr = splitParts[1].trim();
+                var tokens = remainAddr.split(" ");
+                if (tokens.length > 0 && tokens[0].endsWith("리")) {
+                    currentRiName = tokens[0].trim();
+                }
             }
         }
 
@@ -681,11 +690,14 @@
         properties.forEach(function(p) {
             if (p.town === prop.town && p.yongdo === prop.yongdo && p.category === "토지") {
                 var rName = "기타";
-                if (p.name.indexOf(p.town) !== -1) {
-                    var rRemain = p.name.split(p.town)[1].trim();
-                    var rTokens = rRemain.split(" ");
-                    if (rTokens.length > 0 && rTokens[0].endsWith("리")) {
-                        rName = rTokens[0].trim();
+                if (p.name && p.town && p.name.indexOf(p.town) !== -1) {
+                    var rSplit = p.name.split(p.town);
+                    if (rSplit.length > 1) {
+                        var rRemain = rSplit[1].trim();
+                        var rTokens = rRemain.split(" ");
+                        if (rTokens.length > 0 && rTokens[0].endsWith("리")) {
+                            rName = rTokens[0].trim();
+                        }
                     }
                 }
                 
