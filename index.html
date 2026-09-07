@@ -76,7 +76,7 @@
         .property-detail .links-row a.eum-land { background: #ff6e40; color: white !important; }
         .property-detail .links-row a.eum-none { background: #f8f9fa; color: #ccc !important; cursor: not-allowed; }
 
-        /* 💎 [스펙 충족] 우측 분석 패널: 좌측 사이드바와 높이, 최대높이(600px), 테두리 반경 완벽 일치 (데칼코마니) */
+        /* 💎 우측 분석 패널 스타일 */
         #right-stats-panel { 
             width: 350px; 
             height: calc(100vh - 100px); 
@@ -87,29 +87,27 @@
             transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s; 
             display: flex; flex-direction: column; box-shadow: 0 6px 20px rgba(0,0,0,0.18);
             transform: translateX(380px); opacity: 0;
-            overflow: hidden; /* 자식 요소 유출 원천 차단 */
+            overflow: hidden; 
         }
         #right-stats-panel.active { transform: translateX(0); opacity: 1; }
         
-        /* 💎 [스펙 충족] 헤더 다이어트: 파란색 상단 타이틀 바 여백을 절반 이하(5px)로 축소하여 슬림화 */
+        /* 💎 헤더 다이어트 스펙 반영 */
         .stats-header { padding: 5px 15px; background: #4ad3ff !important; backdrop-filter: blur(5px); color: #111111 !important; display: flex; justify-content: space-between; align-items: center; border-radius: 5px 5px 0 0; }
         .stats-header h3 { margin: 0; font-size: 13px; font-weight: bold; }
         .stats-close { background: none; border: none; color: #111111 !important; font-size: 18px; cursor: pointer; padding: 0 5px; }
         
-        /* 💎 [스펙 충족] 알림 상자 다이어트: 회색 용도지역/지목 안내 배너 여백 최소화(3px)로 공간 최적화 */
+        /* 💎 알림 상자 압축 스펙 반영 */
         .stats-notice-box { background: rgba(0,0,0,0.03); padding: 3px 10px; border-bottom: 1px dashed #ccc; font-size: 11px; line-height: 1.4; text-align: left; color: #333; box-sizing: border-box; }
         
-        /* 💎 [스펙 충족] 분석 바디: 2단 독립 영역 고정 분할을 위한 Flex 설정 */
+        /* 💎 분석 바디 및 상하 독립 2단 분할 스펙 반영 */
         .stats-body { display: flex; flex-direction: column; height: 100%; overflow: hidden; padding: 0; font-size: 12px; line-height: 1.5; }
-        
-        /* 💎 [스펙 충족] 1층과 2층 가용 공간 상하 45% : 55% 고정 분할 및 개별 독립 스크롤(overflow-y: auto) 부여 */
         .panel-floor-1 { height: 45%; overflow-y: auto; padding: 10px 15px; box-sizing: border-box; border-bottom: 2px solid #dee2e6; -webkit-overflow-scrolling: touch; }
         .panel-floor-2 { height: 55%; overflow-y: auto; padding: 10px 15px; box-sizing: border-box; -webkit-overflow-scrolling: touch; }
         
-        /* 💎 [스펙 충족] 1층 관내 호가분석 리(Ri)별 카드 디자인 구조 */
+        /* 💎 1층 카드형 레이아웃 스타일 */
         .ri-card { padding: 8px 10px; background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 4px; margin-bottom: 6px; cursor: pointer; transition: all 0.2s; display: flex; justify-content: space-between; align-items: center; box-sizing: border-box; }
         .ri-card:hover { border-color: #ff6e40; background: #fff6f2; }
-        .ri-card.current { border: 1px solid #4ad3ff; background: #e6f9ff; cursor: default; } /* 현재 매물 리 위치 강조 표시 */
+        .ri-card.current { border: 1px solid #4ad3ff; background: #e6f9ff; cursor: default; } 
         .ri-card-left { font-weight: bold; font-size: 12px; color: #222; }
         .ri-card-right { text-align: right; font-size: 11px; color: #666; line-height: 1.3; }
 
@@ -440,7 +438,7 @@
         });
 
         if (currentTown !== "전체" && (currentTown.endsWith("읍") || currentTown.endsWith("면"))) {
-            riSelector.style.style.display = "block";
+            riSelector.style.display = "block";
             
             var targetTownRis = riCounts[currentTown] || {};
             var sortedRis = Object.keys(targetTownRis).sort();
@@ -454,7 +452,7 @@
                 riSelector.appendChild(opt);
             });
         } else {
-            riSelector.style.style.display = "none";
+            riSelector.style.display = "none";
             currentRi = "전체";
         }
     }
@@ -634,7 +632,6 @@
         var targetPos = marker.getPosition(); map.setZoom(19); map.panTo(targetPos);            
         var prop = properties[index];
 
-        // 📐 기존 정상 작동 버전의 안전한 배열 슬라이싱 및 변수 매핑 방식 완벽 적용
         var yParts = prop.yongdo.split("/");
         var mYongdo = (yParts && yParts[0] ? yParts[0].trim() : "").replace("지역", "") + "지역"; 
         var mJimok = (yParts && yParts[1] ? yParts[1].trim() : "");       
@@ -683,36 +680,36 @@
         }
 
         var riGroup = {};
-        properties.forEach(function(p) {
-            if (p.town === prop.town && p.yongdo === prop.yongdo && p.category === "토지") {
+        properties.forEach(function(p) {{
+            if (p.town === prop.town && p.yongdo === prop.yongdo && p.category === "토지") {{
                 var rName = "기타";
-                if (p.name && p.town && p.name.indexOf(p.town) !== -1) {
+                if (p.name && p.town && p.name.indexOf(p.town) !== -1) {{
                     var rSplit = p.name.split(p.town);
-                    if (rSplit.length > 1 && rSplit[1]) {
+                    if (rSplit.length > 1 && rSplit[1]) {{
                         var rRemain = rSplit[1].trim();
                         var rTokens = rRemain.split(" ");
-                        if (rTokens.length > 0 && rTokens[0].endsWith("리")) {
+                        if (rTokens.length > 0 && rTokens[0].endsWith("리")) {{
                             rName = rTokens[0].trim();
-                        }
-                    }
-                }
+                        }}
+                    }}
+                }}
                 
                 var priceNum = parseFloat(p.py_price.replace(/[^0-9.]/g, '')) || 0;
-                if (!riGroup[rName]) {
-                    riGroup[rName] = { count: 1, min: priceNum, max: priceNum };
-                } else {
+                if (!riGroup[rName]) {{
+                    riGroup[rName] = {{ count: 1, min: priceNum, max: priceNum }};
+                }} else {{
                     riGroup[rName].count++;
                     if (priceNum < riGroup[rName].min) riGroup[rName].min = priceNum;
                     if (priceNum > riGroup[rName].max) riGroup[rName].max = priceNum;
-                }
-            }
-        });
+                }}
+            }}
+        }});
 
         var floor1Html = '<p style="color:#ff6e40; font-weight:bold; font-size:11px; margin:0 0 6px 0; border-left:3px solid #ff6e40; padding-left:6px;">동일 조건 관내 등록 호가 분석 (리별)</p>';
         var riKeys = Object.keys(riGroup).sort();
         
-        if (riKeys.length > 0) {
-            riKeys.forEach(function(riKey) {
+        if (riKeys.length > 0) {{
+            riKeys.forEach(function(riKey) {{
                 var g = riGroup[riKey];
                 var isCurrent = (riKey === currentRiName);
                 var activeClass = isCurrent ? "ri-card current" : "ri-card";
@@ -727,10 +724,10 @@
                 floor1Html += '  <div class="ri-card-left">📍 ' + riKey + locationLabel + '</div>';
                 floor1Html += '  <div class="ri-card-right"><b>' + g.count + '개 매물</b><br><span style="color:#e65100;">평당 ' + priceRange + '</span></div>';
                 floor1Html += '</div>';
-            });
-        } else {
+            }});
+        }} else {{
             floor1Html += '<p style="color:#999; font-size:11px; text-align:center; padding:10px 0;">비교 가능한 관내 매물이 없습니다.</p>';
-        }
+        }}
 
         // -----------------------------------------------------------------
         // [출력 최종 레이아웃 결합] 1층과 2층 구역 분할 및 각각 독립 스크롤 바인딩
@@ -749,26 +746,26 @@
             '</div>'
         ].join('');
         
-        if (window.innerWidth <= 768) {
+        if (window.innerWidth <= 768) {{
             var styleEl = document.createElement("style");
             styleEl.innerHTML = "#right-stats-panel.expanded .mobile-notice { display: none !important; }";
             document.head.appendChild(styleEl);
-        }
+        }}
 
-        if (panel) {
+        if (panel) {{
             panel.classList.remove("expanded");
             panel.classList.add("active");
-        }
-    }
+        }}
+    }}
 
     // 💎 [신설] 🔄 1층 타지역 '리' 카드 터치 시 작동하는 역연동 필터 및 화면 리셋 마스터 로직
-    function triggerReverseFilter(townName, riName) {
-        document.querySelectorAll(".property-item").forEach(function(el) { el.classList.remove("active"); });
-        document.querySelectorAll(".property-detail").forEach(function(el) { el.style.display = "none"; });
-        if (currentBoundaryCircle) { currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }
+    function triggerReverseFilter(townName, riName) {{
+        document.querySelectorAll(".property-item").forEach(function(el) {{ el.classList.remove("active"); }});
+        document.querySelectorAll(".property-detail").forEach(function(el) {{ el.style.display = "none"; }});
+        if (currentBoundaryCircle) {{ currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }}
         
         var panel = document.getElementById("right-stats-panel");
-        if (panel) { panel.classList.remove("active"); panel.classList.remove("expanded"); }
+        if (panel) {{ panel.classList.remove("active"); panel.classList.remove("expanded"); }}
 
         currentTown = townName;
         currentRi = riName;
@@ -778,51 +775,51 @@
         
         updateTownSelectorOptions(); 
         var riSelector = document.getElementById("ri-selector");
-        if (riSelector) {
+        if (riSelector) {{
             riSelector.style.display = "block";
             riSelector.value = riName;
-        }
+        }}
 
         applyFilters();
 
         var sumLat = 0, sumLng = 0, matchCount = 0;
-        properties.forEach(function(p) {
+        properties.forEach(function(p) {{
             var isW = p.price.indexOf("월세") !== -1;
             var showM = document.getElementById("chk-maemae").checked;
             var showW = document.getElementById("chk-wolse").checked;
             var mDeal = (showM && !isW) || (showW && isW);
 
-            if (p.town === townName && p.name.indexOf(riName) !== -1 && mDeal) {
+            if (p.town === townName && p.name.indexOf(riName) !== -1 && mDeal) {{
                 sumLat += parseFloat(p.lat);
                 sumLng += parseFloat(p.lng);
                 matchCount++;
-            }
-        });
+            }}
+        }});
 
-        if (matchCount > 0) {
+        if (matchCount > 0) {{
             var avgLat = sumLat / matchCount;
             var avgLng = sumLng / matchCount;
             var moveLatLng = new naver.maps.LatLng(avgLat, avgLng);
             map.setZoom(15); 
             map.panTo(moveLatLng);
-        }
-    }
+        }}
+    }}
 
-    naver.maps.Event.addListener(map, "zoom_changed", function() {
+    naver.maps.Event.addListener(map, "zoom_changed", function() {{
         var currentZoom = map.getZoom();
-        if (currentBoundaryCircle && currentBoundaryCircle.getMap()) {
-            if (currentZoom >= 19) {
+        if (currentBoundaryCircle && currentBoundaryCircle.getMap()) {{
+            if (currentZoom >= 19) {{
                 currentBoundaryCircle.setMap(map);
                 var dynamicRadius = 5;
                 if (currentZoom === 21) dynamicRadius = 1.2;
                 else if (currentZoom === 20) dynamicRadius = 2.5;
                 else if (currentZoom === 19) dynamicRadius = 5;
                 currentBoundaryCircle.setRadius(dynamicRadius);
-            } else {
+            } else {{
                 currentBoundaryCircle.setMap(null);
-            }
-        }
-    });
+            }}
+        }}
+    }});
 
     initMap();
 </script>
