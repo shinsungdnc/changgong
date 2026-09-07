@@ -160,9 +160,14 @@
                         </div>
                     </div>
                     <div id="detail-selector"></div>
-                    <select class="town-select" id="town-selector" onchange="changeTown(this.value)">
-                        <option value="전체">📍 지역 선택 (전체)</option>
-                    </select>
+                    <div style="display: flex; gap: 6px; width: 100%; box-sizing: border-box; margin-top: 4px;">
+                        <select class="town-select" id="town-selector" onchange="changeTown(this.value)" style="flex: 1; width: 100%;">
+                            <option value="전체">📍 지역 선택 (전체)</option>
+                        </select>
+                        <select class="town-select" id="ri-selector" onchange="changeRi(this.value)" style="flex: 1; width: 100%; display: none;">
+                            <option value="전체">📍 리 선택 (전체)</option>
+                        </select>
+                    </div>
                 </div>
             </div>
             <div id="property-list"></div>
@@ -194,6 +199,13 @@
     var currentCategory = "전체";
     var currentDetail = []; 
     var currentTown = "전체";
+    var currentRi = "전체"; // 🔄 [신설] 현재 선택된 세부 '리'를 기억하는 전역 변수
+
+    // 🔄 [신설] 우측에 생성된 리 필터창을 조작했을 때 작동하는 함수
+    function changeRi(ri) {
+        currentRi = ri;
+        applyFilters();
+    }
 
     var map = new naver.maps.Map("map", {
         center: new naver.maps.LatLng(36.560610433016876, 127.29851818670886),
@@ -353,8 +365,16 @@
     }
 
     function updateTownSelectorOptions() {
-        var selector = document.getElementById("town-selector");
-        var savedValue = currentTown, totalCount = 0, townCounts = {};
+        var townSelector = document.getElementById("town-selector");
+        var riSelector = document.getElementById("ri-selector");
+        
+        var savedTown = currentTown;
+        var savedRi = currentRi;
+        
+        var totalCount = 0;
+        var townCounts = {};
+        var riCounts = {};
+        
         var showMaemae = document.getElementById("chk-maemae").checked;
         var showWolse = document.getElementById("chk-wolse").checked;
         
@@ -363,18 +383,51 @@
             var matchDetail = (currentCategory === "전체" || currentDetail.indexOf(p.detail_type) !== -1);
             var isWolseData = p.price.indexOf("월세") !== -1;
             var matchDealType = (showMaemae && !isWolseData) || (showWolse && isWolseData);
-            if (matchCat && matchDetail && matchDealType) { totalCount++; townCounts[p.town] = (townCounts[p.town] || 0) + 1; }
+            
+            if (matchCat && matchDetail && matchDealType) {
+                totalCount++;
+                townCounts[p.town] = (townCounts[p.town] || 0) + 1;
+                
+                if (p.town && p.name.indexOf(p.town) !== -1) {
+                    var remainAddr = p.name.split(p.town)[1].trim();
+                    var tokens = remainAddr.split(" ");
+                    if (tokens.length > 0 && tokens[0].endsWith("리")) {
+                        var riName = tokens[0].trim();
+                        if (!riCounts[p.town]) riCounts[p.town] = {};
+                        riCounts[p.town][riName] = (riCounts[p.town][riName] || 0) + 1;
+                    }
+                }
+            }
         });
 
-        selector.innerHTML = "<option value='전체'>📍 지역 선택 (전체: " + totalCount + "개)</option>";
+        townSelector.innerHTML = "<option value='전체'>📍 지역 선택 (전체: " + totalCount + "개)</option>";
         townList.forEach(function(t) {
             var count = townCounts[t] || 0;
             if (count > 0) {
                 var opt = document.createElement("option"); opt.value = t; opt.innerText = "📍 " + t + " (" + count + ")";
-                if (t === savedValue) opt.selected = true;
-                selector.appendChild(opt);
+                if (t === savedTown) opt.selected = true;
+                townSelector.appendChild(opt);
             }
         });
+
+        if (currentTown !== "전체" && (currentTown.endsWith("읍") || currentTown.endsWith("면"))) {
+            riSelector.style.display = "block";
+            
+            var targetTownRis = riCounts[currentTown] || {};
+            var sortedRis = Object.keys(targetTownRis).sort();
+            var townTotal = townCounts[currentTown] || 0;
+            
+            riSelector.innerHTML = "<option value='전체'>📍 리 전체 (" + townTotal + ")</option>";
+            sortedRis.forEach(function(r) {
+                var rCount = targetTownRis[r] || 0;
+                var opt = document.createElement("option"); opt.value = r; opt.innerText = r + " (" + rCount + ")";
+                if (r === savedRi) opt.selected = true;
+                riSelector.appendChild(opt);
+            });
+        } else {
+            riSelector.style.display = "none";
+            currentRi = "전체";
+        }
     }
 
     function initMap() {
@@ -463,7 +516,7 @@
         if(cat==="공장") document.getElementById("btn-factory").classList.add("active");
         updateDetailSelectorOptions(); applyFilters();
     }
-    function changeTown(town) { currentTown = town; var panel = document.getElementById("detail-selector"); if(panel) panel.style.display = "none"; applyFilters(); }
+    function changeTown(town) { currentTown = town; currentRi = "전체"; var panel = document.getElementById("detail-selector"); if(panel) panel.style.display = "none"; applyFilters(); }
 
     function applyFilters() {
         if (currentBoundaryCircle) currentBoundaryCircle.setMap(null);
@@ -476,11 +529,18 @@
             var mCat = (currentCategory === "전체" || marker.get("category") === currentCategory);
             var mDet = (currentCategory === "전체" || currentDetail.indexOf(marker.get("detail_type")) !== -1); 
             var mTown = (currentTown === "전체" || marker.get("town") === currentTown);
+            // 🔄 [신설] 선택된 '리'가 매물 지번주소에 포함되어 있는지 검증하는 로직
+            var mRi = true;
+            if (currentTown !== "전체" && currentRi !== "전체") {
+                mRi = (p.name.indexOf(currentRi) !== -1);
+            }
+
             var isW = p.price.indexOf("월세") !== -1;
             var mDeal = (showM && !isW) || (showW && isW);
             var item = document.getElementById("item-" + i);
 
-            if (mCat && mDet && mTown && mDeal) {
+            // 🔄 [교정] 합치기 조건 최종 판단에 'mRi(리의 일치 여부)'를 결합
+            if (mCat && mDet && mTown && mRi && mDeal) {
                 item.style.display = "block"; marker.setMap(map); vis.push(marker); 
             } else {
                 item.style.display = "none"; var dEl = document.getElementById("detail-" + i); if(dEl) dEl.style.display = "none";
