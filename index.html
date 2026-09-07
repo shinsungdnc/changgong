@@ -273,7 +273,7 @@
             sidebar.classList.add("hidden");
             if (panel) { panel.classList.remove("active"); panel.classList.remove("expanded"); }
         }
-        setTimeout(function() { map.refresh(); map.setCenter(currentCenter); }, 260);
+        setTimeout(function() { map.setCenter(currentCenter); }, 260);
     }
 
     function expandMobilePanel(event) {
