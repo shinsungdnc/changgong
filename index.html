@@ -530,7 +530,7 @@
         marker.setMap(map);
         if (currentBoundaryCircle) currentBoundaryCircle.setMap(null);
         currentBoundaryCircle = new naver.maps.Circle({
-            map: map, center: marker.getPosition(), radius: 5, fillColor: "#00bfff", fillOpacity: 0.15, strokeColor: "#ff1e00", strokeOpacity: 0.6, strokeWeight: 1.5
+            map: map, center: marker.getPosition(), radius: 5, fillColor: "#00bfff", fillOpacity: 0.15, strokeColor: "#ff0000", strokeOpacity: 0.6, strokeWeight: 1.5
         });
 
         var targetPos = marker.getPosition(); map.setZoom(19); map.panTo(targetPos);            
