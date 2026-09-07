@@ -23,14 +23,14 @@
         
         #top-header-row { display: flex; width: 100%; pointer-events: auto; box-sizing: border-box; }
         
-        /* 💎 [하늘색 통일] 왼쪽 상단 마스터 버튼 */
+        /* 💎 [변경] 왼쪽 상단 마스터 버튼: 실거래 팝업 헤드처럼 투명도 없이 선명한 불투명 하늘색 고정 */
         #brand-master-btn { 
-            width: 100%; padding: 12px; background: rgba(0, 191, 255, 0.65) !important; 
+            width: 100%; padding: 12px; background: #4ad3ff !important; 
             color: #111111 !important; font-weight: 700 !important; font-family: 'Pretendard', sans-serif !important; 
             border: 1px solid #ffffff; border-radius: 6px; font-size: 14px; text-align: center; cursor: pointer; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: all 0.2s; box-sizing: border-box; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.18); transition: all 0.2s; box-sizing: border-box; 
         }
-        #brand-master-btn:hover { background: rgba(0, 191, 255, 0.85) !important; transform: scale(1.02); }
+        #brand-master-btn:hover { background: #00bfff !important; transform: scale(1.02); }
         
         #mylocation-btn {
             position: absolute; right: 15px; top: 15px; z-index: 1001; 
@@ -45,8 +45,8 @@
         #sidebar { width: 100%; height: calc(100vh - 100px); max-height: 600px; background: rgba(248, 249, 250, 0.95) !important; border: 1px solid #dee2e6; border-radius: 6px; display: flex; flex-direction: column; margin-top: 10px; pointer-events: auto; transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s; box-shadow: 0 4px 15px rgba(0,0,0,0.15); transform-origin: top center; }
         #sidebar.hidden { transform: scaleY(0); opacity: 0; pointer-events: none; }
         
-        /* 🔤 좌측 필터 헤더 및 내부 서체 제어 */
-        #sidebar-header { padding: 12px; background: rgba(0, 191, 255, 0.65) !important; border-radius: 5px 5px 0 0; backdrop-filter: blur(4px); font-family: 'Pretendard', sans-serif !important; }
+        /* 🔤 좌측 필터 헤더 배경을 실거래 팝업 헤드와 동일하게 불투명 처리 */
+        #sidebar-header { padding: 12px; background: #4ad3ff !important; border-radius: 5px 5px 0 0; backdrop-filter: blur(4px); font-family: 'Pretendard', sans-serif !important; }
         .filter-section { display: flex; flex-direction: column; gap: 8px; font-family: 'Pretendard', sans-serif !important; }
         .filter-tabs { display: flex; gap: 5px; font-family: 'Pretendard', sans-serif !important; }
         
@@ -81,7 +81,9 @@
             transform: translateX(380px); opacity: 0; font-family: 'Pretendard', sans-serif !important;
         }
         #right-stats-panel.active { transform: translateX(0); opacity: 1; }
-        .stats-header { padding: 12px 15px; background: rgba(0, 191, 255, 0.65) !important; backdrop-filter: blur(5px); color: #111111 !important; display: flex; justify-content: space-between; align-items: center; border-radius: 7px 7px 0 0; font-family: 'Pretendard', sans-serif !important; }
+        
+        /* 💎 실거래 분석 팝업창 헤더 스타일 (기준점 고정) */
+        .stats-header { padding: 12px 15px; background: #4ad3ff !important; backdrop-filter: blur(5px); color: #111111 !important; display: flex; justify-content: space-between; align-items: center; border-radius: 7px 7px 0 0; font-family: 'Pretendard', sans-serif !important; }
         .stats-header h3 { margin: 0; font-size: 13px; font-weight: bold; font-family: 'Pretendard', sans-serif !important; }
         .stats-close { background: none; border: none; color: #111111 !important; font-size: 18px; cursor: pointer; padding: 0 5px; }
         .stats-body { overflow-y: auto; padding: 15px; font-size: 12px; line-height: 1.5; max-height: 500px; font-family: 'Pretendard', sans-serif !important; }
@@ -115,15 +117,15 @@
             #mylocation-btn { position: absolute !important; right: 10px !important; top: 10px !important; bottom: auto !important; z-index: 1001 !important; }
         }
         
-        /* 💎 [하늘색 통일] 우측 상단 엑셀 다운로드 버튼 */
+        /* 💎 [변경] 우측 상단 엑셀 다운로드 버튼: 실거래 팝업과 동일한 완전 불투명 하늘색 및 폰트 통일 */
         #excel-download-btn {
             position: absolute; right: 65px; top: 15px; z-index: 1001; height: 40px; padding: 0 15px; 
-            background: rgba(0, 191, 255, 0.65) !important; color: #111111 !important; font-size: 12px; font-weight: bold;
+            background: #4ad3ff !important; color: #111111 !important; font-size: 12px; font-weight: bold;
             border: 1px solid #ffffff; border-radius: 20px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.18);
             display: flex; align-items: center; justify-content: center; text-decoration: none; box-sizing: border-box;
             transition: all 0.2s; font-family: 'Pretendard', sans-serif !important;
         }
-        #excel-download-btn:hover { background: rgba(0, 191, 255, 0.85) !important; transform: scale(1.02); }
+        #excel-download-btn:hover { background: #00bfff !important; transform: scale(1.02); }
 
         @media (max-width: 768px) {
             #excel-download-btn { display: none !important; }
