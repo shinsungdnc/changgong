@@ -207,6 +207,11 @@
         applyFilters();
     }
 
+    function goWarp(url, prefix, id) {
+        var tabName = prefix + id;
+        window.open(url, tabName).focus();
+    }
+
     var map = new naver.maps.Map("map", {
         center: new naver.maps.LatLng(36.560610433016876, 127.29851818670886),
         zoom: 12, 
@@ -460,10 +465,10 @@
             var danDisplayHtml = (prop.category === "토지") ? prop.py_price : '대지 ' + prop.py_price + ' / <span style="color:#2b5c8f; font-weight:bold;">연면적 ' + prop.year_price + '</span>';
             var itemDiv = document.createElement("div"); itemDiv.className = "property-item"; itemDiv.id = "item-" + index;
             
-            var naverLandLink = '<a href="javascript:void(0);" onclick="window.open(\'https://fin.land.naver.com/articles/' + prop.id + '\', \'R' + prop.id + '\').focus(); event.stopPropagation();" class="naver-land">네이버부동산</a>';
-            var naverMapLink  = '<a href="javascript:void(0);" onclick="window.open(\'https://map.naver.com/p/search/' + prop.name + '\', \'M' + prop.id + '\').focus(); event.stopPropagation();" class="naver-map">네이버지도</a>';
+            var naverLandLink = '<a href="javascript:void(0);" onclick="goWarp(\'https://fin.land.naver.com/articles/' + prop.id + '\', \'R\', \'' + prop.id + '\'); event.stopPropagation();" class="naver-land">네이버부동산</a>';
+            var naverMapLink  = '<a href="javascript:void(0);" onclick="goWarp(\'https://map.naver.com/p/search/' + prop.name + '\', \'M\', \'' + prop.id + '\'); event.stopPropagation();" class="naver-map">네이버지도</a>';
             var eumLandLink   = (prop.pnu && prop.pnu.trim() !== "") 
-                ? '<a href="javascript:void(0);" onclick="window.open(\'http://www.eum.go.kr/web/ar/lu/luLandDet.jsp?pnu=' + prop.pnu.trim() + '&mode=search\', \'E' + prop.id + '\').focus(); event.stopPropagation();" class="eum-land">토지이음</a>' 
+                ? '<a href="javascript:void(0);" onclick="goWarp(\'http://www.eum.go.kr/web/ar/lu/luLandDet.jsp?pnu=' + prop.pnu.trim() + '&mode=search\', \'E\', \'' + prop.id + '\'); event.stopPropagation();" class="eum-land">토지이음</a>' 
                 : '<a class="eum-none" title="PNU 미생성" onclick="event.stopPropagation();">미매칭</a>';
 
             itemDiv.innerHTML = [
