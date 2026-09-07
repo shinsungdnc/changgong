@@ -6,6 +6,31 @@
     <title>창공공인중개사사무소</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
+    <script type="text/javascript">
+        /* =========================================================================
+           🌐 [창공부동산] 2분할 자동 새 창 개설 및 이니셜 탭 누적 서브시스템
+           ========================================================================= */
+        if (!window.changgongRightWindow) {
+            window.changgongRightWindow = null;
+        }
+
+        window.openChanggongLink = function(url, tabName) {
+            if (!window.changgongRightWindow || window.changgongRightWindow.closed) {
+                var sw = screen.availWidth;
+                var sh = screen.availHeight;
+                var winWidth = Math.floor(sw / 2) - 20;
+                var winHeight = sh - 60;
+                
+                window.changgongRightWindow = window.open(
+                    url, 
+                    tabName, 
+                    'width=' + winWidth + ',height=' + winHeight + ',left=' + (sw / 2) + ',top=10,resizable=yes,scrollbars=yes,status=yes'
+                );
+            } else {
+                window.changgongRightWindow.open(url, tabName);
+            }
+        };
+    </script>    
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
     <style>
         /* 🌐 전체 웹 페이지 요소에 프리텐다드 강제 적용 */
@@ -400,11 +425,15 @@
             var danDisplayHtml = (prop.category === "토지") ? prop.py_price : '대지 ' + prop.py_price + ' / <span style="color:#2b5c8f; font-weight:bold;">연면적 ' + prop.year_price + '</span>';
             var itemDiv = document.createElement("div"); itemDiv.className = "property-item"; itemDiv.id = "item-" + index;
             
-            var naverLandLink = '<a href="https://fin.land.naver.com/articles/' + prop.id + '" target="_blank" class="naver-land" onclick="event.stopPropagation();">네이버부동산</a>';
-            var naverMapLink  = '<a href="https://map.naver.com/p/search/' + prop.name + '" target="_blank" class="naver-map" onclick="event.stopPropagation();">네이버지도</a>';
-            var eumLandLink   = (prop.pnu && prop.pnu.trim() !== "") 
-                ? '<a href="http://www.eum.go.kr/web/ar/lu/luLandDet.jsp?pnu=' + prop.pnu.trim() + '&mode=search" target="_blank" class="eum-land" onclick="event.stopPropagation();">토지이음</a>' 
-                : '<a class="eum-none" title="PNU 미생성" onclick="event.stopPropagation();">미매칭</a>';
+            // 1. 현재 매물의 지번 주소(prop.name)에서 숫자 정보만 안전하게 추출 (예: "994")
+            var JBN = prop.name ? String(prop.name).replace(/[^0-9]/g, "") : "";
+            
+			// 2. 2분할 독립 창 서빙용 이니셜 탭 하이퍼링크 빌드
+			var naverLandLink = '<a href="javascript:void(0);" onclick="openChanggongLink(/'https://fin.land.naver.com/articles/' + prop.id, /'R' + JBN + '/');" class="naver-land">네이버부동산</a>';
+			var naverMapLink  = '<a href="javascript:void(0);" onclick="openChanggongLink(/'https://map.naver.com/p/search/' + prop.name, /'M' + JBN + '/');" class="naver-map">네이버지도</a>';
+			var eumLandLink   = (prop.pnu && prop.pnu.trim() !== "")
+				? '<a href="javascript:void(0);" onclick="openChanggongLink(/'http://www.eum.go.kr/web/ar/lu/luLandDet.jsp?pnu=' + prop.pnu.trim() + /'&mode=search/', /'E' + JBN + '/');" class="eum-land">토지이음</a>'
+				: '<a class="eum-none" title="PNU 미생성" onclick="event.stopPropagation();">미매칭</a>';
 
             itemDiv.innerHTML = [
                 '<h4 style="margin: 0 0 3px 0;">[' + prop.detail_type + '] ' + prop.name + '</h4>', 
