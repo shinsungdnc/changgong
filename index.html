@@ -400,10 +400,18 @@
             var danDisplayHtml = (prop.category === "토지") ? prop.py_price : '대지 ' + prop.py_price + ' / <span style="color:#2b5c8f; font-weight:bold;">연면적 ' + prop.year_price + '</span>';
             var itemDiv = document.createElement("div"); itemDiv.className = "property-item"; itemDiv.id = "item-" + index;
             
-            var naverLandLink = '<a href="https://fin.land.naver.com/articles/' + prop.id + '" target="_blank" class="naver-land" onclick="event.stopPropagation();">네이버부동산</a>';
-            var naverMapLink  = '<a href="https://map.naver.com/p/search/' + prop.name + '" target="_blank" class="naver-map" onclick="event.stopPropagation();">네이버지도</a>';
+            // 🚀 [최종 최적화] 빈 탭 생성 버그를 완치한 누적 스크립트
+            var openScript = "event.stopPropagation(); event.preventDefault(); " +
+                               "if(!rightWin || rightWin.closed){ " +
+                               "    rightWin = window.open(this.href, 'RightMainWindow'); " +
+                               " } else { " +
+                               "    rightWin.window.open(this.href, '_blank'); " +
+                               " } ";
+
+            var naverLandLink = '<a href="https://fin.land.naver.com/articles/' + prop.id + '" class="naver-land" onclick="' + openScript + '">네이버부동산</a>';
+            var naverMapLink  = '<a href="https://map.naver.com/p/search/' + prop.name + '" class="naver-map" onclick="' + openScript + '">네이버지도</a>';
             var eumLandLink   = (prop.pnu && prop.pnu.trim() !== "") 
-                ? '<a href="http://www.eum.go.kr/web/ar/lu/luLandDet.jsp?pnu=' + prop.pnu.trim() + '&mode=search" target="_blank" class="eum-land" onclick="event.stopPropagation();">토지이음</a>' 
+                ? '<a href="http://www.eum.go.kr/web/ar/lu/luLandDet.jsp?pnu=' + prop.pnu.trim() + '&mode=search" class="eum-land" onclick="' + openScript + '">토지이음</a>' 
                 : '<a class="eum-none" title="PNU 미생성" onclick="event.stopPropagation();">미매칭</a>';
 
             itemDiv.innerHTML = [
