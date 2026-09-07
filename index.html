@@ -209,7 +209,7 @@
 
     function goWarp(url, prefix, id) {
         var tabName = prefix + id;
-        window.open(url, tabName).focus();
+        window.open(url, tabName, "width=1100,height=900,resizable=yes,scrollbars=yes").focus();
     }
 
     var map = new naver.maps.Map("map", {
