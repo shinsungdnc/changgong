@@ -209,23 +209,9 @@
 
     var briefingWindow = null;
     function goWarp(url, prefix) {
-        // URL 주소창에서 숫자(매물번호나 PNU)만 쏙 뽑아내어 탭 이름(예: R26482103)을 강제로 만들어냅니다.
         var uniqueId = url.replace(/[^0-9]/g, "");
         var tabName = prefix + uniqueId;
-        
-        // 1. 우측 브리핑 전용 창이 없거나 닫혔다면 최초 1번만 분리독립 새 창 개설
-        if (!briefingWindow || briefingWindow.closed) {
-            briefingWindow = window.open("", "changgong_briefing", "width=1200,height=900,resizable=yes,scrollbars=yes");
-        }
-        
-        // 2. 분리된 오른쪽 브리핑 창 내부에서 고유 탭 이름으로 주소록을 찾아 활성화
-        if (briefingWindow) {
-            var targetTab = briefingWindow.open(url, tabName);
-            if (targetTab) {
-                targetTab.focus(); // 이미 열려있는 탭이면 순서 고정인 채 화면 불빛 탁 켜기
-            }
-            briefingWindow.focus();
-        }
+        window.open(url, tabName).focus();
     }
 
     var map = new naver.maps.Map("map", {
