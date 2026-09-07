@@ -426,7 +426,7 @@
             var itemDiv = document.createElement("div"); itemDiv.className = "property-item"; itemDiv.id = "item-" + index;
             
             // 1. 현재 매물의 지번 주소(prop.name)에서 숫자 정보만 안전하게 추출 (예: "994")
-            var JBN = prop.name ? String(prop.name).replace(/[^0-9]/g, "") : "";
+            var JBN = prop.name ? String(prop.name).replace(/[[^0-9]/g, "") : "";
             
 			// 2. 2분할 독립 창 서빙용 이니셜 탭 하이퍼링크 빌드
 			var naverLandLink = '<a href="javascript:void(0);" onclick="openChanggongLink(/'https://fin.land.naver.com/articles/' + prop.id, /'R' + JBN + '/');" class="naver-land">네이버부동산</a>';
