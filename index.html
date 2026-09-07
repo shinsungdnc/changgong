@@ -425,16 +425,15 @@
             var danDisplayHtml = (prop.category === "토지") ? prop.py_price : '대지 ' + prop.py_price + ' / <span style="color:#2b5c8f; font-weight:bold;">연면적 ' + prop.year_price + '</span>';
             var itemDiv = document.createElement("div"); itemDiv.className = "property-item"; itemDiv.id = "item-" + index;
             
-            // 1. 현재 매물의 지번 주소(prop.name)에서 숫자 정보만 안전하게 추출 (예: "994")
-            var JBN = prop.name ? String(prop.name).replace(/[[^0-9]]/g, "") : "";
+			// 1. 현재 매물의 지번 주소(prop.name)에서 숫자 정보만 안전하게 추출 (예: "994")
+			var JBN = prop.name ? String(prop.name).replace(/[[^0-9]]/g, "") : "";
 
-            // 2. 따옴표 충돌을 원천 방지하기 위해 자바스크립트 덧셈(+) 기호로 링크와 탭 이름을 완벽하게 결합
-            var naverLandLink = '<a href="javascript:void(0);" onclick="openChanggongLink(/'https://fin.land.naver.com/articles/' + prop.id, /'R/' + /'' + JBN + '/');" class="naver-land">네이버부동산</a>';
-            var naverMapLink  = '<a href="javascript:void(0);" onclick="openChanggongLink(/'https://map.naver.com/p/search/' + prop.name, /'M/' + /'' + JBN + '/');" class="naver-map">네이버지도</a>';
-            var eumLandLink   = (prop.pnu && prop.pnu.trim() !== "")
-                ? '<a href="javascript:void(0);" onclick="openChanggongLink(/'http://www.eum.go.kr/web/ar/lu/luLandDet.jsp?pnu=' + prop.pnu.trim() + /'&mode=search/', /'E/' + /'' + JBN + '/');" class="eum-land">토지이음</a>'
-                : '<a class="eum-none" title="PNU 미생성" onclick="event.stopPropagation();">미매칭</a>';
-
+			// 2. [완벽 방어] 주소 변수는 원래 순정 그대로 유지하고, onclick 함수 안에는 오직 탭 이름만 바인딩
+			var naverLandLink = '<a href="https://fin.land.naver.com/articles/' + prop.id + '" onclick="openChanggongLink(this.href, 'R' + JBN + ''); event.preventDefault();" class="naver-land">네이버부동산</a>';
+			var naverMapLink  = '<a href="https://map.naver.com/p/search/' + prop.name + '" onclick="openChanggongLink(this.href, 'M' + JBN + ''); event.preventDefault();" class="naver-map">네이버지도</a>';
+			var eumLandLink   = (prop.pnu && prop.pnu.trim() !== "")
+				? '<a href="http://www.eum.go.kr/web/ar/lu/luLandDet.jsp?pnu=' + prop.pnu.trim() + '&mode=search" onclick="openChanggongLink(this.href, 'E' + JBN + ''); event.preventDefault();" class="eum-land">토지이음</a>'
+				: '<a class="eum-none" title="PNU 미생성" onclick="event.stopPropagation();">미매칭</a>';
 
             itemDiv.innerHTML = [
                 '<h4 style="margin: 0 0 3px 0;">[' + prop.detail_type + '] ' + prop.name + '</h4>', 
