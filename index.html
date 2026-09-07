@@ -8,7 +8,12 @@
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: 'Pretendard', sans-serif; overflow: hidden; }
+        /* 🌟 문서 내 최하단 요소까지 Pretendard로 글꼴 강제 대통합 (VSCode 가독성 보장) */
+        body, html, div, span, button, select, input, label, h3, h4, table, th, td, p, a { 
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif !important; 
+        }
+        
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
         #container { width: 100%; height: 100%; position: relative; overflow: hidden; }
         #map { position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 1; }
         
@@ -19,30 +24,38 @@
         }
         
         #top-header-row { display: flex; width: 100%; pointer-events: auto; box-sizing: border-box; }
+# ==========================================
+# [블록 5-2] 상단 마스터 버튼 및 사이드바 헤더 디자인 구역
+# ==========================================
+        /* 🌟 좌측 '창공공인중개사사무소' 마스터 버튼 - 필터부와 완벽한 100% 단색 매칭 */
         #brand-master-btn { 
-            width: 100%; padding: 12px; background: rgba(0, 191, 255, 0.65) !important; 
-            color: #111111 !important; font-weight: 700 !important; font-family: 'Pretendard', sans-serif; 
+            width: 100%; padding: 12px; 
+            background: #2cbfff !important; 
+            backdrop-filter: none !important; -webkit-backdrop-filter: none !important; opacity: 1.0 !important;
+            color: #ffffff !important; font-weight: 700 !important; 
             border: 1px solid #ffffff; border-radius: 6px; font-size: 14px; text-align: center; cursor: pointer; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: all 0.2s; box-sizing: border-box; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15); transition: all 0.2s; box-sizing: border-box; 
         }
-        #brand-master-btn:hover { background: rgba(0, 191, 255, 0.85) !important; transform: scale(1.02); }
+        #brand-master-btn:hover { background: #0096FF !important; transform: scale(1.01); }
         
         #mylocation-btn {
             position: absolute; right: 15px; top: 15px; z-index: 1001; 
-            width: 40px; height: 40px; background: #ffffff;
-            border: 1px solid #ccc; 
-            border-radius: 50%; /* 🌟 기존 4px에서 50%로 변경하여 기본 원형으로 고정 */
-            cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            width: 40px; height: 40px; background: #ffffff; border: 1px solid #ccc; border-radius: 50%; 
+            cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.15);
             display: flex; align-items: center; justify-content: center; box-sizing: border-box;
         }
-
         #mylocation-btn:hover { background: #f4f4f4; }
         #mylocation-btn svg { width: 22px; height: 22px; fill: #333; }
         #mylocation-btn.tracking svg { fill: #00bfff; }
         
-        #sidebar { width: 100%; height: calc(100vh - 100px); max-height: 600px; background: rgba(248, 249, 250, 0.95) !important; border: 1px solid #dee2e6; border-radius: 6px; display: flex; flex-direction: column; margin-top: 10px; pointer-events: auto; transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s; box-shadow: 0 4px 15px rgba(0,0,0,0.15); transform-origin: top center; }
+        #sidebar { width: 100%; height: calc(100vh - 100px); max-height: 600px; background: rgba(248, 249, 250, 0.98) !important; border: 1px solid #dee2e6; border-radius: 6px; display: flex; flex-direction: column; margin-top: 10px; pointer-events: auto; transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s; box-shadow: 0 4px 15px rgba(0,0,0,0.15); transform-origin: top center; }
         #sidebar.hidden { transform: scaleY(0); opacity: 0; pointer-events: none; }
-        #sidebar-header { padding: 12px; background: rgba(0, 191, 255, 0.65) !important; border-radius: 5px 5px 0 0; backdrop-filter: blur(4px); }
+        
+        /* 🌟 기존 필터부 원래 본연의 컬러 레이아웃 고수 */
+        #sidebar-header { padding: 12px; background: #2cbfff !important; border-radius: 5px 5px 0 0; }
+# ==========================================
+# [블록 5-3] 세부 조건 설정 버튼 및 매물 리스트 렌더링 스타일 구역
+# ==========================================
         .filter-section { display: flex; flex-direction: column; gap: 8px; }
         .filter-tabs { display: flex; gap: 5px; }
         .tab-btn { flex: 1; padding: 8px; font-size: 11px; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; background: #e9ecef; color: #495057; transition: all 0.2s; }
@@ -62,43 +75,28 @@
         .property-detail .links-row a.naver-map { background: #157efb; color: white !important; }
         .property-detail .links-row a.eum-land { background: #ff6e40; color: white !important; }
         .property-detail .links-row a.eum-none { background: #f8f9fa; color: #ccc !important; cursor: not-allowed; }
-        
-        /* 🌟 [PC용 플로팅 카드 스타일 각인] 둥둥 떠 있는 가변형 인터페이스 구현 */
+# ==========================================
+# [블록 5-4] 우측 정보 패널 및 상단 엑셀 다운로드 버튼 스타일 구역
+# ==========================================
         #right-stats-panel { 
-            width: 350px; 
-            height: auto; 
-            max-height: calc(100vh - 40px);
-            background: rgba(255, 255, 255, 0.93) !important; 
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(0, 0, 0, 0.12); 
-            border-radius: 8px;
-            position: absolute; 
-            right: 15px; 
-            top: 72px; 
-            z-index: 998; 
+            width: 350px; height: auto; max-height: calc(100vh - 40px);
+            background: rgba(255, 255, 255, 0.96) !important; backdrop-filter: blur(8px);
+            border: 1px solid rgba(0, 0, 0, 0.12); border-radius: 8px;
+            position: absolute; right: 15px; top: 72px; z-index: 998; 
             transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s; 
-            display: flex; 
-            flex-direction: column; 
-            box-shadow: 0 6px 20px rgba(0,0,0,0.18);
-            transform: translateX(380px); 
-            opacity: 0;
+            display: flex; flex-direction: column; box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+            transform: translateX(380px); opacity: 0;
         }
-        #right-stats-panel.active { 
-            transform: translateX(0); 
-            opacity: 1;
-        }
+        #right-stats-panel.active { transform: translateX(0); opacity: 1; }
+        
+        /* 🌟 우측 '주변 실거래 정보' 헤더 - 필터부와 완전 단색 일치화 */
         .stats-header { 
             padding: 12px 15px; 
-            background: rgba(0, 191, 255, 0.65) !important;
-            backdrop-filter: blur(5px);
-            color: #111111 !important; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            border-radius: 7px 7px 0 0;
+            background: #2cbfff !important; 
+            color: #ffffff !important; display: flex; justify-content: space-between; align-items: center; border-radius: 7px 7px 0 0;
         }
         .stats-header h3 { margin: 0; font-size: 13px; font-weight: bold; }
-        .stats-close { background: none; border: none; color: #111111 !important; font-size: 18px; cursor: pointer; padding: 0 5px; }
+        .stats-close { background: none; border: none; color: #ffffff !important; font-size: 18px; cursor: pointer; padding: 0 5px; }
         .stats-body { overflow-y: auto; padding: 15px; font-size: 12px; line-height: 1.5; max-height: 500px; }
         
         .trade-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 11px; border: 1px solid #dee2e6; background: #ffffff; }
@@ -107,79 +105,41 @@
         .trade-table tr:nth-child(even) { background: #fdfdfd; }
         
         @keyframes blink { 0% { opacity: 0.3; } 50% { opacity: 1; } 100% { opacity: 0.3; } }
-
+# ==========================================
+# [블록 5-5] S26 Ultra 등 초고해상도 모바일 최적화 미디어 쿼리 설계 구역
+# ==========================================
         @media (max-width: 768px) {
             #control-panel-wrapper { left: 10px; top: 10px; width: calc(100% - 20px); }
             #sidebar { width: 100%; height: calc(100vh - 120px); max-height: 480px; }
             #sidebar.hidden { transform: translateY(-600px); opacity: 0; }
             
-            /* 📱 [모바일 순정 하단 대기 상태] PC 좌표 스타일 완전 무력화 */
             #right-stats-panel { 
-                position: absolute !important; 
-                left: 16px !important; 
-                right: 16px !important; 
-                bottom: 16px !important; 
-                top: auto !important; 
-                width: calc(100% - 32px) !important; 
-                height: 110px !important; 
-                max-height: none !important;
-                border: 2px solid #2b5c8f !important; 
-                border-radius: 8px !important; 
-                background: #ffffff !important; 
-                z-index: 1010 !important; 
-                opacity: 1 !important;
-                transform: translateY(200px) !important; 
-                transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), height 0.23s ease-in-out !important;
-                overflow: hidden !important;
+                position: absolute !important; left: 16px !important; right: 16px !important; bottom: 16px !important; top: auto !important; 
+                width: calc(100% - 32px) !important; height: 110px !important; max-height: none !important;
+                border: 2px solid #2cbfff !important; border-radius: 8px !important; background: #ffffff !important; 
+                z-index: 1010 !important; opacity: 1 !important; transform: translateY(200px) !important; 
+                transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), height 0.23s ease-in-out !important; overflow: hidden !important;
             }
-            #right-stats-panel.active { 
-                transform: translateY(0) !important; 
-                pointer-events: auto !important; 
-            }
-            
-            /* 📱 [모바일 패널 터치 확장 시] 가변 높이 및 최대 65% 제한 */
-            #right-stats-panel.expanded { 
-                top: auto !important; height: auto !important; max-height: 65vh !important; bottom: 16px !important; 
-                border-radius: 12px !important; box-shadow: 0 -5px 25px rgba(0,0,0,0.25) !important;
-            }
-            /* 내부 알맹이 표가 잘리지 않고 정상 스크롤되도록 제한 해제 */
-            #right-stats-panel.expanded .stats-body { 
-                max-height: calc(100% - 50px) !important; 
-                overflow-y: auto !important; 
-                -webkit-overflow-scrolling: touch;
-            }
+            #right-stats-panel.active { transform: translateY(0) !important; pointer-events: auto !important; }
+            #right-stats-panel.expanded { top: auto !important; height: auto !important; max-height: 65vh !important; bottom: 16px !important; border-radius: 12px !important; box-shadow: 0 -5px 25px rgba(0,0,0,0.2) !important; }
+            #right-stats-panel.expanded .stats-body { max-height: calc(100% - 50px) !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch; }
             
             .stats-header { border-radius: 6px 6px 0 0; }
             #top-header-row { display: block; width: 100%; padding-right: 50px; box-sizing: border-box; }
             #brand-master-btn { padding: 10px; font-size: 13px; }
             #mylocation-btn { position: absolute !important; right: 10px !important; top: 10px !important; bottom: auto !important; z-index: 1001 !important; }
         }
-            /* 📊 [PC 전용] 엑셀 다운로드 버튼 스타일 (267행과 268행 사이에 삽입) */
+        
+        /* 🌟 [PC 전용] 우측 상단 엑셀 다운로드 버튼 - 필터부와 완벽한 단색 동기화 */
         #excel-download-btn {
-            position: absolute; 
-            right: 65px; 
-            top: 15px; 
-            z-index: 1001; 
-            height: 40px; 
-            padding: 0 15px; 
-            background: rgba(0, 191, 255, 0.65) !important; 
-            color: #111111 !important; 
-            font-size: 12px; 
-            font-weight: bold;
-            border: 1px solid #ffffff; 
-            border-radius: 20px; 
-            cursor: pointer; 
-            box-shadow: 0 2px 6px rgba(0,0,0,0.18);
-            display: flex; 
-            align-items: center; 
-            justify-content: center;
-            text-decoration: none; 
-            box-sizing: border-box;
-            transition: all 0.2s
+            position: absolute; right: 65px; top: 15px; z-index: 1001; height: 40px; padding: 0 15px; 
+            background: #2cbfff !important; 
+            color: #ffffff !important; font-size: 12px; font-weight: bold;
+            border: 1px solid #ffffff; border-radius: 20px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            display: flex; align-items: center; justify-content: center; text-decoration: none; box-sizing: border-box; transition: all 0.2s
         }
-        #excel-download-btn:hover { background: rgba(0, 191, 255, 0.85) !important; transform: scale(1.02); }
+        #excel-download-btn:hover { background: #0096FF !important; transform: scale(1.02); }
 
-        /* 📱 모바일 안전 잠금 (화면 깨짐 방지용 원천 제거) */
         @media (max-width: 768px) {
             #excel-download-btn { display: none !important; }
         }
