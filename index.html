@@ -384,7 +384,7 @@
 
         properties.forEach(function(prop, index) {
             var latlng = new naver.maps.LatLng(prop.lat, prop.lng);
-            var markerHtml = ['<div class="m-box" style="position: absolute; transform: translate(-50%, -100%); margin-top: -65px; background-color: ' + prop.bg + '; border: 2px solid #00bfff; opacity: 0.98; border-radius: 6px; padding: 5px 10px; font-weight: bold; font-size: 11px; color: #111; white-space: nowrap; box-shadow: 0 4px 15px rgba(0,0,0,0.25); text-align: center; line-height: 1.3; cursor: pointer;">', ' ' + prop.marker_text + '<br>', ' <span style="font-size: 12px; font-weight: bold; color: #E65100; display: inline-block; margin-top: 1px;">' + prop.dan_text + '</span>', ' <div style="position: absolute; bottom: -65px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 65px solid #00bfff; opacity: 0.45; pointer-events: none;"></div>', ' <div style="position: absolute; bottom: -65px; left: 50%; transform: translateX(-50%) translateY(63px); width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 5px solid #00bfff; opacity: 0.9;"></div>', '</div>'].join('');
+            var markerHtml = ['<div class="m-box" style="position: absolute; transform: translate(-50%, -100%); background-color: ' + prop.bg + '; border: 2px solid #4ad3ff; opacity: 0.98; border-radius: 6px; padding: 6px 12px; font-weight: bold; font-size: 11px; color: #111; white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,0.15); text-align: center; line-height: 1.3; cursor: pointer;">', ' ' + prop.marker_text + '<br>', ' <span style="font-size: 12px; font-weight: bold; color: #E65100; display: inline-block; margin-top: 2px;">' + prop.dan_text + '</span>', '</div>'].join('');
 
             var marker = new naver.maps.Marker({ position: latlng, icon: { content: markerHtml, anchor: new naver.maps.Point(0, 0) } });
             marker.set("category", prop.category); marker.set("detail_type", prop.detail_type); marker.set("town", prop.town); marker.set("p_index", index); markers.push(marker);
@@ -522,7 +522,7 @@
         marker.setMap(map);
         if (currentBoundaryCircle) currentBoundaryCircle.setMap(null);
         currentBoundaryCircle = new naver.maps.Circle({
-            map: map, center: marker.getPosition(), radius: 5, fillColor: "#ff4e00", fillOpacity: 0.15, strokeColor: "#ff1e00", strokeOpacity: 0.6, strokeWeight: 1.5
+            map: map, center: marker.getPosition(), radius: 5, fillColor: "#8A2BE2", fillOpacity: 0.15, strokeColor: "#6A0D91", strokeOpacity: 0.6, strokeWeight: 1.5
         });
 
         var targetPos = marker.getPosition(); map.setZoom(19); map.panTo(targetPos);            
