@@ -207,9 +207,25 @@
         applyFilters();
     }
 
-    function goWarp(url, prefix, id) {
-        var tabName = prefix + id;
-        window.open(url, tabName, "width=1100,height=900,resizable=yes,scrollbars=yes").focus();
+    var briefingWindow = null;
+    function goWarp(url, prefix) {
+        // URL 주소창에서 숫자(매물번호나 PNU)만 쏙 뽑아내어 탭 이름(예: R26482103)을 강제로 만들어냅니다.
+        var uniqueId = url.replace(/[^0-9]/g, "");
+        var tabName = prefix + uniqueId;
+        
+        // 1. 우측 브리핑 전용 창이 없거나 닫혔다면 최초 1번만 분리독립 새 창 개설
+        if (!briefingWindow || briefingWindow.closed) {
+            briefingWindow = window.open("", "changgong_briefing", "width=1200,height=900,resizable=yes,scrollbars=yes");
+        }
+        
+        // 2. 분리된 오른쪽 브리핑 창 내부에서 고유 탭 이름으로 주소록을 찾아 활성화
+        if (briefingWindow) {
+            var targetTab = briefingWindow.open(url, tabName);
+            if (targetTab) {
+                targetTab.focus(); // 이미 열려있는 탭이면 순서 고정인 채 화면 불빛 탁 켜기
+            }
+            briefingWindow.focus();
+        }
     }
 
     var map = new naver.maps.Map("map", {
@@ -465,10 +481,10 @@
             var danDisplayHtml = (prop.category === "토지") ? prop.py_price : '대지 ' + prop.py_price + ' / <span style="color:#2b5c8f; font-weight:bold;">연면적 ' + prop.year_price + '</span>';
             var itemDiv = document.createElement("div"); itemDiv.className = "property-item"; itemDiv.id = "item-" + index;
             
-            var naverLandLink = '<a href="javascript:void(0);" onclick="goWarp(\'https://fin.land.naver.com/articles/' + prop.id + '\', \'R\', \'' + prop.id + '\'); event.stopPropagation();" class="naver-land">네이버부동산</a>';
-            var naverMapLink  = '<a href="javascript:void(0);" onclick="goWarp(\'https://map.naver.com/p/search/' + prop.name + '\', \'M\', \'' + prop.id + '\'); event.stopPropagation();" class="naver-map">네이버지도</a>';
+            var naverLandLink = '<a href="javascript:void(0);" onclick="goWarp(\'https://fin.land.naver.com/articles/' + prop.id + '\', \'R\'); event.stopPropagation();" class="naver-land">네이버부동산</a>';
+            var naverMapLink  = '<a href="javascript:void(0);" onclick="goWarp(\'https://map.naver.com/p/search/' + prop.name + '\', \'M\'); event.stopPropagation();" class="naver-map">네이버지도</a>';
             var eumLandLink   = (prop.pnu && prop.pnu.trim() !== "") 
-                ? '<a href="javascript:void(0);" onclick="goWarp(\'http://www.eum.go.kr/web/ar/lu/luLandDet.jsp?pnu=' + prop.pnu.trim() + '&mode=search\', \'E\', \'' + prop.id + '\'); event.stopPropagation();" class="eum-land">토지이음</a>' 
+                ? '<a href="javascript:void(0);" onclick="goWarp(\'http://www.eum.go.kr/web/ar/lu/luLandDet.jsp?pnu=' + prop.pnu.trim() + '&mode=search\', \'E\'); event.stopPropagation();" class="eum-land">토지이음</a>' 
                 : '<a class="eum-none" title="PNU 미생성" onclick="event.stopPropagation();">미매칭</a>';
 
             itemDiv.innerHTML = [
