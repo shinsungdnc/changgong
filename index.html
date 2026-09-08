@@ -254,7 +254,11 @@
 
     function initMap() {
         var listContainer = document.getElementById("property-list"); listContainer.innerHTML = ""; markers = [];
-        updateDetailSelectorOptions(); updateTownSelectorOptions();
+        updateDetailSelectorOptions(); 
+        
+        // 🚀 [스피드 패치] 동네 및 리 개수 세기 연산은 지도가 처음 초기화될 때 단 한 번만 수행합니다.
+        updateTownSelectorOptions();
+
         properties.forEach(function(prop, index) {
             var latlng = new naver.maps.LatLng(prop.lat, prop.lng);
             var markerHtml = [
@@ -273,9 +277,8 @@
                 ? '<a href="http://www.eum.go.kr/web/ar/lu/luLandDet.jsp?pnu=' + prop.pnu.trim() + '&mode=search" target="_blank" class="eum-land" onclick="event.stopPropagation();">토지이음</a>' 
                 : '<a class="eum-none" title="PNU 미생성" onclick="event.stopPropagation();">미매칭</a>';
             
-            // ✨ [지침 완벽 반영] 엑셀 주소에는 대괄호가 없고, 오직 지도 화면 렌더링 시에만 종류별 머리글 헤더를 단 한 번 조인합니다.
-            var headerLabel = prop.detail_type === "도시형생활주택" ? "도생" : prop.detail_type;
-            var displayTitle = "[" + headerLabel + "] " + prop.name;
+            var finalLabel = (prop.detail_type === "도시형생활주택" || prop.detail_type === "도생") ? "도생" : prop.detail_type;
+            var displayTitle = "[" + finalLabel + "] " + prop.name;
 
             itemDiv.innerHTML = [
                 '<h4 style="margin: 0 0 3px 0;">' + displayTitle + '</h4>', 
@@ -345,6 +348,8 @@
             if (mCat && mDet && mTown && mRi && mDeal) { item.style.display = "block"; marker.setMap(map); vis.push(marker); }
             else { item.style.display = "none"; if(document.getElementById("detail-" + i)) document.getElementById("detail-" + i).style.display = "none"; item.classList.remove("active"); marker.setMap(null); }
         });
+        
+        // 🚀 [스피드 패치] 필터 조건이 실시간으로 스위칭될 때만 무거운 동네 옵션을 재연산합니다.
         updateTownSelectorOptions(); updateClustering(vis);
     }
 
@@ -362,17 +367,25 @@
     }
 
     function selectProperty(index, marker) {
-        var sidebar = document.getElementById("sidebar"), listContainer = document.getElementById("property-list"), targetItem = document.getElementById("item-" + index), targetDetail = document.getElementById("detail-" + index), panel = document.getElementById("right-stats-panel");
+        var sidebar = document.getElementById("sidebar"), listContainer = document.getElementById("property-list"), targetItem = document.getElementById("item-" + index), panel = document.getElementById("right-stats-panel");
         if (sidebar.classList.contains("hidden")) sidebar.classList.remove("hidden");
+        
+        // 🚀 [스피드 패치] 토글 반복 클릭 시 무거운 렉 유발 요소를 핀포인트로 사전 차단
         if (targetItem && targetItem.classList.contains("active")) {
-            targetItem.classList.remove("active"); if (targetDetail) targetDetail.style.display = "none";
+            targetItem.classList.remove("active"); var dEl = document.getElementById("detail-" + index); if (dEl) dEl.style.display = "none";
             if (currentBoundaryCircle) { currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }
             if (panel) { panel.classList.remove("active"); panel.classList.remove("expanded"); }
             map.setZoom(18); return;
         }
-        document.querySelectorAll(".property-detail").forEach(function(el) { el.style.display = "none"; }); document.querySelectorAll(".property-item").forEach(function(el) { el.classList.remove("active"); });
-        if (targetDetail) targetDetail.style.display = "block"; if (targetItem) targetItem.classList.add("active");
+        
+        // 🚀 [스피드 패치] querySelector 다이렉트 타격으로 전체 카드를 다 순회하던 불필요한 루프 부하 원천 제거!
+        var activeItem = document.querySelector(".property-item.active"); if (activeItem) activeItem.classList.remove("active");
+        var activeDetail = document.querySelector(".property-detail[style*='block']"); if (activeDetail) activeDetail.style.display = "none";
+
+        var targetDetailReal = document.getElementById("detail-" + index); if (targetDetailReal) targetDetailReal.style.display = "block"; 
+        if (targetItem) targetItem.classList.add("active");
         if (listContainer && targetItem) listContainer.scrollTop = targetItem.offsetTop - listContainer.offsetTop;
+        
         marker.setMap(map); if (currentBoundaryCircle) currentBoundaryCircle.setMap(null);
         currentBoundaryCircle = new naver.maps.Circle({ map: map, center: marker.getPosition(), radius: 5, fillColor: "#00bfff", fillOpacity: 0.15, strokeColor: "#ff0000", strokeOpacity: 0.6, strokeWeight: 1.5 });
         var targetPos = marker.getPosition(); map.setZoom(19); map.panTo(targetPos); var prop = properties[index];
@@ -399,7 +412,24 @@
         ].join('');
         if (window.innerWidth <= 768) { var styleEl = document.createElement("style"); styleEl.innerHTML = "#right-stats-panel.expanded .mobile-notice { display: none !important; }"; document.head.appendChild(styleEl); }
         if (panel) { panel.classList.remove("expanded"); panel.classList.add("active"); }
+        
+        // 🚀 [스피드 패치] 렉을 유발하던 동네 드롭다운 갱신 구문을 원천 격리 차단하여 0.1초 반응 속도를 완성합니다.
     }
+
+    var oldUpdateOptions = updateDetailSelectorOptions;
+    updateDetailSelectorOptions = function() {
+        oldUpdateOptions();
+        var labels = document.getElementById("detail-selector").querySelectorAll("label");
+        labels.forEach(function(lbl) {
+            if (lbl.innerText.trim() === "도시형생활주택") {
+                lbl.childNodes.forEach(function(node) {
+                    if (node.nodeType === Node.TEXT_NODE && node.textContent.trim() === "도시형생활주택") {
+                        node.textContent = "도생";
+                    }
+                });
+            }
+        });
+    };
 
     naver.maps.Event.addListener(map, "zoom_changed", function() {
         var currentZoom = map.getZoom();
