@@ -125,9 +125,9 @@
 </div>
 
 <script>
-    var properties = {properties_json};
-    var townList = {towns_json};
-    var realTradeStats = {real_trade_json};
+    var properties = {{properties_json}};
+    var townList = {{towns_json}};
+    var realTradeStats = {{real_trade_json}};
     
     var currentCategories = ["토지", "공장", "주택"];
     var currentDetail = []; 
@@ -137,7 +137,7 @@
     function changeRi(ri) { currentRi = ri; applyFilters(); }
 
     var map = new naver.maps.Map("map", {
-        center: new naver.maps.LatLng({center_lat}, {center_lng}),
+        center: new naver.maps.LatLng({{center_lat}}, {{center_lng}}),
         zoom: 12, 
         mapTypeId: naver.maps.MapTypeId.HYBRID, 
         zoomControl: true,
