@@ -339,17 +339,28 @@
     function applyFilters() {
         if (currentBoundaryCircle) currentBoundaryCircle.setMap(null);
         var vis = [], showM = document.getElementById("chk-maemae").checked, showW = document.getElementById("chk-wolse").checked;
+        
+        // 🚀 [초고속 대용량 패치] 전역 루프 돌기 전 카테고리 활성화 여부를 미리 인덱싱하여 연산량 차단
+        var hasLand = currentCategories.indexOf("토지") !== -1;
+        var hasFactory = currentCategories.indexOf("공장") !== -1;
+        var hasHouse = currentCategories.indexOf("주택") !== -1;
+
         markers.forEach(function(marker, i) {
             var p = properties[i];
-            var mCat = (currentCategories.indexOf(marker.get("category")) !== -1), mDet = (currentCategories.length === 0 || currentDetail.indexOf(marker.get("detail_type")) !== -1);
+            
+            // 🚀 [초고속 대용량 패치] 꺼져있는 대형 카테고리(토지 1,693건 등)는 아래 무거운 주소/필터 연산을 타지 않고 즉시 패스시킵니다.
+            if (p.category === "토지" && !hasLand) { marker.setMap(null); var item = document.getElementById("item-" + i); if (item) item.style.display = "none"; return; }
+            if (p.category === "공장" && !hasFactory) { marker.setMap(null); var item = document.getElementById("item-" + i); if (item) item.style.display = "none"; return; }
+            if (p.category === "주택" && !hasHouse) { marker.setMap(null); var item = document.getElementById("item-" + i); if (item) item.style.display = "none"; return; }
+
+            var mDet = (currentCategories.length === 0 || currentDetail.indexOf(marker.get("detail_type")) !== -1);
             var mTown = (currentTown === "전체" || marker.get("town") === currentTown), mRi = (currentTown === "전체" || currentRi === "전체" || p.name.indexOf(currentRi) !== -1);
             var mDeal = (showM && p.price.indexOf("월세") === -1) || (showW && p.price.indexOf("월세") !== -1);
             var item = document.getElementById("item-" + i);
-            if (mCat && mDet && mTown && mRi && mDeal) { item.style.display = "block"; marker.setMap(map); vis.push(marker); }
+            
+            if (mDet && mTown && mRi && mDeal) { item.style.display = "block"; marker.setMap(map); vis.push(marker); }
             else { item.style.display = "none"; if(document.getElementById("detail-" + i)) document.getElementById("detail-" + i).style.display = "none"; item.classList.remove("active"); marker.setMap(null); }
         });
-        
-        // 🚀 [스피드 패치] 필터 조건이 실시간으로 스위칭될 때만 무거운 동네 옵션을 재연산합니다.
         updateTownSelectorOptions(); updateClustering(vis);
     }
 
@@ -370,7 +381,6 @@
         var sidebar = document.getElementById("sidebar"), listContainer = document.getElementById("property-list"), targetItem = document.getElementById("item-" + index), panel = document.getElementById("right-stats-panel");
         if (sidebar.classList.contains("hidden")) sidebar.classList.remove("hidden");
         
-        // 🚀 [스피드 패치] 토글 반복 클릭 시 무거운 렉 유발 요소를 핀포인트로 사전 차단
         if (targetItem && targetItem.classList.contains("active")) {
             targetItem.classList.remove("active"); var dEl = document.getElementById("detail-" + index); if (dEl) dEl.style.display = "none";
             if (currentBoundaryCircle) { currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }
@@ -378,7 +388,6 @@
             map.setZoom(18); return;
         }
         
-        // 🚀 [스피드 패치] querySelector 다이렉트 타격으로 전체 카드를 다 순회하던 불필요한 루프 부하 원천 제거!
         var activeItem = document.querySelector(".property-item.active"); if (activeItem) activeItem.classList.remove("active");
         var activeDetail = document.querySelector(".property-detail[style*='block']"); if (activeDetail) activeDetail.style.display = "none";
 
@@ -389,8 +398,12 @@
         marker.setMap(map); if (currentBoundaryCircle) currentBoundaryCircle.setMap(null);
         currentBoundaryCircle = new naver.maps.Circle({ map: map, center: marker.getPosition(), radius: 5, fillColor: "#00bfff", fillOpacity: 0.15, strokeColor: "#ff0000", strokeOpacity: 0.6, strokeWeight: 1.5 });
         var targetPos = marker.getPosition(); map.setZoom(19); map.panTo(targetPos); var prop = properties[index];
-        var yParts = prop.yongdo.split("/"), mYongdo = (yParts && yParts[0] ? yParts[0].trim() : "").replace("지역", "") + "지역", mJimok = (yParts && yParts[1] ? yParts[1].trim() : "");
+        
+        var yParts = prop.yongdo ? prop.yongdo.split("/") : [];
+        var mYongdo = (yParts && yParts[0] ? yParts[0].trim() : "").replace("지역", "") + "지역"; 
+        var mJimok = (yParts && yParts[1] ? yParts[1].trim() : "");
         var tableHtml = '';
+        
         if (prop.category === "토지") {
             var townBook = (realTradeStats[prop.town] && realTradeStats[prop.town][mYongdo]) ? realTradeStats[prop.town][mYongdo][mJimok] : null;
             if (townBook) {
@@ -404,16 +417,15 @@
                 });
                 tableHtml += '</table>';
             } else { tableHtml += '<p style="color:#999; text-align:center; margin-top:20px; font-size:11px;">해당 지역은 실거래 정보가 준비되지 않았습니다.</p>'; }
-        } else { tableHtml += '<div style="text-align:center; color:#555; padding:20px 10px; background:#f8f9fa; border:1px solid #e9ecef; border-radius:4px; margin-top:10px; font-size:11px; line-height:1.4;">🏭 <b>안내</b><br>공장/창고 및 주택 상품은 개별성이 커서 토지 실거래가 통계를 직접 연동하지 않습니다.</div>'; }
+        } else { 
+            tableHtml = '<div style="text-align:center; color:#555; padding:18px 10px; background:#f8f9fa; border:1px solid #e9ecef; border-radius:4px; margin-top:10px; font-size:11px; line-height:1.4;">🏭 <b>안내</b><br>공장/창고 및 주택 상품은 개별성이 커서 토지 실거래가 통계를 직접 연동하지 않습니다.</div>'; 
+        }
+        
         document.getElementById("stats-title").innerText = "📊 " + prop.town + " 실거래 분석";
-        document.getElementById("stats-content").innerHTML = [
-            '<div style="background: rgba(0,0,0,0.03); padding:6px 10px; border-radius:4px; margin-bottom:6px; font-size:12px; line-height:1.4; text-align:left;"><b>용도지역/지목 :</b> ' + prop.yongdo + '</div>',
-            '<div style="margin-top:6px; border-top:1px dashed #ccc; padding-top:6px;"><p style="color:#2b5c8f; font-weight:bold; font-size:11px; margin:0 0 5px 0; border-left:3px solid #2b5c8f; padding-left:6px;">최근 5개년 토지 실거래가 (평, 평당가)</p>' + tableHtml + '</div>'
-        ].join('');
+        document.getElementById("stats-content").innerHTML = '<div style="background: rgba(0,0,0,0.03); padding:6px 10px; border-radius:4px; margin-bottom:6px; font-size:12px; line-height:1.4; text-align:left;"><b>용도지역/지목 :</b> ' + prop.yongdo + '</div><div style="margin-top:6px; border-top:1px dashed #ccc; padding-top:6px;"><p style="color:#2b5c8f; font-weight:bold; font-size:11px; margin:0 0 5px 0; border-left:3px solid #2b5c8f; padding-left:6px;">최근 5개년 토지 실거래가 (평, 평당가)</p>' + tableHtml + '</div>';
+        
         if (window.innerWidth <= 768) { var styleEl = document.createElement("style"); styleEl.innerHTML = "#right-stats-panel.expanded .mobile-notice { display: none !important; }"; document.head.appendChild(styleEl); }
         if (panel) { panel.classList.remove("expanded"); panel.classList.add("active"); }
-        
-        // 🚀 [스피드 패치] 렉을 유발하던 동네 드롭다운 갱신 구문을 원천 격리 차단하여 0.1초 반응 속도를 완성합니다.
     }
 
     var oldUpdateOptions = updateDetailSelectorOptions;
@@ -423,9 +435,7 @@
         labels.forEach(function(lbl) {
             if (lbl.innerText.trim() === "도시형생활주택") {
                 lbl.childNodes.forEach(function(node) {
-                    if (node.nodeType === Node.TEXT_NODE && node.textContent.trim() === "도시형생활주택") {
-                        node.textContent = "도생";
-                    }
+                    if (node.nodeType === Node.TEXT_NODE && node.textContent.trim() === "도시형생활주택") { node.textContent = "도생"; }
                 });
             }
         });
