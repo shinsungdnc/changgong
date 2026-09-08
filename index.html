@@ -225,12 +225,21 @@
         var townSelector = document.getElementById("town-selector"), riSelector = document.getElementById("ri-selector");
         var savedTown = currentTown, savedRi = currentRi, totalCount = 0, townCounts = {}, riCounts = {};
         var showMaemae = document.getElementById("chk-maemae").checked, showWolse = document.getElementById("chk-wolse").checked;
+        
         properties.forEach(function(p) {
-            if ((currentCategories.indexOf(p.category) !== -1) && (currentCategories.length === 0 || currentDetail.indexOf(p.detail_type) !== -1) && ((showMaemae && p.price.indexOf("월세") === -1) || (showWolse && p.price.indexOf("월세") !== -1))) {
+            var isWolseData = p.price.indexOf("월세") !== -1;
+            if ((currentCategories.indexOf(p.category) !== -1) && (currentCategories.length === 0 || currentDetail.indexOf(p.detail_type) !== -1) && ((showMaemae && !isWolseData) || (showWolse && isWolseData))) {
                 totalCount++; townCounts[p.town] = (townCounts[p.town] || 0) + 1;
+                
+                // ✨ [순정 자바스크립트 문법 완전 부활] 판다스식 문법 노이즈를 완벽하게 고속 제거하고 '리' 목록 가르기
                 if (p.town && p.name.indexOf(p.town) !== -1) {
-                    var tokens = p.name.split(p.town).trim().split(" ");
-                    if (tokens.length > 0 && tokens.endsWith("리")) { var riName = tokens.trim(); if (!riCounts[p.town]) riCounts[p.town] = {}; riCounts[p.town][riName] = (riCounts[p.town][riName] || 0) + 1; }
+                    var remainPart = p.name.split(p.town)[1] ? p.name.split(p.town)[1].trim() : "";
+                    var tokens = remainPart.split(" ");
+                    if (tokens.length > 0 && tokens[0].slice(-1) === "리") { 
+                        var riName = tokens[0].trim(); 
+                        if (!riCounts[p.town]) riCounts[p.town] = {}; 
+                        riCounts[p.town][riName] = (riCounts[p.town][riName] || 0) + 1; 
+                    }
                 }
             }
         });
