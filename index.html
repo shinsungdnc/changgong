@@ -274,15 +274,17 @@
     function initMap() {
         var listContainer = document.getElementById("property-list"); listContainer.innerHTML = ""; markers = []; cachedElements = [];
         
-        // 🚀 [초고속 패치] 초기화 시점에 '리' 이름을 단 한 번만 파싱하여 속도 최적화
+        // 🚀 [버그 수정 완료] 자바스크립트 배열 객체 에러를 해결하여 안전하게 '리' 목록 추출
         properties.forEach(function(p) {
             p.riName = "";
             if (p.town && p.name.indexOf(p.town) !== -1) {
                 var parts = p.name.split(p.town);
-                var remainPart = parts[1] ? parts[1].trim() : "";
-                var tokens = remainPart.split(" ");
-                if (tokens.length > 0 && tokens[0].slice(-1) === "리") { 
-                    p.riName = tokens[0].trim(); 
+                if (parts && parts.length > 1) {
+                    var remainPart = parts[1].trim();
+                    var tokens = remainPart.split(" ");
+                    if (tokens.length > 0 && tokens[0].slice(-1) === "리") { 
+                        p.riName = tokens[0].trim(); 
+                    }
                 }
             }
         });
@@ -300,7 +302,7 @@
             var marker = new naver.maps.Marker({ position: latlng, icon: { content: markerHtml, anchor: new naver.maps.Point(0, 0) } });
             marker.set("category", prop.category); marker.set("detail_type", prop.detail_type); marker.set("town", prop.town); marker.set("p_index", index); markers.push(marker);
             
-            var danDisplayHtml = (prop.category === "토지") ? prop.py_price : '대지 ' + prop.py_price + ' / <span style="color:#2b5c8f; font-weight:bold;">연면적 ' + prop.year_price + '</span>';
+            var danDisplayHtml = (prop.category === "土지") ? prop.py_price : '대지 ' + prop.py_price + ' / <span style="color:#2b5c8f; font-weight:bold;">연면적 ' + prop.year_price + '</span>';
             var itemDiv = document.createElement("div"); itemDiv.className = "property-item"; itemDiv.id = "item-" + index;
             
             var naverLandLink = '<a href="https://naver.com' + prop.id + '" target="_blank" class="naver-land" onclick="event.stopPropagation();">네이버부동산</a>';
@@ -384,7 +386,6 @@
             var p = properties[i];
             var cached = cachedElements[i];
 
-            // 🚀 [초고속 대용량 패치] 꺼진 카테고리는 즉시 숨김 처리 후 연산 완전 탈출
             if ((p.category === "토지" && !hasLand) || (p.category === "공장" && !hasFactory) || (p.category === "주택" && !hasHouse)) { 
                 marker.setMap(null); 
                 if (cached) cached.item.style.display = "none"; 
@@ -398,7 +399,6 @@
             var isWolseData = p.price.indexOf("월세") !== -1;
             var mDeal = (showM && !isWolseData) || (showW && isWolseData);
             
-            // 🚀 [초고속 대용량 패치] 미리 저장해둔 메모리 주소(cached.item)로 렉 없이 다이렉트 처리
             if (mDet && mTown && mRi && mDeal) { 
                 if (cached) cached.item.style.display = "block"; 
                 marker.setMap(map); 
