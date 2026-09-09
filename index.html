@@ -221,75 +221,43 @@
         });
     }
 
-    // 🚀 [초고속 패치] 데이터 필터링 시 동네 및 리 카운트를 초고속 연산하기 위한 최적화 함수
     function updateTownSelectorOptions() {
         var townSelector = document.getElementById("town-selector"), riSelector = document.getElementById("ri-selector");
         var savedTown = currentTown, savedRi = currentRi, totalCount = 0, townCounts = {}, riCounts = {};
         var showMaemae = document.getElementById("chk-maemae").checked, showWolse = document.getElementById("chk-wolse").checked;
         
-        var hasLand = currentCategories.indexOf("토지") !== -1;
-        var hasFactory = currentCategories.indexOf("공장") !== -1;
-        var hasHouse = currentCategories.indexOf("주택") !== -1;
-
         properties.forEach(function(p) {
-            if (p.category === "토지" && !hasLand) return;
-            if (p.category === "공장" && !hasFactory) return;
-            if (p.category === "주택" && !hasHouse) return;
-            if (currentDetail.indexOf(p.detail_type) === -1) return;
-
             var isWolseData = p.price.indexOf("월세") !== -1;
-            if ((showMaemae && !isWolseData) || (showWolse && isWolseData)) {
-                totalCount++; 
-                townCounts[p.town] = (townCounts[p.town] || 0) + 1;
+            if ((currentCategories.indexOf(p.category) !== -1) && (currentCategories.length === 0 || currentDetail.indexOf(p.detail_type) !== -1) && ((showMaemae && !isWolseData) || (showWolse && isWolseData))) {
+                totalCount++; townCounts[p.town] = (townCounts[p.town] || 0) + 1;
                 
-                if (p.riName) {
-                    if (!riCounts[p.town]) riCounts[p.town] = {}; 
-                    riCounts[p.town][p.riName] = (riCounts[p.town][p.riName] || 0) + 1; 
-                }
-            }
-        });
-
-        townSelector.innerHTML = "<option value='전체'>📍 지역 선택 (전체: " + totalCount + "개)</option>";
-        townList.forEach(function(t) { 
-            if ((townCounts[t] || 0) > 0) { 
-                var opt = document.createElement("option"); opt.value = t; opt.innerText = "📍 " + t + " (" + townCounts[t] + ")"; 
-                if (t === savedTown) opt.selected = true; townSelector.appendChild(opt); 
-            } 
-        });
-
-        if (currentTown !== "전체" && (currentTown.endsWith("읍") || currentTown.endsWith("면"))) {
-            riSelector.style.display = "block"; 
-            var targetTownRis = riCounts[currentTown] || {}, sortedRis = Object.keys(targetTownRis).sort();
-            riSelector.innerHTML = "<option value='전체'>📍 리 전체 (" + (townCounts[currentTown] || 0) + ")</option>";
-            sortedRis.forEach(function(r) { 
-                var opt = document.createElement("option"); opt.value = r; opt.innerText = r + " (" + targetTownRis[r] + ")"; 
-                if (r === savedRi) opt.selected = true; riSelector.appendChild(opt); 
-            });
-        } else { riSelector.style.display = "none"; currentRi = "전체"; }
-    }
-
-    // 🚀 [초고속 패치] 매물 엘리먼트를 캐싱하여 DOM 접근 속도를 획기적으로 개선하기 위한 전역 배열
-    var cachedElements = [];
-
-    function initMap() {
-        var listContainer = document.getElementById("property-list"); listContainer.innerHTML = ""; markers = []; cachedElements = [];
-        
-        // 🚀 [버그 수정 완료] 자바스크립트 배열 객체 에러를 해결하여 안전하게 '리' 목록 추출
-        properties.forEach(function(p) {
-            p.riName = "";
-            if (p.town && p.name.indexOf(p.town) !== -1) {
-                var parts = p.name.split(p.town);
-                if (parts && parts.length > 1) {
-                    var remainPart = parts[1].trim();
+                // ✨ [순정 자바스크립트 문법 완전 부활] 판다스식 문법 노이즈를 완벽하게 고속 제거하고 '리' 목록 가르기
+                if (p.town && p.name.indexOf(p.town) !== -1) {
+                    var remainPart = p.name.split(p.town)[1] ? p.name.split(p.town)[1].trim() : "";
                     var tokens = remainPart.split(" ");
                     if (tokens.length > 0 && tokens[0].slice(-1) === "리") { 
-                        p.riName = tokens[0].trim(); 
+                        var riName = tokens[0].trim(); 
+                        if (!riCounts[p.town]) riCounts[p.town] = {}; 
+                        riCounts[p.town][riName] = (riCounts[p.town][riName] || 0) + 1; 
                     }
                 }
             }
         });
+        townSelector.innerHTML = "<option value='전체'>📍 지역 선택 (전체: " + totalCount + "개)</option>";
+        townList.forEach(function(t) { if ((townCounts[t] || 0) > 0) { var opt = document.createElement("option"); opt.value = t; opt.innerText = "📍 " + t + " (" + townCounts[t] + ")"; if (t === savedTown) opt.selected = true; townSelector.appendChild(opt); } });
+        if (currentTown !== "전체" && (currentTown.endsWith("읍") || currentTown.endsWith("면"))) {
+            riSelector.style.display = "block"; var targetTownRis = riCounts[currentTown] || {}, sortedRis = Object.keys(targetTownRis).sort();
+            riSelector.innerHTML = "<option value='전체'>📍 리 전체 (" + (townCounts[currentTown] || 0) + ")</option>";
+            sortedRis.forEach(function(r) { var opt = document.createElement("option"); opt.value = r; opt.innerText = r + " (" + targetTownRis[r] + ")"; if (r === savedRi) opt.selected = true; riSelector.appendChild(opt); });
+        } else { riSelector.style.display = "none"; currentRi = "전체"; }
+    }
 
+    function initMap() {
+        var listContainer = document.getElementById("property-list"); listContainer.innerHTML = ""; markers = [];
         updateDetailSelectorOptions(); 
+        
+        // 🚀 [스피드 패치] 동네 및 리 개수 세기 연산은 지도가 처음 초기화될 때 단 한 번만 수행합니다.
+        updateTownSelectorOptions();
 
         properties.forEach(function(prop, index) {
             var latlng = new naver.maps.LatLng(prop.lat, prop.lng);
@@ -301,15 +269,14 @@
             ].join('');
             var marker = new naver.maps.Marker({ position: latlng, icon: { content: markerHtml, anchor: new naver.maps.Point(0, 0) } });
             marker.set("category", prop.category); marker.set("detail_type", prop.detail_type); marker.set("town", prop.town); marker.set("p_index", index); markers.push(marker);
-            
-            var danDisplayHtml = (prop.category === "土지") ? prop.py_price : '대지 ' + prop.py_price + ' / <span style="color:#2b5c8f; font-weight:bold;">연면적 ' + prop.year_price + '</span>';
+            var danDisplayHtml = (prop.category === "토지") ? prop.py_price : '대지 ' + prop.py_price + ' / <span style="color:#2b5c8f; font-weight:bold;">연면적 ' + prop.year_price + '</span>';
             var itemDiv = document.createElement("div"); itemDiv.className = "property-item"; itemDiv.id = "item-" + index;
-            
-            var naverLandLink = '<a href="https://naver.com' + prop.id + '" target="_blank" class="naver-land" onclick="event.stopPropagation();">네이버부동산</a>';
-            var naverMapLink  = '<a href="https://naver.com' + prop.name + '" target="_blank" class="naver-map" onclick="event.stopPropagation();">네이버지도</a>';
+            var naverLandLink = '<a href="https://fin.land.naver.com/articles/' + prop.id + '" target="_blank" class="naver-land" onclick="event.stopPropagation();">네이버부동산</a>';
+            var naverMapLink  = '<a href="https://map.naver.com/p/search/' + prop.name + '" target="_blank" class="naver-map" onclick="event.stopPropagation();">네이버지도</a>';
             var eumLandLink   = (prop.pnu && prop.pnu.trim() !== "") 
-                ? '<a href="http://eum.go.kr' + prop.pnu.trim() + '&mode=search" target="_blank" class="eum-land" onclick="event.stopPropagation();">토지이음</a>' 
+                ? '<a href="http://www.eum.go.kr/web/ar/lu/luLandDet.jsp?pnu=' + prop.pnu.trim() + '&mode=search" target="_blank" class="eum-land" onclick="event.stopPropagation();">토지이음</a>' 
                 : '<a class="eum-none" title="PNU 미생성" onclick="event.stopPropagation();">미매칭</a>';
+            
             var finalLabel = (prop.detail_type === "도시형생활주택" || prop.detail_type === "도생") ? "도생" : prop.detail_type;
             var displayTitle = "[" + finalLabel + "] " + prop.name;
 
@@ -354,14 +321,9 @@
                 ' </div>', 
                 '</div>'
             ].join('');
-            
-            itemDiv.onclick = function() { selectProperty(index, marker); }; 
-            listContainer.appendChild(itemDiv);
-            
-            cachedElements.push({ item: itemDiv, detail: null });
+            itemDiv.onclick = function() { selectProperty(index, marker); }; listContainer.appendChild(itemDiv);
             naver.maps.Event.addListener(marker, "click", function(e) { selectProperty(index, marker); });
         });
-        
         applyFilters();
     }
 
@@ -378,44 +340,28 @@
         if (currentBoundaryCircle) currentBoundaryCircle.setMap(null);
         var vis = [], showM = document.getElementById("chk-maemae").checked, showW = document.getElementById("chk-wolse").checked;
         
+        // 🚀 [초고속 대용량 패치] 전역 루프 돌기 전 카테고리 활성화 여부를 미리 인덱싱하여 연산량 차단
         var hasLand = currentCategories.indexOf("토지") !== -1;
         var hasFactory = currentCategories.indexOf("공장") !== -1;
         var hasHouse = currentCategories.indexOf("주택") !== -1;
 
         markers.forEach(function(marker, i) {
             var p = properties[i];
-            var cached = cachedElements[i];
-
-            if ((p.category === "토지" && !hasLand) || (p.category === "공장" && !hasFactory) || (p.category === "주택" && !hasHouse)) { 
-                marker.setMap(null); 
-                if (cached) cached.item.style.display = "none"; 
-                return; 
-            }
-
-            var mDet = (currentCategories.length === 0 || currentDetail.indexOf(p.detail_type) !== -1);
-            var mTown = (currentTown === "전체" || p.town === currentTown);
-            var mRi = (currentTown === "전체" || currentRi === "전체" || (p.riName === currentRi));
             
-            var isWolseData = p.price.indexOf("월세") !== -1;
-            var mDeal = (showM && !isWolseData) || (showW && isWolseData);
+            // 🚀 [초고속 대용량 패치] 꺼져있는 대형 카테고리(토지 1,693건 등)는 아래 무거운 주소/필터 연산을 타지 않고 즉시 패스시킵니다.
+            if (p.category === "토지" && !hasLand) { marker.setMap(null); var item = document.getElementById("item-" + i); if (item) item.style.display = "none"; return; }
+            if (p.category === "공장" && !hasFactory) { marker.setMap(null); var item = document.getElementById("item-" + i); if (item) item.style.display = "none"; return; }
+            if (p.category === "주택" && !hasHouse) { marker.setMap(null); var item = document.getElementById("item-" + i); if (item) item.style.display = "none"; return; }
+
+            var mDet = (currentCategories.length === 0 || currentDetail.indexOf(marker.get("detail_type")) !== -1);
+            var mTown = (currentTown === "전체" || marker.get("town") === currentTown), mRi = (currentTown === "전체" || currentRi === "전체" || p.name.indexOf(currentRi) !== -1);
+            var mDeal = (showM && p.price.indexOf("월세") === -1) || (showW && p.price.indexOf("월세") !== -1);
+            var item = document.getElementById("item-" + i);
             
-            if (mDet && mTown && mRi && mDeal) { 
-                if (cached) cached.item.style.display = "block"; 
-                marker.setMap(map); 
-                vis.push(marker); 
-            }
-            else { 
-                if (cached) {
-                    cached.item.style.display = "none"; 
-                    cached.item.classList.remove("active");
-                    if (!cached.detail) cached.detail = document.getElementById("detail-" + i);
-                    if (cached.detail) cached.detail.style.display = "none";
-                }
-                marker.setMap(null); 
-            }
+            if (mDet && mTown && mRi && mDeal) { item.style.display = "block"; marker.setMap(map); vis.push(marker); }
+            else { item.style.display = "none"; if(document.getElementById("detail-" + i)) document.getElementById("detail-" + i).style.display = "none"; item.classList.remove("active"); marker.setMap(null); }
         });
-        
-        updateClustering(vis);
+        updateTownSelectorOptions(); updateClustering(vis);
     }
 
     function updateClustering(vis) {
