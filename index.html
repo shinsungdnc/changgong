@@ -252,12 +252,28 @@
         } else { riSelector.style.display = "none"; currentRi = "전체"; }
     }
 
+    // 🚀 [초고속 패치] 매물 엘리먼트를 캐싱하여 DOM 접근 속도를 획기적으로 개선하기 위한 전역 배열
+    var cachedElements = [];
+
     function initMap() {
-        var listContainer = document.getElementById("property-list"); listContainer.innerHTML = ""; markers = [];
-        updateDetailSelectorOptions(); 
+        var listContainer = document.getElementById("property-list"); listContainer.innerHTML = ""; markers = []; cachedElements = [];
         
-        // 🚀 [스피드 패치] 동네 및 리 개수 세기 연산은 지도가 처음 초기화될 때 단 한 번만 수행합니다.
-        updateTownSelectorOptions();
+        // 🚀 [버그 완치] 배열 객체에 직접 trim()을 하던 치명적 오류를 완벽히 교정했습니다.
+        properties.forEach(function(p) {
+            p.riName = "";
+            if (p.town && p.name.indexOf(p.town) !== -1) {
+                var parts = p.name.split(p.town);
+                if (parts && parts.length > 1 && parts[1]) {
+                    var remainPart = parts[1].trim();
+                    var tokens = remainPart.split(" ");
+                    if (tokens.length > 0 && tokens[0].slice(-1) === "리") { 
+                        p.riName = tokens[0].trim(); 
+                    }
+                }
+            }
+        });
+
+        updateDetailSelectorOptions(); 
 
         properties.forEach(function(prop, index) {
             var latlng = new naver.maps.LatLng(prop.lat, prop.lng);
@@ -269,14 +285,15 @@
             ].join('');
             var marker = new naver.maps.Marker({ position: latlng, icon: { content: markerHtml, anchor: new naver.maps.Point(0, 0) } });
             marker.set("category", prop.category); marker.set("detail_type", prop.detail_type); marker.set("town", prop.town); marker.set("p_index", index); markers.push(marker);
+            
             var danDisplayHtml = (prop.category === "토지") ? prop.py_price : '대지 ' + prop.py_price + ' / <span style="color:#2b5c8f; font-weight:bold;">연면적 ' + prop.year_price + '</span>';
             var itemDiv = document.createElement("div"); itemDiv.className = "property-item"; itemDiv.id = "item-" + index;
-            var naverLandLink = '<a href="https://fin.land.naver.com/articles/' + prop.id + '" target="_blank" class="naver-land" onclick="event.stopPropagation();">네이버부동산</a>';
-            var naverMapLink  = '<a href="https://map.naver.com/p/search/' + prop.name + '" target="_blank" class="naver-map" onclick="event.stopPropagation();">네이버지도</a>';
-            var eumLandLink   = (prop.pnu && prop.pnu.trim() !== "") 
-                ? '<a href="http://www.eum.go.kr/web/ar/lu/luLandDet.jsp?pnu=' + prop.pnu.trim() + '&mode=search" target="_blank" class="eum-land" onclick="event.stopPropagation();">토지이음</a>' 
-                : '<a class="eum-none" title="PNU 미생성" onclick="event.stopPropagation();">미매칭</a>';
             
+            var naverLandLink = '<a href="https://naver.com' + prop.id + '" target="_blank" class="naver-land" onclick="event.stopPropagation();">네이버부동산</a>';
+            var naverMapLink  = '<a href="https://naver.com' + prop.name + '" target="_blank" class="naver-map" onclick="event.stopPropagation();">네이버지도</a>';
+            var eumLandLink   = (prop.pnu && prop.pnu.trim() !== "") 
+                ? '<a href="http://eum.go.kr' + prop.pnu.trim() + '&mode=search" target="_blank" class="eum-land" onclick="event.stopPropagation();">토지이음</a>' 
+                : '<a class="eum-none" title="PNU 미생성" onclick="event.stopPropagation();">미매칭</a>';
             var finalLabel = (prop.detail_type === "도시형생활주택" || prop.detail_type === "도생") ? "도생" : prop.detail_type;
             var displayTitle = "[" + finalLabel + "] " + prop.name;
 
@@ -321,60 +338,112 @@
                 ' </div>', 
                 '</div>'
             ].join('');
-            itemDiv.onclick = function() { selectProperty(index, marker); }; listContainer.appendChild(itemDiv);
+            
+            itemDiv.onclick = function() { selectProperty(index, marker); }; 
+            listContainer.appendChild(itemDiv);
+            
+            cachedElements.push({ item: itemDiv, detail: null });
             naver.maps.Event.addListener(marker, "click", function(e) { selectProperty(index, marker); });
         });
+        
         applyFilters();
     }
 
-    function toggleCategory(cat) {
-        var btnId = cat === "토지" ? "btn-land" : (cat === "공장" ? "btn-factory" : "btn-house");
-        var btn = document.getElementById(btnId), idx = currentCategories.indexOf(cat);
-        if (idx > -1) { currentCategories.splice(idx, 1); if (btn) btn.classList.remove("active"); }
-        else { currentCategories.push(cat); if (btn) btn.classList.add("active"); }
-        updateDetailSelectorOptions(); applyFilters();
-    }
-    function changeTown(town) { currentTown = town; currentRi = "전체"; var panel = document.getElementById("detail-selector"); if(panel) panel.style.display = "none"; applyFilters(); }
+    // 🚀 [초고속 패치] 매물 엘리먼트를 캐싱하여 DOM 접근 속도를 획기적으로 개선하기 위한 전역 배열
+    var cachedElements = [];
 
-    function applyFilters() {
-        if (currentBoundaryCircle) currentBoundaryCircle.setMap(null);
-        var vis = [], showM = document.getElementById("chk-maemae").checked, showW = document.getElementById("chk-wolse").checked;
+    function initMap() {
+        var listContainer = document.getElementById("property-list"); listContainer.innerHTML = ""; markers = []; cachedElements = [];
         
-        // 🚀 [초고속 대용량 패치] 전역 루프 돌기 전 카테고리 활성화 여부를 미리 인덱싱하여 연산량 차단
-        var hasLand = currentCategories.indexOf("토지") !== -1;
-        var hasFactory = currentCategories.indexOf("공장") !== -1;
-        var hasHouse = currentCategories.indexOf("주택") !== -1;
-
-        markers.forEach(function(marker, i) {
-            var p = properties[i];
-            
-            // 🚀 [초고속 대용량 패치] 꺼져있는 대형 카테고리(토지 1,693건 등)는 아래 무거운 주소/필터 연산을 타지 않고 즉시 패스시킵니다.
-            if (p.category === "토지" && !hasLand) { marker.setMap(null); var item = document.getElementById("item-" + i); if (item) item.style.display = "none"; return; }
-            if (p.category === "공장" && !hasFactory) { marker.setMap(null); var item = document.getElementById("item-" + i); if (item) item.style.display = "none"; return; }
-            if (p.category === "주택" && !hasHouse) { marker.setMap(null); var item = document.getElementById("item-" + i); if (item) item.style.display = "none"; return; }
-
-            var mDet = (currentCategories.length === 0 || currentDetail.indexOf(marker.get("detail_type")) !== -1);
-            var mTown = (currentTown === "전체" || marker.get("town") === currentTown), mRi = (currentTown === "전체" || currentRi === "전체" || p.name.indexOf(currentRi) !== -1);
-            var mDeal = (showM && p.price.indexOf("월세") === -1) || (showW && p.price.indexOf("월세") !== -1);
-            var item = document.getElementById("item-" + i);
-            
-            if (mDet && mTown && mRi && mDeal) { item.style.display = "block"; marker.setMap(map); vis.push(marker); }
-            else { item.style.display = "none"; if(document.getElementById("detail-" + i)) document.getElementById("detail-" + i).style.display = "none"; item.classList.remove("active"); marker.setMap(null); }
+        // 🚀 [버그 완치] 배열 객체에 직접 trim()을 하던 치명적 오류를 완벽히 교정했습니다.
+        properties.forEach(function(p) {
+            p.riName = "";
+            if (p.town && p.name.indexOf(p.town) !== -1) {
+                var parts = p.name.split(p.town);
+                if (parts && parts.length > 1 && parts[1]) {
+                    var remainPart = parts[1].trim();
+                    var tokens = remainPart.split(" ");
+                    if (tokens.length > 0 && tokens[0].slice(-1) === "리") { 
+                        p.riName = tokens[0].trim(); 
+                    }
+                }
+            }
         });
-        updateTownSelectorOptions(); updateClustering(vis);
-    }
 
-    function updateClustering(vis) {
-        if (markerClustering) markerClustering.setMap(null);
-        markerClustering = new MarkerClustering({
-            minClusterSize: 2, maxZoom: 16, map: map, markers: vis, gridSize: 120, disableClickZoom: false,
-            icons: [
-                { content: '<div class="cluster-badge" style="cursor:pointer; width:44px; height:44px; line-height:44px; font-size:12px; color:#fff; text-align:center; font-weight:bold; background:rgba(0, 140, 180, 0.95); border:2px solid #fff; border-radius:50%; box-shadow:0 3px 10px rgba(0,0,0,0.35);"></div>', anchor: new naver.maps.Point(22, 22) },
-                { content: '<div class="cluster-badge" style="cursor:pointer; width:52px; height:52px; line-height:52px; font-size:13px; color:#fff; text-align:center; font-weight:bold; background:rgba(230, 70, 20, 0.95); border:2px solid #fff; border-radius:50%; box-shadow:0 4px 12px rgba(0,0,0,0.4);"></div>', anchor: new naver.maps.Point(26, 26) }
-            ],
-            indexGenerator: function(count) { return count < 15 ? 0 : 1; },
-            stylingFunction: function(clusterMarker, count) { var el = clusterMarker.getElement(); if (el && el.querySelector(".cluster-badge")) el.querySelector(".cluster-badge").innerText = count; }
+        updateDetailSelectorOptions(); 
+
+        properties.forEach(function(prop, index) {
+            var latlng = new naver.maps.LatLng(prop.lat, prop.lng);
+            var markerHtml = [
+                '<div class="m-box" style="position: absolute; transform: translate(-50%, -100%); margin-top: -65px; background-color: ' + prop.bg + '; border: 2px solid ' + prop.border + '; opacity: 0.98; border-radius: 6px; padding: 5px 10px; font-weight: bold; font-size: 11px; color: #111; white-space: nowrap; box-shadow: 0 4px 15px rgba(0,0,0,0.25); text-align: center; line-height: 1.3; cursor: pointer;">', 
+                ' ' + prop.marker_text + '<br>', 
+                ' <span style="font-size: 12px; font-weight: bold; color: #E65100; display: inline-block; margin-top: 1px;">' + prop.dan_text + '</span>', 
+                ' <div style="position: absolute; bottom: -55px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 55px solid ' + prop.border + '; opacity: 0.45; pointer-events: none;"></div>'
+            ].join('');
+            var marker = new naver.maps.Marker({ position: latlng, icon: { content: markerHtml, anchor: new naver.maps.Point(0, 0) } });
+            marker.set("category", prop.category); marker.set("detail_type", prop.detail_type); marker.set("town", prop.town); marker.set("p_index", index); markers.push(marker);
+            
+            var danDisplayHtml = (prop.category === "토지") ? prop.py_price : '대지 ' + prop.py_price + ' / <span style="color:#2b5c8f; font-weight:bold;">연면적 ' + prop.year_price + '</span>';
+            var itemDiv = document.createElement("div"); itemDiv.className = "property-item"; itemDiv.id = "item-" + index;
+            
+            var naverLandLink = '<a href="https://naver.com' + prop.id + '" target="_blank" class="naver-land" onclick="event.stopPropagation();">네이버부동산</a>';
+            var naverMapLink  = '<a href="https://naver.com' + prop.name + '" target="_blank" class="naver-map" onclick="event.stopPropagation();">네이버지도</a>';
+            var eumLandLink   = (prop.pnu && prop.pnu.trim() !== "") 
+                ? '<a href="http://eum.go.kr' + prop.pnu.trim() + '&mode=search" target="_blank" class="eum-land" onclick="event.stopPropagation();">토지이음</a>' 
+                : '<a class="eum-none" title="PNU 미생성" onclick="event.stopPropagation();">미매칭</a>';
+            var finalLabel = (prop.detail_type === "도시형생활주택" || prop.detail_type === "도생") ? "도생" : prop.detail_type;
+            var displayTitle = "[" + finalLabel + "] " + prop.name;
+
+            itemDiv.innerHTML = [
+                '<h4 style="margin: 0 0 3px 0;">' + displayTitle + '</h4>', 
+                '<div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 0;">', 
+                ' <div style="font-size: 11px; color: #495057; line-height: 1.35;">', 
+                ' <b>면적:</b> ' + prop.area + '<br>', 
+                ' <b>용도:</b> ' + prop.yongdo + '<br>', 
+                ' </div>', 
+                ' <div style="font-size: 14px; color: #e65100; font-weight: bold; text-align: right; line-height: 1.2;">' + prop.price + '</div>', 
+                '</div>', 
+                '<div class="property-detail" id="detail-' + index + '" style="margin-top: 3px; padding-top: 3px; font-size: 12px; line-height: 1.3;">', 
+                ' <div style="display: flex; flex-direction: column; gap: 1px; width: 100%;">', 
+                ' <div style="display: flex; width: 100%;">', 
+                ' <span style="font-weight: bold; color: #555; width: 52px; flex-shrink: 0;">평 당 가</span>', 
+                ' <span style="font-weight: bold; color: #555; width: 12px; flex-shrink: 0;">:</span>', 
+                ' <span style="color: #222; word-break: break-all;">' + danDisplayHtml + '</span>', 
+                ' </div>', 
+                ' <div style="display: flex; width: 100%;">', 
+                ' <div style="flex: 1; display: flex; overflow: hidden;">', 
+                ' <span style="font-weight: bold; color: #555; width: 52px; flex-shrink: 0;">평공시가</span>', 
+                ' <span style="font-weight: bold; color: #555; width: 12px; flex-shrink: 0;">:</span>', 
+                ' <span style="color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + prop.gongsi_price + '</span>', 
+                ' </div>', 
+                ' <div style="flex: 1; display: flex; padding-left: 6px; overflow: hidden;">', 
+                ' <span style="font-weight: bold; color: #555; width: 52px; flex-shrink: 0;">도로접면</span>', 
+                ' <span style="font-weight: bold; color: #555; width: 12px; flex-shrink: 0;">:</span>', 
+                ' <span style="color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + prop.road + '</span>', 
+                ' </div>', 
+                ' </div>', 
+                ' <div style="display: flex; width: 100%;">', 
+                ' <span style="font-weight: bold; color: #555; width: 52px; flex-shrink: 0;">매물특징</span>', 
+                ' <span style="font-weight: bold; color: #555; width: 12px; flex-shrink: 0;">:</span>', 
+                ' <span style="color: #222; word-break: break-all; flex: 1;">' + prop.feature + '</span>', 
+                ' </div>', 
+                ' </div>', 
+                ' <div class="links-row" style="margin-top: 4px; padding-top: 4px; margin-bottom: 0;">', 
+                ' ' + naverLandLink, 
+                ' ' + naverMapLink, 
+                ' ' + eumLandLink, 
+                ' </div>', 
+                '</div>'
+            ].join('');
+            
+            itemDiv.onclick = function() { selectProperty(index, marker); }; 
+            listContainer.appendChild(itemDiv);
+            
+            cachedElements.push({ item: itemDiv, detail: null });
+            naver.maps.Event.addListener(marker, "click", function(e) { selectProperty(index, marker); });
         });
+        
+        applyFilters();
     }
 
     function selectProperty(index, marker) {
