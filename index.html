@@ -287,56 +287,56 @@
     }
     function changeTown(town) { currentTown = town; currentRi = "전체"; var panel = document.getElementById("detail-selector"); if(panel) panel.style.display = "none"; applyFilters(); }
 
-function applyFilters() {
-    if (currentBoundaryCircle) currentBoundaryCircle.setMap(null);
-    var visMarkers = [], showM = document.getElementById("chk-maemae").checked, showW = document.getElementById("chk-wolse").checked;
-    
-    var hasLand = currentCategories.indexOf("토지") !== -1;
-    var hasFactory = currentCategories.indexOf("공장") !== -1;
-    var hasHouse = currentCategories.indexOf("주택") !== -1;
-
-    // 🗺️ [대표님 피드백 반영: 기기/해상도 독립형 마커 제어 핵심]
-    // 현재 지도 화면의 사각형 좌우 폭이 실제 지상 거리로 몇 미터(m)인지 추출합니다.
-    var bounds = map.getBounds();
-    var sw = bounds.getSW(); // 화면 남서쪽 좌표
-    var ne = bounds.getNE(); // 화면 북동쪽 좌표
-    
-    // 네이버 지도 자체 거리 계산 모듈로 현재 내 눈에 보이는 화면 전체의 가로 미터(m) 거리를 구합니다.
-    var currentViewHorizontalMeter = map.getPrimitiveProjection().getDistance(sw, new naver.maps.LatLng(sw.lat(), ne.lng()));
-
-    // 스마트폰이든 4K 모니터든 상관없이, 하단 축척 바가 '300m'를 가리키는 시점의 
-    // 화면 전체 가로 지상 거리는 대략 1,500m~2,000m 내외로 고정됩니다.
-    // 1,000미터(1km) 축척 뷰에서는 화면 전체 가로 거리가 6,000m 이상으로 나오므로 상세 뷰가 거짓(false)이 됩니다.
-    var isDetailedView = (currentViewHorizontalMeter <= 2500); // 300m 축척 이하일 때만 참(true)
-
-    filteredProperties = [];
-    markers.forEach(function(marker, i) {
-        var p = properties[i];
-        if ((p.category === "토지" && !hasLand) || (p.category === "공장" && !hasFactory) || (p.category === "주택" && !hasHouse)) { marker.setMap(null); return; }
-
-        var mDet = (currentCategories.length === 0 || currentDetail.indexOf(marker.get("detail_type")) !== -1);
-        var mTown = (currentTown === "전체" || marker.get("town") === currentTown);
-        var mRi = (currentTown === "전체" || currentRi === "전체" || p.ri === currentRi);
-        var mDeal = (showM && !p._is_wolse) || (showW && p._is_wolse);
+    function applyFilters() {
+        if (currentBoundaryCircle) currentBoundaryCircle.setMap(null);
+        var visMarkers = [], showM = document.getElementById("chk-maemae").checked, showW = document.getElementById("chk-wolse").checked;
         
-        if (mDet && mTown && mRi && mDeal) {
-            p._origIndex = i;
-            p._markerRef = marker;
-            filteredProperties.push(p);
+        var hasLand = currentCategories.indexOf("토지") !== -1;
+        var hasFactory = currentCategories.indexOf("공장") !== -1;
+        var hasHouse = currentCategories.indexOf("주택") !== -1;
 
-            // 기기 환경 불문하고 300m 이하 축척에서만 마커 활성화! 1,000m 광역에선 무조건 숨김
-            if (isDetailedView) {
-                marker.setMap(map);
-                visMarkers.push(marker);
-            } else {
-                marker.setMap(null);
+        // 🗺️ 기기/해상도 독립형 화면 거리 정밀 측정
+        var bounds = map.getBounds();
+        var sw = bounds.getSW();
+        var ne = bounds.getNE();
+        var currentViewHorizontalMeter = map.getPrimitiveProjection().getDistance(sw, new naver.maps.LatLng(sw.lat(), ne.lng()));
+
+        // 축척 바가 300m 이하(상세 뷰)인지 최종 판정
+        var isDetailedView = (currentViewHorizontalMeter <= 2500); 
+
+        filteredProperties = [];
+        markers.forEach(function(marker, i) {
+            var p = properties[i];
+            if ((p.category === "토지" && !hasLand) || (p.category === "공장" && !hasFactory) || (p.category === "주택" && !hasHouse)) { 
+                marker.setMap(null); 
+                return; 
             }
-        } else { marker.setMap(null); }
-    });
 
-    // (이하 거리순 정렬 및 무한 스크롤 연산 코드는 동일...)
+            var mDet = (currentCategories.length === 0 || currentDetail.indexOf(marker.get("detail_type")) !== -1);
+            var mTown = (currentTown === "전체" || marker.get("town") === currentTown);
+            var mRi = (currentTown === "전체" || currentRi === "전체" || p.ri === currentRi);
+            var mDeal = (showM && !p._is_wolse) || (showW && p._is_wolse);
+            
+            if (mDet && mTown && mRi && mDeal) {
+                p._origIndex = i;
+                p._markerRef = marker;
+                filteredProperties.push(p);
 
-        // 💎 중심점 거리순 초고속 재정렬 연산
+                // ✨ [버그 치료 핵심 로직]
+                // 300m 이하 상세 뷰일 때만 지도(`map`)에 낱개 마커를 다이렉트로 올립니다.
+                // 1,000m 광역 뷰일 때는 낱개 마커를 지도에 직접 올리지 않고(null), 오직 클러스터더 파일에만 전달합니다.
+                if (isDetailedView) {
+                    marker.setMap(map);
+                } else {
+                    marker.setMap(null); 
+                }
+                visMarkers.push(marker); // 클러스터 주입용 배열에는 무조건 담아둡니다.
+            } else { 
+                marker.setMap(null); 
+            }
+        });
+
+        // 중심점 기준 거리순 정렬 연산
         var center = map.getCenter();
         filteredProperties.sort(function(a, b) {
             var distA = Math.pow(a.lat - center.lat(), 2) + Math.pow(a.lng - center.lng(), 2);
@@ -344,19 +344,25 @@ function applyFilters() {
             return distA - distB;
         });
 
-        // 💎 [축척별 가변 격자 기획 완성] 멀리 볼 수록 격자를 격하게 키워 마커 수를 기하급수적으로 축소
+        // ✨ [가변 클러스터 및 락 제어 완결판]
         if (!isDetailedView) {
-            var dynamicGridSize = 130; // 기본 축척 (500m~1km 주변)
-            if (currentZoom <= 9) dynamicGridSize = 280;     // 초광역 충청권 전체 뷰
-            else if (currentZoom <= 11) dynamicGridSize = 220; // 광역 시군 단위 뷰 (3km 주변)
-            else if (currentZoom <= 13) dynamicGridSize = 160; // 중간 읍면 단위 뷰
+            // 광역 뷰(1,000m 등)일 때는 줌 레벨에 따라 뭉치는 간격을 다이나믹하게 조정하며 클러스터 동그라미를 켭니다.
+            var currentZoom = map.getZoom();
+            var dynamicGridSize = 120; 
             
-            updateClustering(markers.filter(m => m.getMap() === null && filteredProperties.some(fp => fp._origIndex === m.get("p_index"))), dynamicGridSize);
+            if (currentZoom <= 11) { dynamicGridSize = 260; }      
+            else if (currentZoom === 12) { dynamicGridSize = 200; } 
+            else if (currentZoom === 13) { dynamicGridSize = 140; } 
+
+            // 클러스터 함수 가동 (마커 노출은 라이브러리가 자동 제어하도록 gridSize 전달)
+            updateClustering(visMarkers, dynamicGridSize);
         } else {
+            // 300m 이하 상세 뷰 진입 시 클러스터를 지도에서 완전히 제거 (낱개 시세 박스만 노출)
             if (markerClustering) { markerClustering.setMap(null); markerClustering = null; }
         }
 
-        // 목록 초기화 및 상위 거리순 10개 카드 슬라이싱 렌더링
+        updateTownSelectorOptions(); 
+
         document.getElementById("property-list").innerHTML = "";
         loadedItemCount = 0;
         renderNextPageItems();
@@ -412,10 +418,10 @@ function applyFilters() {
         loadedItemCount = nextLimit;
     }
 
-    function updateClustering(vis, targetGridSize) {
+    function updateClustering(vis, size) {
         if (markerClustering) markerClustering.setMap(null);
         markerClustering = new MarkerClustering({
-            minClusterSize: 2, maxZoom: 13, map: map, markers: vis, gridSize: targetGridSize, disableClickZoom: false,
+            minClusterSize: 2, maxZoom: 13, map: map, markers: vis, gridSize: size, disableClickZoom: false,
             icons: [
                 { content: '<div class="cluster-badge" style="cursor:pointer; width:46px; height:46px; line-height:46px; font-size:12px; color:#fff; text-align:center; font-weight:bold; background:rgba(0, 140, 180, 0.95); border:2px solid #fff; border-radius:50%; box-shadow:0 3px 10px rgba(0,0,0,0.35);"></div>', anchor: new naver.maps.Point(23, 23) },
                 { content: '<div class="cluster-badge" style="cursor:pointer; width:54px; height:54px; line-height:54px; font-size:13px; color:#fff; text-align:center; font-weight:bold; background:rgba(230, 70, 20, 0.95); border:2px solid #fff; border-radius:50%; box-shadow:0 4px 12px rgba(0,0,0,0.4);"></div>', anchor: new naver.maps.Point(27, 27) }
