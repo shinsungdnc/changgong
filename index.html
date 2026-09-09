@@ -136,7 +136,6 @@
     var currentTown = "전체";
     var currentRi = "전체";
     
-    // ✨ 무한 스크롤 및 거리순 캐싱 변수단
     var filteredProperties = []; 
     var loadedItemCount = 0;
     var ITEMS_PER_PAGE = 10; 
@@ -145,7 +144,7 @@
 
     var map = new naver.maps.Map("map", {
         center: new naver.maps.LatLng(36.56083573781291, 127.29589223320156),
-        zoom: 11, // 초기 줌광역 최적화
+        zoom: 12, 
         mapTypeId: naver.maps.MapTypeId.HYBRID, 
         zoomControl: true,
         zoomControlOptions: { position: naver.maps.Position.RIGHT_BOTTOM }
@@ -268,7 +267,7 @@
             naver.maps.Event.addListener(marker, "click", function(e) { selectProperty(index, marker); });
         });
 
-        // 🚀 스크롤이 바닥에 닿을 때 10개씩 추가 로드하는 무한스크롤 이벤트 바인딩
+        // 🚀 대표님 지시사항 : 스크롤 바닥 감지 시 10개씩 거리순 추가 노출
         document.getElementById("property-list").addEventListener("scroll", function(e) {
             var container = e.target;
             if (container.scrollTop + container.clientHeight >= container.scrollHeight - 20) {
@@ -296,7 +295,10 @@
         var hasFactory = currentCategories.indexOf("공장") !== -1;
         var hasHouse = currentCategories.indexOf("주택") !== -1;
 
-        // 1. 전체 매물 중 필터 조건에 부합하는 가상 데이터셋 1차 추출
+        // 💎 [300m 완벽 이원화 스위치] 네이버 지도 줌레벨 14~15 이상이 실축척 300미터 이하 상세뷰입니다.
+        var currentZoom = map.getZoom();
+        var isDetailedView = currentZoom >= 14; 
+
         filteredProperties = [];
         markers.forEach(function(marker, i) {
             var p = properties[i];
@@ -308,14 +310,21 @@
             var mDeal = (showM && !p._is_wolse) || (showW && p._is_wolse);
             
             if (mDet && mTown && mRi && mDeal) {
-                marker.setMap(map); visMarkers.push(marker);
-                p._markerRef = marker;
                 p._origIndex = i;
+                p._markerRef = marker;
                 filteredProperties.push(p);
+
+                // ⭕ 300m 이하 확대 뷰일때만 낱개 매물 마커 노출 (광역에선 지도 엔진에 주지 않고 원천 숨김)
+                if (isDetailedView) {
+                    marker.setMap(map);
+                    visMarkers.push(marker);
+                } else {
+                    marker.setMap(null);
+                }
             } else { marker.setMap(null); }
         });
 
-        // 2. ✨ [대표님 기획 핵심 1] 현 지도 중심점 기준 거리순으로 초고속 정렬
+        // 💎 중심점 거리순 초고속 재정렬 연산
         var center = map.getCenter();
         filteredProperties.sort(function(a, b) {
             var distA = Math.pow(a.lat - center.lat(), 2) + Math.pow(a.lng - center.lng(), 2);
@@ -323,16 +332,24 @@
             return distA - distB;
         });
 
-        updateTownSelectorOptions(); 
-        updateClustering(visMarkers);
+        // 💎 [축척별 가변 격자 기획 완성] 멀리 볼 수록 격자를 격하게 키워 마커 수를 기하급수적으로 축소
+        if (!isDetailedView) {
+            var dynamicGridSize = 130; // 기본 축척 (500m~1km 주변)
+            if (currentZoom <= 9) dynamicGridSize = 280;     // 초광역 충청권 전체 뷰
+            else if (currentZoom <= 11) dynamicGridSize = 220; // 광역 시군 단위 뷰 (3km 주변)
+            else if (currentZoom <= 13) dynamicGridSize = 160; // 중간 읍면 단위 뷰
+            
+            updateClustering(markers.filter(m => m.getMap() === null && filteredProperties.some(fp => fp._origIndex === m.get("p_index"))), dynamicGridSize);
+        } else {
+            if (markerClustering) { markerClustering.setMap(null); markerClustering = null; }
+        }
 
-        // 3. 리스트 초기화 후 첫 페이지(10개) 출력 실행
+        // 목록 초기화 및 상위 거리순 10개 카드 슬라이싱 렌더링
         document.getElementById("property-list").innerHTML = "";
         loadedItemCount = 0;
         renderNextPageItems();
     }
 
-    // ✨ [대표님 기획 핵심 2] 1,600개 중 딱 10개씩만 쪼개서 붙여주는 무한 스크롤 엔진
     function renderNextPageItems() {
         if (loadedItemCount >= filteredProperties.length) return;
         var listContainer = document.getElementById("property-list");
@@ -383,11 +400,10 @@
         loadedItemCount = nextLimit;
     }
 
-    // ✨ [대표님 기획 핵심 3] 광역 뷰 렉 해소를 위해 클러스터 격자 격하게 확대(gridSize: 240)
-    function updateClustering(vis) {
+    function updateClustering(vis, targetGridSize) {
         if (markerClustering) markerClustering.setMap(null);
         markerClustering = new MarkerClustering({
-            minClusterSize: 2, maxZoom: 15, map: map, markers: vis, gridSize: 240, disableClickZoom: false,
+            minClusterSize: 2, maxZoom: 13, map: map, markers: vis, gridSize: targetGridSize, disableClickZoom: false,
             icons: [
                 { content: '<div class="cluster-badge" style="cursor:pointer; width:46px; height:46px; line-height:46px; font-size:12px; color:#fff; text-align:center; font-weight:bold; background:rgba(0, 140, 180, 0.95); border:2px solid #fff; border-radius:50%; box-shadow:0 3px 10px rgba(0,0,0,0.35);"></div>', anchor: new naver.maps.Point(23, 23) },
                 { content: '<div class="cluster-badge" style="cursor:pointer; width:54px; height:54px; line-height:54px; font-size:13px; color:#fff; text-align:center; font-weight:bold; background:rgba(230, 70, 20, 0.95); border:2px solid #fff; border-radius:50%; box-shadow:0 4px 12px rgba(0,0,0,0.4);"></div>', anchor: new naver.maps.Point(27, 27) }
@@ -460,18 +476,9 @@
         });
     };
 
-    // 🚀 [대표님 기획 연동] 지도를 움직여 멈추면 현재 중심점 기준으로 목록 즉시 거리순 재정렬 트리거
-    naver.maps.Event.addListener(map, "dragend", function() {
-        applyFilters();
-    });
-
-    naver.maps.Event.addListener(map, "zoom_changed", function() {
-        var currentZoom = map.getZoom();
-        if (currentBoundaryCircle && currentBoundaryCircle.getMap()) {
-            if (currentZoom >= 19) { currentBoundaryCircle.setMap(map); currentBoundaryCircle.setRadius(currentZoom === 21 ? 1.2 : (currentZoom === 20 ? 2.5 : 5)); }
-            else { currentBoundaryCircle.setMap(null); }
-        }
-    });
+    // 🚀 지도가 움직이거나 확대/축소될 때마다 300m 자동 이원화 필터 및 정렬 트리거 가동
+    naver.maps.Event.addListener(map, "dragend", function() { applyFilters(); });
+    naver.maps.Event.addListener(map, "zoom_changed", function() { applyFilters(); });
 
     initMap();
 </script>
