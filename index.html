@@ -632,30 +632,24 @@
             townBook = (realTradeStats[prop.town] && realTradeStats[prop.town][mYongdo]) ? realTradeStats[prop.town][mYongdo][mJimok] : null;
         } 
         else if (prop.category === "주택") {
-            // 🔄 연립/다세대 정밀 조건 매칭 수정
-            var isMultiFamily = (prop.detail_type.indexOf("연립") !== -1 || prop.detail_type.indexOf("다세대") !== -1 || prop.type.indexOf("빌라") !== -1);
+            // 🔄 헤더 앞 [ ]에 찍혀 넘어오는 실감지 텍스트(prop.detail_type)를 기준으로 영리하게 분기
+            var mDetail = prop.detail_type ? prop.detail_type.trim() : "";
+            
+            // 매물상세 텍스트에 '단독'이나 '다가구'가 직접 찍혀있는게 아니라면 모두 '연립다세대(빌라 단지명)'로 판정
+            var isMultiFamily = (mDetail.indexOf("단독") === -1 && mDetail.indexOf("다가구") === -1);
+            
             var houseYongdo = isMultiFamily ? "연립다세대" : "단독다가구";
+            var houseJimok = mDetail; // '단독', '다가구' 또는 '단지명(텍스트)'이 파이썬에서 이미 완벽히 대입되어 있음
             
-            // 🛠️ [버그 완치] 단지명 파싱 괄호 오류 및 문자열 스플릿 완전 교정
-            var houseJimok = "";
-            if (isMultiFamily) {
-                // marker_text 예시: "🏠 빌라명 매매 2.5억" -> "빌라명"만 추출
-                var cleanText = prop.marker_text.replace("🏠", "").trim();
-                var tokens = cleanText.split(" ");
-                houseJimok = tokens[0] ? tokens[0].trim() : "연립다세대";
-            } else {
-                houseJimok = (prop.detail_type.indexOf("다가구") !== -1) ? "다가구" : "단독";
-            }
-            
-            // 기획안 규칙 적용: 면적 안내 문구 자동 변환
+            // 기획안 전용면적 vs 대지면적 기준 문구 동적 스위칭
             noticeText = isMultiFamily ? '최근 5개년 주택 실거래가 (전용면적 기준 산정)' : '최근 5개년 주택 실거래가 (대지면적 기준 산정)';
             
-            // 실거래 데이터 장부 매칭
+            // 읍면동 실거래 마스터 딕셔너리에서 대조 실행
             if (realTradeStats[prop.town] && realTradeStats[prop.town][houseYongdo]) {
                 townBook = realTradeStats[prop.town][houseYongdo][houseJimok];
                 
-                // 나홀로 빌라 등 매칭 데이터 부족 시 읍면동 차선책(Fallback) 데이터 연결
-                if (!townBook) {
+                // 만약 나홀로 빌라처럼 개별 단지 거래가 전혀 없다면, 읍면동 내 연립다세대 첫 번째 기본 데이터 세트로 보정(Fallback)
+                if (!townBook && isMultiFamily) {
                     var backupKeys = Object.keys(realTradeStats[prop.town][houseYongdo]);
                     if (backupKeys.length > 0) {
                         townBook = realTradeStats[prop.town][houseYongdo][backupKeys[0]];
@@ -664,7 +658,7 @@
             }
         }
 
-        // 📊 테이블 생성 루프 구조 (순정 포맷 100% 보존 유지)
+        // 📊 테이블 생성 루프 구조 (토지/주택 공유형 순정 레이아웃 100% 보존)
         if (townBook) {
             tableHtml += '<table class="trade-table"><tr><th style="width:14% !important; white-space:nowrap;">년도</th><th>구분/리</th><th>건수</th><th>면적</th><th>최저</th><th>평균</th><th>최고</th></tr>';
             var sortedYears = Object.keys(townBook).sort(function(a, b){ return b - a; });
