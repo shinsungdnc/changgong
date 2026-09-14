@@ -624,51 +624,54 @@
 
         var tableHtml = '';
         var noticeText = '최근 5개년 토지 실거래가 (평, 평당가)'; 
-        var combinedBook = {}; // 연립다세대 읍면동 통합용 장부 공간
+        var combinedBook = {}; 
+        var townBook = null;
 
         if (prop.category === "토지") {
             noticeText = '최근 5개년 토지 실거래가 (평, 평당가)';
-            var townBook = (realTradeStats[prop.town] && realTradeStats[prop.town][mYongdo]) ? realTradeStats[prop.town][mYongdo][mJimok] : null;
+            townBook = (realTradeStats[prop.town] && realTradeStats[prop.town][mYongdo]) ? realTradeStats[prop.town][mYongdo][mJimok] : null;
         } 
         else if (prop.category === "주택") {
-            // 매물종류 및 상세 속성을 통해 대분류 판정 고도화
-            var isMultiFamily = (prop.type.indexOf("빌라") !== -1 || prop.type.indexOf("연립") !== -1 || prop.type.indexOf("다세대") !== -1 || prop.detail_type.indexOf("원룸") !== -1 || prop.detail_type.indexOf("주택") === -1);
-            var houseYongdo = isMultiFamily ? "연립다세대" : "단독다가구";
+            // 🔄 [판정 기준 완전 정상화] 매물상세(prop.detail_type) 텍스트를 기준으로 정밀 분기
+            var mDetail = prop.detail_type ? prop.detail_type.trim() : "";
             
-            noticeText = isMultiFamily ? '최근 5개년 주택 실거래가 (전용면적 기준 산정)' : '최근 5개년 주택 실거래가 (대지면적 기준 산정)';
+            // 확실하게 '단독' 또는 '다가구'라는 단어가 명시되어 있다면 단독다가구 카테고리로 고정
+            var isSingleFamily = (mDetail.indexOf("단독") !== -1 || mDetail.indexOf("다가구") !== -1);
+            var houseYongdo = isSingleFamily ? "단독다가구" : "연립다세대";
+            
+            // 기획안 규칙 준수: 단독/다가구는 대지면적 기준, 빌라/연립은 전용면적 기준 문구 바인딩
+            noticeText = isSingleFamily ? '최근 5개년 주택 실거래가 (대지면적 기준 산정)' : '최근 5개년 주택 실거래가 (전용면적 기준 산정)';
             
             if (realTradeStats[prop.town] && realTradeStats[prop.town][houseYongdo]) {
-                if (!isMultiFamily) {
-                    // 🏠 단독/다가구: 기존 매칭 포맷 그대로 추적
-                    var houseJimok = (prop.detail_type.indexOf("다가구") !== -1) ? "다가구" : "단독";
-                    var townBook = realTradeStats[prop.town][houseYongdo][houseJimok];
+                if (isSingleFamily) {
+                    // 🏠 단독·다가구: 해당 읍면동 내 '단독' 또는 '다가구' 방 데이터 직접 매칭
+                    var houseJimok = (mDetail.indexOf("다가구") !== -1) ? "다가구" : "단독";
+                    townBook = realTradeStats[prop.town][houseYongdo][houseJimok];
                 } else {
-                    // 🏢 연립다세대 (빌라/원룸군): 기획안 '읍면동 통합' 원칙 반영
-                    // 단지별로 쪼개진 딕셔너리 방들을 연도별로 완전 자동 병합(Merge) 연산하여 읍면동 단위 거시 지표 도출
+                    // 🏢 연립·다세대 (빌라군): 단지별 딕셔너리 연도별 완전 자동 통합 연산 루프
                     var complexes = Object.keys(realTradeStats[prop.town][houseYongdo]);
                     complexes.forEach(function(cxName) {
                         var cxBook = realTradeStats[prop.town][houseYongdo][cxName];
                         Object.keys(cxBook).forEach(function(yr) {
                             if (!combinedBook[yr]) combinedBook[yr] = [];
-                            // 해당 연도에 속한 단지별 실거래 내역 리스트를 누적 합산
                             combinedBook[yr] = combinedBook[yr].concat(cxBook[yr]);
                         });
                     });
-                    var townBook = combinedBook;
+                    townBook = combinedBook;
                 }
             }
         }
 
-        // 📊 테이블 생성 루프 그리드 엔진 (정렬 및 병합 연산 동기화 완비)
+        // 📊 테이블 그리드 드로잉 루프 엔진 (정렬 규칙 완벽 유지)
         if (townBook && Object.keys(townBook).length > 0) {
             tableHtml += '<table class="trade-table"><tr><th style="width:14% !important; white-space:nowrap;">년도</th><th>구분/리(단지)</th><th>건수</th><th>면적</th><th>최저</th><th>평균</th><th>최고</th></tr>';
             var sortedYears = Object.keys(townBook).sort(function(a, b){ return b - a; });
 
             sortedYears.forEach(function(yr) {
                 var isFirst = true;
-                
-                // 🔄 통합된 연도별 실거래 내역을 거래 규모(면적) 순으로 내림차순 정렬하여 브리핑 가치 극대화
                 var records = townBook[yr];
+                
+                // 거래 규모가 큰 순서대로 내림차순 정렬
                 records.sort(function(a, b) { return b.count - a.count; });
 
                 records.forEach(function(row) {
