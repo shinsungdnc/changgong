@@ -657,7 +657,7 @@
 
         // 📊 테이블 데이터 변환 루프 그리드 구조 (토지/주택 공유형 완벽 보존)
         if (townBook) {
-            tableHtml += '<table class="trade-table"><tr><th style="width:14% !important; white-space:nowrap;">년도</th><th>구분/리</th><th>건수</th><th>면적</th><th>최저</th><th>평균</th><th>최고</th></tr>';
+            tableHtml += '<table class="trade-table"><tr><th style="width:14% !important; white-space:nowrap;">년도</th><th>리</th><th>건수</th><th>면적</th><th>최저</th><th>평균</th><th>최고</th></tr>';
             var sortedYears = Object.keys(townBook).sort(function(a, b){ return b - a; });
 
             sortedYears.forEach(function(yr) {
