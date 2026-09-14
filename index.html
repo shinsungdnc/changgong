@@ -641,7 +641,7 @@
                 
                 // 🔄 [이원화 기획 반영] 클릭한 주택 매물 속성에 맞춰 안내문 제목을 정밀화
                 var targetHouseName = isDagagu ? "다가구주택" : "단독주택";
-                noticeText = '최근 5개년 ' + targetHouseName + ' [매매] 실거래가 (대지면적 기준 산정)';
+                noticeText = '최근 5개년 ' + targetHouseName + ' [매매] 실거래가 (대지평, 평당가)';
                 
                 if (realTradeStats[prop.town] && realTradeStats[prop.town][houseYongdo]) {
                     townBook = realTradeStats[prop.town][houseYongdo][houseJimok];
