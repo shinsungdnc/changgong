@@ -325,12 +325,15 @@
                 townCounts[p.town] = (townCounts[p.town] || 0) + 1;
                 
                 if (p.town && p.name.indexOf(p.town) !== -1) {
-                    var remainAddr = p.name.split(p.town)[1] ? p.name.split(p.town)[1].trim() : "";
-                    var tokens = remainAddr.split(" ");
-                    if (tokens.length > 0 && tokens[0].endsWith("리")) {
-                        var riName = tokens[0].trim();
-                        if (!riCounts[p.town]) riCounts[p.town] = {};
-                        riCounts[p.town][riName] = (riCounts[p.town][riName] || 0) + 1;
+                    var parts = p.name.split(p.town);
+                    if (parts.length > 1) {
+                        var remainAddr = parts[1].trim();
+                        var tokens = remainAddr.split(" ");
+                        if (tokens.length > 0 && tokens[0].endsWith("리")) {
+                            var riName = tokens[0].trim();
+                            if (!riCounts[p.town]) riCounts[p.town] = {};
+                            riCounts[p.town][riName] = (riCounts[p.town][riName] || 0) + 1;
+                        }
                     }
                 }
             }
@@ -386,10 +389,10 @@
             var danDisplayHtml = (prop.category === "토지") ? prop.py_price : '대지 ' + prop.py_price + ' / <span style="color:#2b5c8f; font-weight:bold;">건물 ' + prop.year_price + '</span>';
             var itemDiv = document.createElement("div"); itemDiv.className = "property-item"; itemDiv.id = "item-" + index;
             
-            var naverLandLink = '<a href="https://fin.land.naver.com/articles/' + prop.id + '" target="_blank" class="naver-land" onclick="event.stopPropagation();">네이버부동산</a>';
-            var naverMapLink  = '<a href="https://map.naver.com/p/search/' + prop.name + '" target="_blank" class="naver-map" onclick="event.stopPropagation();">네이버지도</a>';
+            var naverLandLink = '<a href="https://naver.com' + prop.id + '" target="_blank" class="naver-land" onclick="event.stopPropagation();">네이버부동산</a>';
+            var naverMapLink  = '<a href="https://naver.com' + prop.name + '" target="_blank" class="naver-map" onclick="event.stopPropagation();">네이버지도</a>';
             var eumLandLink   = (prop.pnu && prop.pnu.trim() !== "") 
-                ? '<a href="http://www.eum.go.kr/web/ar/lu/luLandDet.jsp?pnu=' + prop.pnu.trim() + '&isNoScr=script&mode=search" target="_blank" class="eum-land" onclick="event.stopPropagation();">토지이음</a>' 
+                ? '<a href="http://eum.go.kr' + prop.pnu.trim() + '&isNoScr=script&mode=search" target="_blank" class="eum-land" onclick="event.stopPropagation();">토지이음</a>' 
                 : '<a class="eum-none" title="PNU 미생성" onclick="event.stopPropagation();">미매칭</a>';
 
             itemDiv.innerHTML = [
@@ -466,7 +469,7 @@
         markers.forEach(function(marker, i) {
             var p = properties[i];
             var mCat = (currentCategories.indexOf(marker.get("category")) !== -1);
-            var mDet = (currentCategories.length === 0 || currentDetail.indexOf(marker.get("detail_type")) !== -1);
+            var mDet = (currentCategories.length === 0 || currentDetail.indexOf(p.detail_type) !== -1);
             var mTown = (currentTown === "전체" || marker.get("town") === currentTown);
             var mRi = true;
             if (currentTown !== "전체" && currentRi !== "전체") {
@@ -532,7 +535,6 @@
         var targetPos = marker.getPosition(); map.setZoom(19); map.panTo(targetPos);            
         var prop = properties[index];
 
-        // 📐 [버그 완치] yParts 배열 인덱스를 안전하게 split[0], [1]로 분리하여 스크립트 정지 현상 차단
         var yParts = prop.yongdo.split("/");
         var mYongdo = (yParts && yParts[0] ? yParts[0].trim() : "").replace("지역", "") + "지역"; 
         var mJimok = (yParts && yParts[1] ? yParts[1].trim() : "");       
@@ -555,7 +557,8 @@
             } else {
                 tableHtml += '<p style="color:#999; text-align:center; padding:10px;">실거래 정보가 준비되지 않았습니다.</p>';
             }
-        } 
+        }
+
         else if (prop.category === "주택") {
             var isVilla = (prop.detail_type.indexOf("빌라") !== -1 || prop.detail_type.indexOf("다세대") !== -1 || prop.detail_type.indexOf("연립") !== -1);
             var isPureHouse = (prop.detail_type.indexOf("단독") !== -1 || prop.detail_type.indexOf("다가구") !== -1 || prop.detail_type.indexOf("전원") !== -1);
