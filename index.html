@@ -588,7 +588,7 @@
         });
     }
 
-        function selectProperty(index, marker) {
+    function selectProperty(index, marker) {
         var sidebar = document.getElementById("sidebar");
         var listContainer = document.getElementById("property-list");
         var targetItem = document.getElementById("item-" + index);
@@ -618,39 +618,44 @@
         var targetPos = marker.getPosition(); map.setZoom(19); map.panTo(targetPos);            
         var prop = properties[index];
 
-        // 💡 [배러 완치] 배열 인덱스를 지정하여 문자열을 분리하도록 정확하게 교정
+        // 💡 [배러 완치] 순정 주소/용도 분리 규칙 보존
         var yParts = prop.yongdo.split("/");
         var mYongdo = (yParts && yParts[0] ? yParts[0].trim() : "").replace("지역", "") + "지역"; 
         var mJimok = (yParts && yParts[1] ? yParts[1].trim() : "");       
 
         var tableHtml = '';
-        var noticeText = '최근 5개년 토지 실거래가 (평, 평당가)'; // 기본 문구
+        var noticeText = '최근 5개년 토지 실거래가 (평, 평당가)'; // 기본값 설정
+        var townBook = null;
 
-        // ★[주택 기획 추가] 토지 카테고리가 아닐 때(주택 매물일 때)의 데이터 바인딩 브릿지 분기문 레이어
+        // ★[주택 기획 추가] 카테고리 판별 조건을 최우선 분기하여 꼬임 현상 원천 차단
         if (prop.category === "토지") {
-            var townBook = (realTradeStats[prop.town] && realTradeStats[prop.town][mYongdo]) ? realTradeStats[prop.town][mYongdo][mJimok] : null;
-        } else if (prop.category === "주택") {
-            // 매물 상세 정보에서 주택 하위 유형(단독, 다가구, 빌라 단지명) 파싱 및 가상 부모 키 바인딩
+            noticeText = '최근 5개년 토지 실거래가 (평, 평당가)';
+            townBook = (realTradeStats[prop.town] && realTradeStats[prop.town][mYongdo]) ? realTradeStats[prop.town][mYongdo][mJimok] : null;
+        } 
+        else if (prop.category === "주택") {
+            // 연립/다세대 문자열 포함 여부 체크로 대분류 자동 판정
             var isMultiFamily = (prop.detail_type.indexOf("연립") !== -1 || prop.detail_type.indexOf("다세대") !== -1);
             var houseYongdo = isMultiFamily ? "연립다세대" : "단독다가구";
-            var houseJimok = isMultiFamily ? prop.marker_text.split("🏠")[1].split(" ")[1].trim() : prop.detail_type; // 빌라 단지명 또는 주택종류 추출
+            var houseJimok = isMultiFamily ? prop.detail_type : (prop.detail_type.indexOf("다가구") !== -1 ? "다가구" : "단독");
             
-            // 전용면적 vs 대지면적 안내 문구 자동 스위칭
+            // 기획안 지침 반영: 면적 안내 문구 동적 변화
             noticeText = isMultiFamily ? '최근 5개년 주택 실거래가 (전용면적 기준 산정)' : '최근 5개년 주택 실거래가 (대지면적 기준 산정)';
             
-            // 해당 동네 고유 딕셔너리 방 탐색
-            var townBook = (realTradeStats[prop.town] && realTradeStats[prop.town][houseYongdo]) ? realTradeStats[prop.town][houseYongdo][houseJimok] : null;
-            
-            // 만약 나홀로 빌라 등 고유 단지 통계가 없다면, 해당 동네 해당 주택유형의 첫번째 방 데이터를 백업(Fallback) 로드
-            if (!townBook && realTradeStats[prop.town] && realTradeStats[prop.town][houseYongdo]) {
-                var backupKeys = Object.keys(realTradeStats[prop.town][houseYongdo]);
-                if (backupKeys.length > 0) townBook = realTradeStats[prop.town][houseYongdo][backupKeys[0]];
+            // 고유 동네 주택 통계방 매칭 탐색
+            if (realTradeStats[prop.town] && realTradeStats[prop.town][houseYongdo]) {
+                townBook = realTradeStats[prop.town][houseYongdo][houseJimok];
+                
+                // 나홀로 빌라 등 세부 매칭 실패 시 방어용 Fallback 처리
+                if (!townBook) {
+                    var backupKeys = Object.keys(realTradeStats[prop.town][houseYongdo]);
+                    if (backupKeys.length > 0) {
+                        townBook = realTradeStats[prop.town][houseYongdo][backupKeys[0]];
+                    }
+                }
             }
-        } else {
-            var townBook = null;
         }
-        
-        // 데이터 테이블 그리드 동적 생성 루프 (토지/주택 포맷 100% 공유)
+
+        // 📊 테이블 데이터 변환 루프 그리드 구조 (토지/주택 공유형 완벽 보존)
         if (townBook) {
             tableHtml += '<table class="trade-table"><tr><th style="width:14% !important; white-space:nowrap;">년도</th><th>구분/리</th><th>건수</th><th>면적</th><th>최저</th><th>평균</th><th>최고</th></tr>';
             var sortedYears = Object.keys(townBook).sort(function(a, b){ return b - a; });
@@ -667,6 +672,7 @@
             });
             tableHtml += '</table>';
         } else {
+            // 공장/창고 혹은 실거래가가 아예 없는 경우의 안내문 예외 분기
             if (prop.category === "토지" || prop.category === "주택") {
                 tableHtml += '<p style="color:#999; text-align:center; margin-top:20px; font-size:11px;">해당 지역은 실거래 정보가 준비되지 않았습니다.</p>';
             } else {
@@ -696,7 +702,6 @@
         }
 
         if (panel) {
-            // 매물을 새로 선택할 때마다 기존 확장 상태(expanded)를 초기화하여 바닥으로 내립니다.
             panel.classList.remove("expanded");
             panel.classList.add("active");
         }
