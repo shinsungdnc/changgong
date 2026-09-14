@@ -618,65 +618,71 @@
         var targetPos = marker.getPosition(); map.setZoom(19); map.panTo(targetPos);            
         var prop = properties[index];
 
-        // 💡 [배러 완치] 순정 주소/용도 분리 규칙 보존
         var yParts = prop.yongdo.split("/");
         var mYongdo = (yParts && yParts[0] ? yParts[0].trim() : "").replace("지역", "") + "지역"; 
         var mJimok = (yParts && yParts[1] ? yParts[1].trim() : "");       
 
         var tableHtml = '';
         var noticeText = '최근 5개년 토지 실거래가 (평, 평당가)'; 
-        var townBook = null;
+        var combinedBook = {}; // 연립다세대 읍면동 통합용 장부 공간
 
         if (prop.category === "토지") {
             noticeText = '최근 5개년 토지 실거래가 (평, 평당가)';
-            townBook = (realTradeStats[prop.town] && realTradeStats[prop.town][mYongdo]) ? realTradeStats[prop.town][mYongdo][mJimok] : null;
+            var townBook = (realTradeStats[prop.town] && realTradeStats[prop.town][mYongdo]) ? realTradeStats[prop.town][mYongdo][mJimok] : null;
         } 
         else if (prop.category === "주택") {
-            // 🔄 헤더 앞 [ ]에 찍혀 넘어오는 실감지 텍스트(prop.detail_type)를 기준으로 영리하게 분기
-            var mDetail = prop.detail_type ? prop.detail_type.trim() : "";
-            
-            // 매물상세 텍스트에 '단독'이나 '다가구'가 직접 찍혀있는게 아니라면 모두 '연립다세대(빌라 단지명)'로 판정
-            var isMultiFamily = (mDetail.indexOf("단독") === -1 && mDetail.indexOf("다가구") === -1);
-            
+            // 매물종류 및 상세 속성을 통해 대분류 판정 고도화
+            var isMultiFamily = (prop.type.indexOf("빌라") !== -1 || prop.type.indexOf("연립") !== -1 || prop.type.indexOf("다세대") !== -1 || prop.detail_type.indexOf("원룸") !== -1 || prop.detail_type.indexOf("주택") === -1);
             var houseYongdo = isMultiFamily ? "연립다세대" : "단독다가구";
-            var houseJimok = mDetail; // '단독', '다가구' 또는 '단지명(텍스트)'이 파이썬에서 이미 완벽히 대입되어 있음
             
-            // 기획안 전용면적 vs 대지면적 기준 문구 동적 스위칭
             noticeText = isMultiFamily ? '최근 5개년 주택 실거래가 (전용면적 기준 산정)' : '최근 5개년 주택 실거래가 (대지면적 기준 산정)';
             
-            // 읍면동 실거래 마스터 딕셔너리에서 대조 실행
             if (realTradeStats[prop.town] && realTradeStats[prop.town][houseYongdo]) {
-                townBook = realTradeStats[prop.town][houseYongdo][houseJimok];
-                
-                // 만약 나홀로 빌라처럼 개별 단지 거래가 전혀 없다면, 읍면동 내 연립다세대 첫 번째 기본 데이터 세트로 보정(Fallback)
-                if (!townBook && isMultiFamily) {
-                    var backupKeys = Object.keys(realTradeStats[prop.town][houseYongdo]);
-                    if (backupKeys.length > 0) {
-                        townBook = realTradeStats[prop.town][houseYongdo][backupKeys[0]];
-                    }
+                if (!isMultiFamily) {
+                    // 🏠 단독/다가구: 기존 매칭 포맷 그대로 추적
+                    var houseJimok = (prop.detail_type.indexOf("다가구") !== -1) ? "다가구" : "단독";
+                    var townBook = realTradeStats[prop.town][houseYongdo][houseJimok];
+                } else {
+                    // 🏢 연립다세대 (빌라/원룸군): 기획안 '읍면동 통합' 원칙 반영
+                    // 단지별로 쪼개진 딕셔너리 방들을 연도별로 완전 자동 병합(Merge) 연산하여 읍면동 단위 거시 지표 도출
+                    var complexes = Object.keys(realTradeStats[prop.town][houseYongdo]);
+                    complexes.forEach(function(cxName) {
+                        var cxBook = realTradeStats[prop.town][houseYongdo][cxName];
+                        Object.keys(cxBook).forEach(function(yr) {
+                            if (!combinedBook[yr]) combinedBook[yr] = [];
+                            // 해당 연도에 속한 단지별 실거래 내역 리스트를 누적 합산
+                            combinedBook[yr] = combinedBook[yr].concat(cxBook[yr]);
+                        });
+                    });
+                    var townBook = combinedBook;
                 }
             }
         }
 
-        // 📊 테이블 생성 루프 구조 (토지/주택 공유형 순정 레이아웃 100% 보존)
-        if (townBook) {
-            tableHtml += '<table class="trade-table"><tr><th style="width:14% !important; white-space:nowrap;">년도</th><th>구분/리</th><th>건수</th><th>면적</th><th>최저</th><th>평균</th><th>최고</th></tr>';
+        // 📊 테이블 생성 루프 그리드 엔진 (정렬 및 병합 연산 동기화 완비)
+        if (townBook && Object.keys(townBook).length > 0) {
+            tableHtml += '<table class="trade-table"><tr><th style="width:14% !important; white-space:nowrap;">년도</th><th>구분/리(단지)</th><th>건수</th><th>면적</th><th>최저</th><th>평균</th><th>최고</th></tr>';
             var sortedYears = Object.keys(townBook).sort(function(a, b){ return b - a; });
 
             sortedYears.forEach(function(yr) {
                 var isFirst = true;
-                townBook[yr].forEach(function(row) {
+                
+                // 🔄 통합된 연도별 실거래 내역을 거래 규모(면적) 순으로 내림차순 정렬하여 브리핑 가치 극대화
+                var records = townBook[yr];
+                records.sort(function(a, b) { return b.count - a.count; });
+
+                records.forEach(function(row) {
                     var yrTxt = isFirst ? yr : ""; 
                     var yrSty = isFirst ? 'style="font-weight:bold; color:#2b5c8f; white-space:nowrap; border-bottom:none;"' : 'style="border-top:none; border-bottom:none;"';
                     isFirst = false;
                     
-                    tableHtml += '<tr><td ' + yrSty + '>' + yrTxt + '</td><td style="font-weight:bold; color:#ff6e40; max-width:90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="'+row.ri+'">'+row.ri+'</td><td>'+row.count+'</td><td>'+row.volume.toLocaleString()+'</td><td>'+row.min.toLocaleString()+'</td><td style="font-weight:bold; color:#2b5c8f;">'+row.avg.toLocaleString()+'</td><td style="font-weight:bold; color:#e65100;">'+row.max.toLocaleString()+'</td></tr>';
+                    tableHtml += '<tr><td ' + yrSty + '>' + yrTxt + '</td><td style="font-weight:bold; color:#ff6e40; max-width:110px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="'+row.ri+'">'+row.ri+'</td><td>'+row.count+'</td><td>'+row.volume.toLocaleString()+'</td><td>'+row.min.toLocaleString()+'</td><td style="font-weight:bold; color:#2b5c8f;">'+row.avg.toLocaleString()+'</td><td style="font-weight:bold; color:#e65100;">'+row.max.toLocaleString()+'</td></tr>';
                 });
             });
             tableHtml += '</table>';
         } else {
             if (prop.category === "토지" || prop.category === "주택") {
-                tableHtml += '<p style="color:#999; text-align:center; margin-top:20px; font-size:11px;">해당 지역은 실거래 정보가 준비되지 않았습니다.</p>';
+                tableHtml += '<p style="color:#999; text-align:center; margin-top:20px; font-size:11px;">해당 지역은 최근 실거래 정보가 대조되지 않습니다.</p>';
             } else {
                 tableHtml += '<div style="text-align:center; color:#555; padding:20px 10px; background:#f8f9fa; border:1px solid #e9ecef; border-radius:4px; margin-top:10px; font-size:11px; line-height:1.4;">🏭 <b>안내</b><br>공장/창고 상품은 개별성이 커서 실거래가 정보를 제공하지 않습니다.</div>';
             }
