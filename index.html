@@ -325,7 +325,7 @@
                 townCounts[p.town] = (townCounts[p.town] || 0) + 1;
                 
                 if (p.town && p.name.indexOf(p.town) !== -1) {
-                    var remainAddr = p.name.split(p.town)[1].trim();
+                    var remainAddr = p.name.split(p.town)[1] ? p.name.split(p.town)[1].trim() : "";
                     var tokens = remainAddr.split(" ");
                     if (tokens.length > 0 && tokens[0].endsWith("리")) {
                         var riName = tokens[0].trim();
@@ -532,6 +532,7 @@
         var targetPos = marker.getPosition(); map.setZoom(19); map.panTo(targetPos);            
         var prop = properties[index];
 
+        // 📐 [버그 완치] yParts 배열 인덱스를 안전하게 split[0], [1]로 분리하여 스크립트 정지 현상 차단
         var yParts = prop.yongdo.split("/");
         var mYongdo = (yParts && yParts[0] ? yParts[0].trim() : "").replace("지역", "") + "지역"; 
         var mJimok = (yParts && yParts[1] ? yParts[1].trim() : "");       
