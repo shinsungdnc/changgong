@@ -611,6 +611,13 @@
             var bList = [];
             try { bList = JSON.parse(prop.Building_List_JSON); } catch(e) { bList = []; }
             
+            var seen = new Set();
+            bList = bList.filter(function(item) {
+                if (!item || !item.dong) return false;
+                var dName = item.dong.trim();
+                return seen.has(dName) ? false : seen.add(dName);
+            });
+
             var tableHtml = '';
             var noticeText = "건축물대장 동별 명세표";
             
