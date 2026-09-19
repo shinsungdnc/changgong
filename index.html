@@ -3,72 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260920_0414</title>
+    <title>창공공인중개사사무소 - v.260920_0422</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
 
     <style>
-        /* 🌐 전체 웹 페이지 요소에 프리텐다드 강제 적용 */
         * { font-family: 'Pretendard', sans-serif !important; }
-
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: 'Pretendard', sans-serif; overflow: hidden; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; }
         #container { width: 100%; height: 100%; position: relative; overflow: hidden; }
         #map { position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 1; }
         
+        /* 💡 [정밀 교정] 모니터 및 스마트폰 화면 세로 길이에 맞춰 사이드바 전체 가로막을 동적 고정합니다. */
         #control-panel-wrapper { 
             position: absolute; left: 15px; top: 15px; width: 340px; 
+            height: calc(100vh - 30px); /* 화면 세로 폭에 100% 맞춤 */
             display: flex; flex-direction: column; z-index: 999; 
             pointer-events: none; 
         }
-        
-        #top-header-row { display: flex; width: 100%; pointer-events: auto; box-sizing: border-box; }
-        
-        /* 💎 왼쪽 상단 마스터 브랜드 버튼 스타일 */
+        #top-header-row { display: flex; width: 100%; pointer-events: auto; box-sizing: border-box; flex-shrink: 0; }
         #brand-master-btn { 
             width: 100%; padding: 12px; background: #4ad3ff !important; 
             color: #111111 !important; font-weight: 700 !important; 
             border: 1px solid #ffffff; border-radius: 6px; font-size: 14px; text-align: center; cursor: pointer; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.18); transition: all 0.2s; box-sizing: border-box; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.18); box-sizing: border-box; 
         }
-        #brand-master-btn:hover { background: #00bfff !important; transform: scale(1.02); }
         
-        #mylocation-btn {
-            position: absolute; right: 15px; top: 15px; z-index: 1001; 
-            width: 40px; height: 40px; background: #ffffff; border: 1px solid #ccc; border-radius: 50%; 
-            cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-            display: flex; align-items: center; justify-content: center; box-sizing: border-box;
+        /* 💡 [스크롤 마비 치료 핵심] 사이드바 껍데기가 밑바닥을 뚫고 내려가지 않도록 유연한 flex 구조로 차단합니다. */
+        #sidebar { 
+            width: 100%; flex: 1; min-height: 0; /* 중요: 내부 스크롤 가동을 위한 파이프 고정 */
+            background: rgba(248, 249, 250, 0.95) !important; border: 1px solid #dee2e6; border-radius: 6px; 
+            display: flex; flex-direction: column; margin-top: 10px; pointer-events: auto; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15); 
         }
-        #mylocation-btn:hover { background: #f4f4f4; }
-        #mylocation-btn svg { width: 22px; height: 22px; fill: #333; }
-        #mylocation-btn.tracking svg { fill: #00bfff; }
-# [블록 6 마감 - 다음 블록으로 이어짐]
-# =========================================================================
-# [블록 7] 좌측 사이드바 필터 패널 및 매물 리스트 항목의 근간 CSS 마감 구역
-# =========================================================================
-        #sidebar { width: 100%; height: calc(100vh - 100px); max-height: 600px; background: rgba(248, 249, 250, 0.95) !important; border: 1px solid #dee2e6; border-radius: 6px; display: flex; flex-direction: column; margin-top: 10px; pointer-events: auto; transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s; box-shadow: 0 4px 15px rgba(0,0,0,0.15); transform-origin: top center; }
-        #sidebar.hidden { transform: scaleY(0); opacity: 0; pointer-events: none; }
-        
-        /* 🔤 좌측 필터 헤더 배경 불투명 마감 */
-        #sidebar-header { padding: 12px; background: #4ad3ff !important; border-radius: 5px 5px 0 0; backdrop-filter: blur(4px); }
+        #sidebar-header { padding: 12px; background: #4ad3ff !important; border-radius: 5px 5px 0 0; flex-shrink: 0; }
         .filter-section { display: flex; flex-direction: column; gap: 8px; }
         .filter-tabs { display: flex; gap: 5px; }
-        .tab-btn { flex: 1; padding: 8px; font-size: 11px; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; background: #e9ecef; color: #495057; transition: all 0.2s; }
-        .tab-btn.active { background: #ff6e40; color: white; box-shadow: 0 2px 5px rgba(255,110,64,0.3); }
-        .town-select { width: 100%; padding: 8px; font-size: 12px; border: 1px solid #ced4da; border-radius: 4px; font-weight: bold; background: rgba(255,255,255,0.95); color: #004b6e; }
+        .tab-btn { flex: 1; padding: 8px; font-size: 11px; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; background: #e9ecef; color: #495057; }
+        .tab-btn.active { background: #ff6e40; color: white; }
+        .town-select { width: 100%; padding: 8px; font-size: 12px; border: 1px solid #ced4da; border-radius: 4px; font-weight: bold; color: #004b6e; }
         
-        #deal-type-filter { }
-        #deal-type-filter label { }
-        .filter-toggle-trigger { width: 100%; padding: 6px; background: rgba(0,0,0,0.25); color: #fff; border: 1px dashed rgba(255,255,255,0.5); border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; text-align: center; margin-top: 4px; box-sizing: border-box; }
-        #detail-selector { display: none; gap: 6px; padding: 10px 4px 5px 4px; overflow-x: auto; white-space: nowrap; max-width: 100%; box-sizing: border-box; -webkit-overflow-scrolling: touch; }
-        #property-list { flex: 1; overflow-y: auto; padding: 10px; -webkit-overflow-scrolling: touch; background: rgba(248, 249, 250, 0.1); }
-        .property-item { padding: 14px; background: rgba(255, 255, 255, 0.96); margin-bottom: 10px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); cursor: pointer; border: 1px solid #e9ecef; transition: all 0.2s; position: relative; overflow: hidden; }
-        .property-item:hover { border-color: #ff6e40; background: #fffdfb; }
-        .property-item.active { border: 2px solid #ff6e40 !important; background: #fff6f2 !important; box-shadow: 0 4px 12px rgba(255,110,64,0.25) !important; }
-# [블록 7 마감 - 다음 블록으로 이어짐]
-# =========================================================================
-# [블록 8] 우측 실거래 분석 패널 및 모바일 미디어 쿼리 최적화 CSS 구역
-# =========================================================================
+        /* 💡 [마우스 스크롤 센서 복원 고정] 매물 목록 박스가 온전히 자기 영역 안에서만 휙휙 구르도록 명령합니다. */
+        #property-list { 
+            flex: 1; 
+            overflow-y: auto !important; /* 스크롤바 강제 활성화 */
+            padding: 10px; 
+            background: rgba(248, 249, 250, 0.4); 
+            -webkit-overflow-scrolling: touch; 
+        }
+        .property-item { padding: 14px; background: #ffffff; margin-bottom: 10px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); cursor: pointer; border: 1px solid #e9ecef; transition: all 0.15s; position: relative; }
+        .property-item:hover { border-color: #ff6e40; }
+        .property-item.active { border: 2px solid #ff6e40 !important; background: #fff6f2 !important; }
+
         .property-item h4 { margin: 0 0 6px 0; color: #212529; font-size: 13px; font-weight: bold; line-height: 1.4; max-width: 75%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .property-detail { display: none; margin-top: 6px; padding-top: 6px; border-top: 1px dashed #dee2e6; font-size: 12px; color: #333; line-height: 1.5; }
         .property-detail .links-row { margin-top: 8px; border-top: 1px solid #f1f3f5; padding-top: 8px; display: flex !important; gap: 6px; }
@@ -441,7 +427,6 @@
         }
     }
 
-    // 💡 [가변형 자동 축소 + 한글 억 변환 금액 마감 처리 장치]
     function renderChanggongPrice(prop) {
         var price = parseFloat(prop.pure_price) || 0;
         var worth = parseFloat(prop.pure_worth) || 0;
@@ -464,13 +449,13 @@
             finalPriceText = convertUnit(price);
         }
         
-        // 글자 길이에 맞춰 스스로 크기를 유기적으로 깎아내는 소장님 기획 Auto-Shrink 엔진
+        // 💡 [폰트 다이어트 적용] 숫자가 길어지면 소장님 기획대로 유기적으로 줄어드는 정사이즈 세팅
         var fontSize = "14px";
         if (finalPriceText.length > 13) fontSize = "11px";
         else if (finalPriceText.length > 9) fontSize = "12px";
         
         var color = isWolse ? "#e65100" : "#2b5c8f";
-        return '<span style="font-size: ' + fontSize + '; font-weight: 900; color: ' + color + '; white-space: nowrap; transition: font-size 0.15s;">' + finalPriceText + '</span>';
+        return '<span style="font-size: ' + fontSize + ' !important; font-weight: 800 !important; color: ' + color + '; white-space: nowrap;">' + finalPriceText + '</span>';
     }
 
     function initMap() {
@@ -484,7 +469,8 @@
                 '<div class="m-box" style="position: absolute; transform: translate(-50%, -100%); margin-top: -65px; background-color: ' + prop.bg + '; border: 2px solid #00bfff; opacity: 0.98; border-radius: 6px; padding: 5px 10px; font-weight: bold; font-size: 11px; color: #111; white-space: nowrap; box-shadow: 0 4px 15px rgba(0,0,0,0.25); text-align: center; line-height: 1.3; cursor: pointer;">', 
                 ' ' + prop.marker_text + '<br>', 
                 ' <span style="font-size: 12px; font-weight: bold; color: #E65100; display: inline-block; margin-top: 1px;">' + prop.dan_text + '</span>', 
-                ' <div style="position: absolute; bottom: -55px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 55px solid #00bfff; opacity: 0.45; pointer-events: none;"></div>'
+                ' <div style="position: absolute; bottom: -55px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 55px solid #00bfff; opacity: 0.45; pointer-events: none;"></div>',
+                '</div>'
             ].join('');
 
             var marker = new naver.maps.Marker({ position: latlng, icon: { content: markerHtml, anchor: new naver.maps.Point(0, 0) } });
@@ -499,30 +485,31 @@
                 ? '<a href="' + "http://www.eum.go.kr/web/ar/lu/luLandDet.jsp?pnu=" + prop.pnu.trim() + '&isNoScr=script&mode=search" target="_blank" class="eum-land" onclick="event.stopPropagation();">토지이음</a>' 
                 : '<a class="eum-none" title="PNU 미생성" onclick="event.stopPropagation();">미매칭</a>';
 
-            // 💡 1줄 우측의 [매매]/[월세] 폰트와 상하 여백 배경색 매칭
             var gubunBg = prop.pure_gubun === "월세" ? "#e65100" : "#2b5c8f";
-            var specText = (prop.category === "토지") ? prop.yongdo : prop.road; // 공장/주택의 경우 2줄에 대장 정보가 한 줄로 뿌려지므로, 3줄 좌측 라벨용으로 배치 유지
 
-            // 🏛️ [수복 완료] 소장님 명품 정통 3줄 리스트 카드 레이아웃 렌더링 엔진
+            // 💡 [주소 2차 정밀 소탕 소스 수복] 고운동 등 주소창 앞에 남아있는 도/시 명칭들을 프론트엔드단에서 한 번 더 완벽하게 도려냅니다.
+            var cleanName = prop.name.replace("세종특별자치시", "").replace("충청북도 청주시", "").strip();
+
+            // 🏛️ [순정 원형 복원] 소장님 기획안 비율 그대로 글자 크기와 두께를 완전 정상화합니다.
             itemDiv.innerHTML = [
-                // 1줄: [분류] 컴팩트 지번주소 ---------> [거래구분 뱃지 (여백 채우기 마감)]
+                // 1줄: 컴팩트해진 순정 주소와 우측 상하 여백을 채운 단정한 컬러 박스 구분
                 '<div style="display: flex; justify-content: space-between; align-items: center; margin: 0 0 5px 0; width: 100%;">',
-                '  <h4 style="margin: 0; font-size: 13px; font-weight: bold; color: #212529; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 78%;">[' + prop.detail_type + '] ' + prop.name + '</h4>',
-                '  <span style="font-size: 13px; font-weight: bold; color: #ffffff; background-color: ' + gubunBg + '; padding: 3px 8px; border-radius: 3px; line-height: 1.0; flex-shrink: 0; text-align: right; display: inline-block;">' + prop.pure_gubun + '</span>',
+                '  <h4 style="margin: 0; font-size: 13px !important; font-weight: bold !important; color: #212529; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 78%;">[' + prop.detail_type + '] ' + cleanName + '</h4>',
+                '  <span style="font-size: 13px !important; font-weight: bold !important; color: #ffffff; background-color: ' + gubunBg + '; padding: 3px 8px; border-radius: 3px; line-height: 1.0; flex-shrink: 0; text-align: right; display: inline-block;">' + prop.pure_gubun + '</span>',
                 '</div>',
                 
-                // 2줄: 대장/토지 고유 특성 명세 한 줄 칼정렬 (줄바꿈 원천 봉쇄)
-                '<div style="margin: 0 0 5px 0; font-size: 11px; color: #495057; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; width: 100%;">',
-                '  ' + (prop.category === "토지" ? "특성: " + prop.yongdo : "대장: " + (function() { try { var dongs = JSON.parse(prop.Building_List_JSON); if (dongs && dongs.length > 0) return (dongs[0].structure || '-') + ' / ' + (dongs[0].use || '-') + ' / ' + (dongs[0].height || '-'); } catch(e) {} return '대장없음'; })()) + '',
+                // 2줄: 대장/특성 명세 라인 (기본 11px, 얇고 단정하게 폰트 고정)
+                '<div style="margin: 0 0 5px 0; font-size: 11px !important; font-weight: normal !important; color: #495057; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; width: 100%;">',
+                '  ' + (prop.category === "토지" ? "특성: " + prop.yongdo : "대장: " + (function() { try { var dongs = JSON.parse(prop.Building_List_JSON); if (dongs && dongs.length > 0) return (dongs.structure || '-') + ' / ' + (dongs.use || '-') + ' / ' + (dongs.height || '-'); } catch(e) {} return '대장없음'; })()) + '',
                 '</div>',
                 
-                // 3줄: 면적 정보 -------------------> [한글 변환 억 금액 숫자 가변 노출]
+                // 3줄: 면적 정보 (12px 보통 두께) ----------> 우측 금액 숫자 (14px 가변 두께)
                 '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0; width: 100%;">',
-                '  <div style="font-size: 12px; color: #495057; font-weight: normal; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 65%;">면적: ' + prop.area + '</div>',
+                '  <div style="font-size: 12px !important; font-weight: normal !important; color: #495057; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 65%;">면적: ' + prop.area + '</div>',
                 '  <div style="text-align: right; flex-shrink: 0; max-width: 35%;">' + renderChanggongPrice(prop) + '</div>',
                 '</div>',
                 
-                // [클릭 시 하단으로 미끄러져 열리는 순정 상세 가독창 및 단추 구조 원형 복원 보존]
+                // 마우스 클릭 시 아래로 부드럽게 열릴 상세 대조 패널 보존
                 '<div class="property-detail" id="detail-' + index + '" style="margin-top: 5px; padding-top: 5px; font-size: 12px; line-height: 1.3;">', 
                 ' <div style="display: flex; flex-direction: column; gap: 1px; width: 100%;">', 
                 ' <div style="display: flex; width: 100%;">', 
@@ -556,9 +543,12 @@
                 '</div>'
             ].join('');
             
-            itemDiv.onclick = function() { selectProperty(index, marker); };
+            (function(idx, mkr) {
+                itemDiv.onclick = function() { selectProperty(idx, mkr); };
+                naver.maps.Event.addListener(mkr, "click", function(e) { selectProperty(idx, mkr); });
+            })(index, marker);
+
             listContainer.appendChild(itemDiv);
-            naver.maps.Event.addListener(marker, "click", function(e) { selectProperty(index, marker); });
         });
         applyFilters();
     }
