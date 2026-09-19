@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260920_0402</title>
+    <title>창공공인중개사사무소 - v.260920_0409</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -393,13 +393,19 @@
                 totalCount++;
                 townCounts[p.town] = (townCounts[p.town] || 0) + 1;
                 
+                // 💡 [자바스크립트 문법 수복] 터졌던 주소 분리 및 "리" 추출 연산 완벽 정형화
                 if (p.town && p.name.indexOf(p.town) !== -1) {
-                    var remainAddr = p.name.split(p.town)[1].trim();
-                    var tokens = remainAddr.split(" ");
-                    if (tokens.length > 0 && tokens[0].endsWith("리")) {
-                        var riName = tokens[0].trim();
-                        if (!riCounts[p.town]) riCounts[p.town] = {};
-                        riCounts[p.town][riName] = (riCounts[p.town][riName] || 0) + 1;
+                    var parts = p.name.split(p.town);
+                    if (parts.length > 1) {
+                        var remainAddr = parts[1].trim();
+                        var tokens = remainAddr.split(" ");
+                        if (tokens.length > 0) {
+                            var riName = tokens[0].trim();
+                            if (riName.indexOf("리") !== -1 || riName.charAt(riName.length - 1) === "리") {
+                                if (!riCounts[p.town]) riCounts[p.town] = {};
+                                riCounts[p.town][riName] = (riCounts[p.town][riName] || 0) + 1;
+                            }
+                        }
                     }
                 }
             }
