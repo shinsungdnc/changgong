@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260920_0422</title>
+    <title>창공공인중개사사무소 - v.260920_0431</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -449,7 +449,6 @@
             finalPriceText = convertUnit(price);
         }
         
-        // 💡 [폰트 다이어트 적용] 숫자가 길어지면 소장님 기획대로 유기적으로 줄어드는 정사이즈 세팅
         var fontSize = "14px";
         if (finalPriceText.length > 13) fontSize = "11px";
         else if (finalPriceText.length > 9) fontSize = "12px";
@@ -487,29 +486,37 @@
 
             var gubunBg = prop.pure_gubun === "월세" ? "#e65100" : "#2b5c8f";
 
-            // 💡 [주소 2차 정밀 소탕 소스 수복] 고운동 등 주소창 앞에 남아있는 도/시 명칭들을 프론트엔드단에서 한 번 더 완벽하게 도려냅니다.
-            var cleanName = prop.name.replace("세종특별자치시", "").replace("충청북도 청주시", "").strip();
+            // 💡 [정통 주소 정제 엔진 수복] 시도 시군구를 완벽하게 걸러내어 읍면동+리+지번만 남깁니다.
+            var cleanName = (function(addr) {
+                if (!addr) return "";
+                var tokens = addr.trim().split(/\s+/);
+                var idx = 0;
+                while (idx < tokens.length) {
+                    var t = tokens[idx];
+                    if (t.endsWith("시") || t.endsWith("도") || t.endsWith("구")) {
+                        idx++;
+                    } else {
+                        break;
+                    }
+                }
+                return tokens.slice(idx).join(" ");
+            })(prop.name);
 
-            // 🏛️ [순정 원형 복원] 소장님 기획안 비율 그대로 글자 크기와 두께를 완전 정상화합니다.
             itemDiv.innerHTML = [
-                // 1줄: 컴팩트해진 순정 주소와 우측 상하 여백을 채운 단정한 컬러 박스 구분
                 '<div style="display: flex; justify-content: space-between; align-items: center; margin: 0 0 5px 0; width: 100%;">',
                 '  <h4 style="margin: 0; font-size: 13px !important; font-weight: bold !important; color: #212529; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 78%;">[' + prop.detail_type + '] ' + cleanName + '</h4>',
                 '  <span style="font-size: 13px !important; font-weight: bold !important; color: #ffffff; background-color: ' + gubunBg + '; padding: 3px 8px; border-radius: 3px; line-height: 1.0; flex-shrink: 0; text-align: right; display: inline-block;">' + prop.pure_gubun + '</span>',
                 '</div>',
                 
-                // 2줄: 대장/특성 명세 라인 (기본 11px, 얇고 단정하게 폰트 고정)
                 '<div style="margin: 0 0 5px 0; font-size: 11px !important; font-weight: normal !important; color: #495057; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; width: 100%;">',
                 '  ' + (prop.category === "토지" ? "특성: " + prop.yongdo : "대장: " + (function() { try { var dongs = JSON.parse(prop.Building_List_JSON); if (dongs && dongs.length > 0) return (dongs.structure || '-') + ' / ' + (dongs.use || '-') + ' / ' + (dongs.height || '-'); } catch(e) {} return '대장없음'; })()) + '',
                 '</div>',
                 
-                // 3줄: 면적 정보 (12px 보통 두께) ----------> 우측 금액 숫자 (14px 가변 두께)
                 '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0; width: 100%;">',
                 '  <div style="font-size: 12px !important; font-weight: normal !important; color: #495057; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 65%;">면적: ' + prop.area + '</div>',
                 '  <div style="text-align: right; flex-shrink: 0; max-width: 35%;">' + renderChanggongPrice(prop) + '</div>',
                 '</div>',
                 
-                // 마우스 클릭 시 아래로 부드럽게 열릴 상세 대조 패널 보존
                 '<div class="property-detail" id="detail-' + index + '" style="margin-top: 5px; padding-top: 5px; font-size: 12px; line-height: 1.3;">', 
                 ' <div style="display: flex; flex-direction: column; gap: 1px; width: 100%;">', 
                 ' <div style="display: flex; width: 100%;">', 
