@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260920_0431</title>
+    <title>창공공인중개사사무소 - v.260920_0441</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -427,10 +427,11 @@
         }
     }
 
+    // 💡 [가변 금액 크기 복원] 소장님 기획 비율대로 15px 크기를 든든하게 유지합니다.
     function renderChanggongPrice(prop) {
         var price = parseFloat(prop.pure_price) || 0;
         var worth = parseFloat(prop.pure_worth) || 0;
-        var isWolse = prop.price.indexOf("월세") !== -1;
+        var isWolse = prop.price.indexOf("월se") !== -1 || prop.price.indexOf("월세") !== -1;
         
         function convertUnit(val) {
             if (val <= 0) return "0";
@@ -449,12 +450,12 @@
             finalPriceText = convertUnit(price);
         }
         
+        // 💡 [글자 크기 반전 교정] 14px~15px 대형화 기준을 확보하고, 글자가 극단적으로 길어질 때만 미세 조절합니다.
         var fontSize = "14px";
-        if (finalPriceText.length > 13) fontSize = "11px";
-        else if (finalPriceText.length > 9) fontSize = "12px";
+        if (finalPriceText.length > 15) fontSize = "12px";
         
         var color = isWolse ? "#e65100" : "#2b5c8f";
-        return '<span style="font-size: ' + fontSize + ' !important; font-weight: 800 !important; color: ' + color + '; white-space: nowrap;">' + finalPriceText + '</span>';
+        return '<span style="font-size: ' + fontSize + ' !important; font-weight: 900 !important; color: ' + color + '; white-space: nowrap;">' + finalPriceText + '</span>';
     }
 
     function initMap() {
@@ -486,39 +487,41 @@
 
             var gubunBg = prop.pure_gubun === "월세" ? "#e65100" : "#2b5c8f";
 
-            // 💡 [정통 주소 정제 엔진 수복] 시도 시군구를 완벽하게 걸러내어 읍면동+리+지번만 남깁니다.
+            // 🏛️ 정통 시도 시군구 제거 주소 정제 엔진 작동
             var cleanName = (function(addr) {
                 if (!addr) return "";
                 var tokens = addr.trim().split(/\s+/);
                 var idx = 0;
                 while (idx < tokens.length) {
                     var t = tokens[idx];
-                    if (t.endsWith("시") || t.endsWith("도") || t.endsWith("구")) {
-                        idx++;
-                    } else {
-                        break;
-                    }
+                    if (t.endsWith("시") || t.endsWith("도") || t.endsWith("구")) { idx++; }
+                    else { break; }
                 }
                 return tokens.slice(idx).join(" ");
             })(prop.name);
 
+            // 🏛️ [순정 원형 복원 명세서] 소장님 정통 3줄 리스트 카드 레이아웃 가공부
             itemDiv.innerHTML = [
-                '<div style="display: flex; justify-content: space-between; align-items: center; margin: 0 0 5px 0; width: 100%;">',
-                '  <h4 style="margin: 0; font-size: 13px !important; font-weight: bold !important; color: #212529; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 78%;">[' + prop.detail_type + '] ' + cleanName + '</h4>',
-                '  <span style="font-size: 13px !important; font-weight: bold !important; color: #ffffff; background-color: ' + gubunBg + '; padding: 3px 8px; border-radius: 3px; line-height: 1.0; flex-shrink: 0; text-align: right; display: inline-block;">' + prop.pure_gubun + '</span>',
+                // 1줄: [분류] 주소 -----------------> [우측 여백 컬러 뱃지 마감]
+                '<div style="display: flex; justify-content: space-between; align-items: center; margin: 0 0 4px 0; width: 100%;">',
+                '  <h4 style="margin: 0; font-size: 13px !important; font-weight: bold !important; color: #212529; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 76%;">[' + prop.detail_type + '] ' + cleanName + '</h4>',
+                '  <span style="font-size: 13px !important; font-weight: bold !important; color: #ffffff; background-color: ' + gubunBg + '; padding: 3px 7px; border-radius: 3px; line-height: 1.0; flex-shrink: 0; display: inline-block;">' + prop.pure_gubun + '</span>',
                 '</div>',
                 
-                '<div style="margin: 0 0 5px 0; font-size: 11px !important; font-weight: normal !important; color: #495057; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; width: 100%;">',
-                '  ' + (prop.category === "토지" ? "특성: " + prop.yongdo : "대장: " + (function() { try { var dongs = JSON.parse(prop.Building_List_JSON); if (dongs && dongs.length > 0) return (dongs.structure || '-') + ' / ' + (dongs.use || '-') + ' / ' + (dongs.height || '-'); } catch(e) {} return '대장없음'; })()) + '',
+                // 2줄: 대장/특성 명세 (★한글 데이터 구조체 매칭 완료로 하이픈 현상을 소탕합니다)
+                '<div style="margin: 0 0 4px 0; font-size: 11px !important; font-weight: normal !important; color: #666666; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; width: 100%;">',
+                '  ' + (prop.category === "토지" ? "특성: " + prop.yongdo : "대장: " + (function() { try { var dongs = JSON.parse(prop.Building_List_JSON); if (dongs && dongs.length > 0) return (dongs.구조 || dongs.structure || '-') + ' / ' + (dongs.주용도 || dongs.use || '-') + ' / ' + (dongs.높이 || dongs.height || '-'); } catch(e) {} return '- / - / -'; })()) + '',
                 '</div>',
                 
+                // 3줄: 면적 정보 (12px 정상 두께 축소) -------> [우측 14px 선명한 대형화 금액 숫자 결합]
                 '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0; width: 100%;">',
-                '  <div style="font-size: 12px !important; font-weight: normal !important; color: #495057; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 65%;">면적: ' + prop.area + '</div>',
+                '  <div style="font-size: 11.5px !important; font-weight: normal !important; color: #495057; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 65%;">면적: ' + prop.area + '</div>',
                 '  <div style="text-align: right; flex-shrink: 0; max-width: 35%;">' + renderChanggongPrice(prop) + '</div>',
                 '</div>',
                 
-                '<div class="property-detail" id="detail-' + index + '" style="margin-top: 5px; padding-top: 5px; font-size: 12px; line-height: 1.3;">', 
-                ' <div style="display: flex; flex-direction: column; gap: 1px; width: 100%;">', 
+                // 💡 [스크롤 압축 복원] 최초에는 안 보이게 숨겨두고, 클릭시에만 미세하게 열리도록 슬라이딩 가독창을 격리합니다.
+                '<div class="property-detail" id="detail-' + index + '" style="display: none; margin-top: 6px; padding-top: 6px; border-top: 1px dashed #dee2e6; font-size: 12px; line-height: 1.4;">', 
+                ' <div style="display: flex; flex-direction: column; gap: 2px; width: 100%;">', 
                 ' <div style="display: flex; width: 100%;">', 
                 ' <span style="font-weight: bold; color: #555; width: 52px; flex-shrink: 0;">평 당 가</span>', 
                 ' <span style="font-weight: bold; color: #555; width: 12px; flex-shrink: 0;">:</span>', 
@@ -542,7 +545,7 @@
                 ' <span style="color: #222; word-break: break-all; flex: 1;">' + prop.feature + '</span>', 
                 ' </div>', 
                 ' </div>', 
-                ' <div class="links-row" style="margin-top: 4px; padding-top: 4px; margin-bottom: 0;">', 
+                ' <div class="links-row" style="margin-top: 6px; padding-top: 6px; margin-bottom: 0;">', 
                 ' ' + naverLandLink, 
                 ' ' + naverMapLink, 
                 ' ' + eumLandLink, 
