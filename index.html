@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260921_0843</title>
+    <title>창공공인중개사사무소 - v.260921_0851</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -661,20 +661,18 @@
         var panel = document.getElementById("detail-selector");
         if(panel) panel.style.display = "none";
         
-        // 🎯 [딜레이 제거 및 초기 화면 복귀] '전체'로 돌아가는 경우 카메라를 초기 세종시 중심 좌표로 고속 복귀
+        // 🎯 [렉/딜레이 완전 박멸 복귀 엔진]
         if (town === "전체") {
-            // 💡 최초 지도 레이아웃을 잡았던 세종시 정중앙 좌표와 초기 줌 레벨(예: 11~12레벨)을 그대로 대입합니다.
-            // 사장님 코드 블록 7 상단의 최초 map 객체 생성 시점의 lat, lng, zoom 값과 일치시켰습니다.
             var initialLatLng = new naver.maps.LatLng(36.55, 127.25); 
-            map.setZoom(11); 
+            map.setZoom(12); // 초기 로딩과 일치하는 3km 범위
             map.panTo(initialLatLng);
             
-            // 🚀 브라우저 렉(딜레이) 현상을 원천 차단하기 위해 리스트 렌더링에 0.05초의 미세한 시간차(비동기)를 주어 고속 통과시킵니다.
-            setTimeout(function() {
+            // 🚀 브라우저가 멈칫하는 현상을 완전히 없애기 위해, 화면 리스트 요소를 렌더링 큐에 태워 초고속으로 패스시킵니다.
+            requestAnimationFrame(function() {
                 applyFilters();
-            }, 50);
+            });
         } else {
-            // 특정 읍면동을 선택한 경우: 기존에 구현 완료한 15레벨 순간이동 엔진 가동
+            // 특정 읍면동 선택 시: 기존 완성형 15레벨 무빙 엔진
             applyFilters();
             
             var sumLat = 0;
