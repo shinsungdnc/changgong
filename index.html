@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260920_1525</title>
+    <title>창공공인중개사사무소 - v.260920_1534</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -484,30 +484,26 @@
                 ? '<a href="' + "http://www.eum.go.kr/web/ar/lu/luLandDet.jsp?pnu=" + prop.pnu.trim() + '&isNoScr=script&mode=search" target="_blank" class="eum-land" onclick="event.stopPropagation();">토지이음</a>' 
                 : '<a class="eum-none" title="PNU 미생성" onclick="event.stopPropagation();">미매칭</a>';
 
-            // [1] 기존 하단 로직용 옛날 변수 이름표 완벽 복구 및 안착
             var isWolseData = (prop.detail_type === "월세");
             var rawPrice = prop.price;
 
-            // [2] 거래 종류별 고유 시그니처 색상 추출
-            var badgeBg = "#1E3A8A"; // 매매 블루
-            if (prop.detail_type === "전세") { badgeBg = "#15803D"; } // 전세 그린
-            else if (prop.detail_type === "월세") { badgeBg = "#EA580C"; } // 월세 오렌지
-            else if (prop.detail_type === "단기") { badgeBg = "#6D28D9"; } // 단기 퍼플
+            var badgeBg = "#1E3A8A";
+            if (prop.detail_type === "전세") { badgeBg = "#15803D"; }
+            else if (prop.detail_type === "월세") { badgeBg = "#EA580C"; }
+            else if (prop.detail_type === "단기") { badgeBg = "#6D28D9"; }
 
-            var priceColor = badgeBg;
             var badgeText = prop.detail_type;
+            var priceColor = badgeBg;
 
-            // [3] 사장님이 원래 사용하시던 오리지널 금액 포맷(억 단위 소수점 등)을 100% 그대로 승계합니다.
-            var cleanPriceText = prop.price; 
+            // 💡 사장님이 과거에 텍스트와 가격을 완벽하게 조합해두셨던 오리지널 가격 추출 로직(convertToEok)을 그대로 작동시킵니다.
+            var cleanPriceText = convertToEok(prop.price);
+            
+            // 💡 사장님의 원래 그릇에서 앞머리에 붙어나오는 중복 글자들만 칼같이 도려내어 순수 알맹이만 분리합니다.
+            var cleanPriceOnly = cleanPriceText.replace("매매", "").replace("전세", "").replace("월세", "").replace("단기", "").trim();
 
-            // 749-753행 교체: 상단 틀에 절대 간섭하지 않는 깔끔한 1줄 배지 생성
             var dealBadgeHtml = '<span class="badge" style="background: ' + badgeBg + ' !important; color: #fff !important; padding: 2px 6px !important; border-radius: 3px !important; font-size: 11px !important; font-weight: bold !important; display: inline-block !important; margin: 0 !important;">' + badgeText + '</span>';
 
-            // 💡 사장님 오리지널 함수에서 변환된 텍스트를 가져온 뒤, 중복되는 거래 명칭만 칼같이 도려냅니다!
-            var originalPriceStr = convertToEok(prop.price);
-            var cleanPriceOnly = originalPriceStr.replace("매매", "").replace("전세", "").replace("월세", "").replace("단기", "").trim();
-
-            // 755-765행 교체: 상단 필터 레이아웃을 100% 보호하면서, 배지와 중복 없는 금액만 수직 정렬하는 마스터 프레임
+            // 💡 상단 필터 틀을 100% 완벽하게 수호하면서, 사장님의 정제된 오리지널 금액을 상하 정가운데 수직 밀착 정렬하는 마스터 프레임
             var html = '<div style="display: flex !important; justify-content: space-between !important; align-items: center !important; width: 100% !important; padding: 10px !important; box-sizing: border-box !important;">' +
                 '<div style="flex: 1 !important; text-align: left !important; padding-right: 10px !important; box-sizing: border-box !important; overflow: hidden !important;">' +
                     '<div style="font-weight: bold; font-size: 13px; margin-bottom: 4px; color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">[' + prop.detail_type + '] ' + prop.name + '</div>' +
@@ -519,7 +515,7 @@
                     (typeof varNaverMapLink !== "undefined" ? varNaverMapLink : "") +
                     (typeof varEumLandLink !== "undefined" ? varEumLandLink : "") +
                 '</div>' +
-                '<div style="display: flex !important; flex-direction: column !important; align-items: flex-end !important; justify-content: center !important; gap: 4px !important; text-align: right !important; min-width: 100px !important; box-sizing: border-box !important;">' +
+                '<div style="display: flex !important; flex-direction: column !important; align-items: flex-end !important; justify-content: center !important; gap: 4px !important; text-align: right !important; min-width: 100px !important; min-height: 55px !important; box-sizing: border-box !important;">' +
                     dealBadgeHtml +
                     '<div class="price" style="color: ' + priceColor + ' !important; font-size: 13px !important; font-weight: bold; margin-top: 2px; white-space: nowrap;">' + cleanPriceOnly + '</div>' +
                 '</div>' +
