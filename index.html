@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260920_1608</title>
+    <title>창공공인중개사사무소 - v.260920_1612</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -484,46 +484,48 @@
                 ? '<a href="' + "http://www.eum.go.kr/web/ar/lu/luLandDet.jsp?pnu=" + prop.pnu.trim() + '&isNoScr=script&mode=search" target="_blank" class="eum-land" onclick="event.stopPropagation();">토지이음</a>' 
                 : '<a class="eum-none" title="PNU 미생성" onclick="event.stopPropagation();">미매칭</a>';
 
-        var badgeBg = "#1E3A8A"; // 매매 블루
-        if (prop.price.indexOf("전세") !== -1) { badgeBg = "#15803D"; } // 전세 그린
-        else if (prop.price.indexOf("월세") !== -1) { badgeBg = "#EA580C"; } // 월세 오렌지
-        else if (prop.price.indexOf("단기") !== -1) { badgeBg = "#6D28D9"; } // 단기 퍼플
+        var isWolseData = (prop.price.indexOf("월세") !== -1);
+        var rawPrice = prop.price;
+
+        var badgeBg = "#1E3A8A";
+        if (prop.price.indexOf("전세") !== -1) { badgeBg = "#15803D"; }
+        else if (prop.price.indexOf("월세") !== -1) { badgeBg = "#EA580C"; }
+        else if (prop.price.indexOf("단기") !== -1) { badgeBg = "#6D28D9"; }
 
         var badgeText = (prop.price.indexOf("전세") !== -1 ? "전세" : prop.price.indexOf("월세") !== -1 ? "월세" : prop.price.indexOf("단기") !== -1 ? "단기" : "매매");
         var priceColor = badgeBg;
 
-        // 💡 억 변환 함수 전용 정밀 안전 가공 모듈
-        function runStrictEokConverter(rawStr) {
-            if (!rawStr) return "-";
-            // 파이썬이 보낸 "매매 70000"에서 숫자와 소수점만 깔끔하게 발라냅니다.
-            var numText = rawStr.replace(/[^0-9.]/g, "").trim();
-            var num = parseFloat(numText);
-            if (isNaN(num)) return rawStr;
-            
+        // 💡 억 단위 변환을 방해하던 한글 단어를 '먼저' 완벽히 떼어내는 정밀 치환 모듈
+        var rawPriceText = prop.price.replace("매매", "").replace("전세", "").replace("월세", "").replace("단기", "").trim();
+
+        // 💡 사장님의 오리지널 '억' 단위 소수점 변환 함수 엔진방 (내부 유일 선언으로 중복 충돌 제거)
+        function convertToEokInternal(wonVal) {
+            var num = parseFloat(wonVal);
+            if (isNaN(num)) return wonVal;
             if (num >= 10000) {
                 var eok = num / 10000;
-                return parseFloat(eok.toFixed(1)) + " 억"; // 사장님이 확정하신 깔끔한 소수점 한 자리 마감 (예: 22.5 억)
+                return parseFloat(eok.toFixed(1)) + " 억"; // 소수점 한 자리 정갈한 마감 고정
             } else {
-                return num.toLocaleString() + " 만"; // 만원 단위 유연성 확보
+                return num.toLocaleString();
             }
         }
 
-        // 💡 보증금/월세 3단 슬라이스 동적 연산 엔진
+        // 💡 보증금/월세 3단 슬라이스 동적 연산 제어
         var cleanPriceOnly = "";
-        if (prop.price.indexOf("/") !== -1) {
-            var parts = prop.price.replace("월세", "").trim().split("/");
+        if (rawPriceText.indexOf("/") !== -1) {
+            var parts = rawPriceText.split("/");
             if (parts.length >= 2) {
-                cleanPriceOnly = runStrictEokConverter(parts[0]) + " / " + runStrictEokConverter(parts[1]);
+                cleanPriceOnly = convertToEokInternal(parts[0].trim()) + " / " + convertToEokInternal(parts[1].trim());
             } else {
-                cleanPriceOnly = runStrictEokConverter(prop.price);
+                cleanPriceOnly = convertToEokInternal(rawPriceText);
             }
         } else {
-            cleanPriceOnly = runStrictEokConverter(prop.price);
+            cleanPriceOnly = convertToEokInternal(rawPriceText);
         }
 
         var dealBadgeHtml = '<span class="badge" style="background: ' + badgeBg + ' !important; color: #fff !important; padding: 2px 6px !important; border-radius: 3px !important; font-size: 11px !important; font-weight: bold !important; display: inline-block !important; margin: 0 !important;">' + badgeText + '</span>';
 
-        // 💡 [건축물대장 정보 연동 수복] 기존 문자열 버그를 완전히 지우고 내장형으로 정밀 재조립
+        // 💡 [건축물대장 정보 연동] 구식 문자열 결합 구조를 독립형 명세표로 완전 수복
         var factoryLedgerText = (prop.category === "공장" ? (function() {
             try {
                 var dongs = JSON.parse(prop.Building_List_JSON);
@@ -532,9 +534,10 @@
             return '대장없음';
         })() : prop.yongdo);
 
-        var html = '<div style="display: flex !important; justify-content: space-between !important; align-items: center !important; width: 100% !important; padding: 12px !important; box-sizing: border-box !important;">' +
+        // 💡 잡아놓으신 상단 레이아웃을 100% 수호하며, 배지와 정제된 소수점 금액을 상하 정가운데 밀착 정렬하는 최종 마스터 격자 프레임
+        var html = '<div style="display: flex !important; justify-content: space-between !important; align-items: center !important; width: 100% !important; padding: 10px !important; box-sizing: border-box !important;">' +
             '<div style="flex: 1 !important; text-align: left !important; padding-right: 10px !important; box-sizing: border-box !important; overflow: hidden !important; line-height: 1.45 !important;">' +
-                '<div style="font-weight: bold; font-size: 13px; margin-bottom: 5px; color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">[' + badgeText + '] ' + prop.name + '</div>' +
+                '<div style="font-weight: bold; font-size: 13px; margin-bottom: 4px; color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">[' + badgeText + '] ' + prop.name + '</div>' +
                 '<div style="font-size: 11px; color: #555; margin-bottom: 2px;"><b>면적:</b> ' + prop.area + '</div>' +
                 '<div style="font-size: 11px; color: #555; margin-bottom: 4px;"><b>' + (prop.category === "공장" ? "대장" : "용도") + ':</b> ' + factoryLedgerText + '</div>' +
                 (prop.py_price_str ? '<div style="font-size: 11px; color: #ff6e40; font-weight: bold;">' + prop.py_price_str + '</div>' : '') +
@@ -543,7 +546,7 @@
                 (typeof varNaverMapLink !== "undefined" ? varNaverMapLink : "") +
                 (typeof varEumLandLink !== "undefined" ? varEumLandLink : "") +
             '</div>' +
-            '<div style="display: flex !important; flex-direction: column !important; align-items: flex-end !important; justify-content: center !important; gap: 4px !important; text-align: right !important; min-width: 105px !important; min-height: 55px !important; box-sizing: border-box !important;">' +
+            '<div style="display: flex !important; flex-direction: column !important; align-items: flex-end !important; justify-content: center !important; gap: 4px !important; text-align: right !important; min-width: 100px !important; min-height: 55px !important; box-sizing: border-box !important;">' +
                 dealBadgeHtml +
                 '<div class="price" style="color: ' + priceColor + ' !important; font-size: 13.5px !important; font-weight: bold; margin-top: 2px; white-space: nowrap;">' + cleanPriceOnly + '</div>' +
             '</div>' +
