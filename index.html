@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260920_1509</title>
+    <title>창공공인중개사사무소 - v.260920_1512</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -500,22 +500,22 @@
             // [3] 사장님이 원래 사용하시던 오리지널 금액 포맷(억 단위 소수점 등)을 100% 그대로 승계합니다.
             var cleanPriceText = prop.price; 
 
-            // [4] 흔들렸던 중앙 틀에 절대 간섭하지 않는 독립형 우측 배지-금액 레이아웃 박스 (상단 배지, 하단 금액)
-            var dealBadgeHtml = '<div style="display: flex !important; flex-direction: column !important; align-items: flex-end !important; justify-content: center !important; gap: 4px !important; text-align: right !important; min-width: 90px !important; box-sizing: border-box !important;">' +
-                '<span class="badge" style="background: ' + badgeBg + ' !important; color: #fff !important; padding: 2px 8px !important; border-radius: 3px !important; font-size: 11px !important; font-weight: bold !important; white-space: nowrap !important; display: inline-block !important; margin: 0 !important;">' + badgeText + '</span>' +
-                '<div class="price" style="color: ' + priceColor + ' !important; font-size: 13px !important; font-weight: bold !important; margin-top: 2px !important; white-space: nowrap !important;">' + cleanPriceText + '</div>' +
-            '</div>';
+            // 749-753행 교체: 상단 틀에 절대 간섭하지 않는 순수한 1줄 배지 주머니로 변경
+            var dealBadgeHtml = '<span class="badge" style="background: ' + badgeBg + ' !important; color: #fff !important; padding: 2px 6px !important; border-radius: 3px !important; font-size: 11px !important; font-weight: bold !important; display: inline-block !important; margin: 0 !important;">' + badgeText + '</span>';
 
-            // [5] 좌측의 텍스트 정보(주소, 면적, 용도)와 우측의 컬러 블록(배지+금액)을 황금 비율로 묶어주는 메인 웹 프레임 구조
-            var html = '<div style="display: flex !important; justify-content: space-between !important; align-items: center !important; width: 100% !important; padding: 12px !important; box-sizing: border-box !important; position: relative !important;">' +
+            // 755-765행 교체: 원래의 격자 구조와 여백을 100% 보존하면서 배지와 가격 위치만 정렬하는 메인 프레임
+            var html = '<div style="display: flex !important; justify-content: space-between !important; align-items: center !important; width: 100% !important; padding: 10px !important; box-sizing: border-box !important;">' +
                 '<div style="flex: 1 !important; text-align: left !important; padding-right: 10px !important; box-sizing: border-box !important; overflow: hidden !important;">' +
-                    '<div style="font-weight: bold; font-size: 13px; margin-bottom: 6px; color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">[' + prop.detail_type + '] ' + prop.name + '</div>' +
+                    '<div style="font-weight: bold; font-size: 13px; margin-bottom: 4px; color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">[' + prop.detail_type + '] ' + prop.name + '</div>' +
                     '<div style="font-size: 11px; color: #666; margin-bottom: 2px;">면적: ' + prop.area + '</div>' +
                     '<div style="font-size: 11px; color: #666; margin-bottom: 4px;">용도: ' + prop.yongdo + '</div>' +
                     (prop.py_price_str ? '<div style="font-size: 11px; color: #ff6e40; font-weight: bold;">' + prop.py_price_str + '</div>' : '') +
                     vanLandLink + varNaverMapLink + varEumLandLink +
                 '</div>' +
-                dealBadgeHtml + // 우측 상하단 컬러 세트 블록 결합
+                '<div style="display: flex !important; flex-direction: column !important; align-items: flex-end !important; justify-content: center !important; gap: 4px !important; text-align: right !important; min-width: 85px !important; box-sizing: border-box !important;">' +
+                    dealBadgeHtml +
+                    '<div class="price" style="color: ' + priceColor + ' !important; font-size: 13px !important; font-weight: bold; margin-top: 2px; white-space: nowrap;">' + cleanPriceText + '</div>' +
+                '</div>' +
             '</div>';
 
             itemDiv.innerHTML = html;
