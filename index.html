@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260920_1517</title>
+    <title>창공공인중개사사무소 - v.260920_1525</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -500,24 +500,30 @@
             // [3] 사장님이 원래 사용하시던 오리지널 금액 포맷(억 단위 소수점 등)을 100% 그대로 승계합니다.
             var cleanPriceText = prop.price; 
 
-        var dealBadgeHtml = '<span class="badge" style="background: ' + badgeBg + ' !important; color: #fff !important; padding: 2px 6px !important; border-radius: 3px !important; font-size: 11px !important; font-weight: bold !important; display: inline-block !important; margin: 0 !important;">' + badgeText + '</span>';
+            // 749-753행 교체: 상단 틀에 절대 간섭하지 않는 깔끔한 1줄 배지 생성
+            var dealBadgeHtml = '<span class="badge" style="background: ' + badgeBg + ' !important; color: #fff !important; padding: 2px 6px !important; border-radius: 3px !important; font-size: 11px !important; font-weight: bold !important; display: inline-block !important; margin: 0 !important;">' + badgeText + '</span>';
 
-        var html = '<div style="display: flex !important; justify-content: space-between !important; align-items: center !important; width: 100% !important; padding: 10px !important; box-sizing: border-box !important;">' +
-            '<div style="flex: 1 !important; text-align: left !important; padding-right: 10px !important; box-sizing: border-box !important; overflow: hidden !important;">' +
-                '<div style="font-weight: bold; font-size: 13px; margin-bottom: 4px; color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">[' + prop.detail_type + '] ' + prop.name + '</div>' +
-                '<div style="font-size: 11px; color: #666; margin-bottom: 2px;">면적: ' + prop.area + '</div>' +
-                '<div style="font-size: 11px; color: #666; margin-bottom: 4px;">용도: ' + prop.yongdo + '</div>' +
-                (prop.py_price_str ? '<div style="font-size: 11px; color: #ff6e40; font-weight: bold;">' + prop.py_price_str + '</div>' : '') +
-                (typeof vanLandLink !== "undefined" ? vanLandLink : "") +
-                (typeof varLandLink !== "undefined" ? varLandLink : "") +
-                (typeof varNaverMapLink !== "undefined" ? varNaverMapLink : "") +
-                (typeof varEumLandLink !== "undefined" ? varEumLandLink : "") +
-            '</div>' +
-            '<div style="display: flex !important; flex-direction: column !important; align-items: flex-end !important; justify-content: center !important; gap: 4px !important; text-align: right !important; min-width: 85px !important; box-sizing: border-box !important;">' +
-                dealBadgeHtml +
-                '<div class="price" style="color: ' + priceColor + ' !important; font-size: 13px !important; font-weight: bold; margin-top: 2px; white-space: nowrap;">' + cleanPriceText + '</div>' +
-            '</div>' +
-        '</div>';
+            // 💡 사장님 오리지널 함수에서 변환된 텍스트를 가져온 뒤, 중복되는 거래 명칭만 칼같이 도려냅니다!
+            var originalPriceStr = convertToEok(prop.price);
+            var cleanPriceOnly = originalPriceStr.replace("매매", "").replace("전세", "").replace("월세", "").replace("단기", "").trim();
+
+            // 755-765행 교체: 상단 필터 레이아웃을 100% 보호하면서, 배지와 중복 없는 금액만 수직 정렬하는 마스터 프레임
+            var html = '<div style="display: flex !important; justify-content: space-between !important; align-items: center !important; width: 100% !important; padding: 10px !important; box-sizing: border-box !important;">' +
+                '<div style="flex: 1 !important; text-align: left !important; padding-right: 10px !important; box-sizing: border-box !important; overflow: hidden !important;">' +
+                    '<div style="font-weight: bold; font-size: 13px; margin-bottom: 4px; color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">[' + prop.detail_type + '] ' + prop.name + '</div>' +
+                    '<div style="font-size: 11px; color: #666; margin-bottom: 2px;">면적: ' + prop.area + '</div>' +
+                    '<div style="font-size: 11px; color: #666; margin-bottom: 4px;">용도: ' + prop.yongdo + '</div>' +
+                    (prop.py_price_str ? '<div style="font-size: 11px; color: #ff6e40; font-weight: bold;">' + prop.py_price_str + '</div>' : '') +
+                    (typeof vanLandLink !== "undefined" ? vanLandLink : "") +
+                    (typeof varLandLink !== "undefined" ? varLandLink : "") +
+                    (typeof varNaverMapLink !== "undefined" ? varNaverMapLink : "") +
+                    (typeof varEumLandLink !== "undefined" ? varEumLandLink : "") +
+                '</div>' +
+                '<div style="display: flex !important; flex-direction: column !important; align-items: flex-end !important; justify-content: center !important; gap: 4px !important; text-align: right !important; min-width: 100px !important; box-sizing: border-box !important;">' +
+                    dealBadgeHtml +
+                    '<div class="price" style="color: ' + priceColor + ' !important; font-size: 13px !important; font-weight: bold; margin-top: 2px; white-space: nowrap;">' + cleanPriceOnly + '</div>' +
+                '</div>' +
+            '</div>';
 
             itemDiv.innerHTML = html;
 
