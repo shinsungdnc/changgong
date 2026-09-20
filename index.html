@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260920_1452</title>
+    <title>창공공인중개사사무소 - v.260920_1455</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -484,6 +484,7 @@
                 ? '<a href="' + "http://www.eum.go.kr/web/ar/lu/luLandDet.jsp?pnu=" + prop.pnu.trim() + '&isNoScr=script&mode=search" target="_blank" class="eum-land" onclick="event.stopPropagation();">토지이음</a>' 
                 : '<a class="eum-none" title="PNU 미생성" onclick="event.stopPropagation();">미매칭</a>';
 
+        var isWolseData = (prop.detail_type === "월세");                
         var badgeBg = "#1E3A8A";
         if (prop.detail_type === "전세") { badgeBg = "#15803D"; }
         else if (prop.detail_type === "월세") { badgeBg = "#EA580C"; }
