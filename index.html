@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260920_1446</title>
+    <title>창공공인중개사사무소 - v.260920_1452</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -484,25 +484,25 @@
                 ? '<a href="' + "http://www.eum.go.kr/web/ar/lu/luLandDet.jsp?pnu=" + prop.pnu.trim() + '&isNoScr=script&mode=search" target="_blank" class="eum-land" onclick="event.stopPropagation();">토지이음</a>' 
                 : '<a class="eum-none" title="PNU 미생성" onclick="event.stopPropagation();">미매칭</a>';
 
-            // 1. 거래 구분별 고유 시그니처 색상(블루/그린/오렌지/퍼플) 동적 매칭
-            var badgeBg = "#1E3A8A"; // 매매 (딥 블루)
-            if (prop.detail_type === "전세") { badgeBg = "#15803D"; } // 전세 (딥 그린)
-            else if (prop.detail_type === "월세") { badgeBg = "#EA580C"; } // 월세 (오렌지 레드)
-            else if (prop.detail_type === "단기") { badgeBg = "#6D28D9"; } // 단기 (딥 퍼플)
+        var badgeBg = "#1E3A8A";
+        if (prop.detail_type === "전세") { badgeBg = "#15803D"; }
+        else if (prop.detail_type === "월세") { badgeBg = "#EA580C"; }
+        else if (prop.detail_type === "단기") { badgeBg = "#6D28D9"; }
 
-            var badgeText = prop.detail_type;
+        var badgeText = prop.detail_type;
 
-            // 2. 숫자에 천 단위 콤마 포맷 처리 (억 단위가 아닌 순수 숫자인 경우 자동 보정)
-            var formattedPrice = prop.price;
-            if (!isNaN(formattedPrice) && formattedPrice !== "") {
-                formattedPrice = Number(formattedPrice).toLocaleString();
-            }
+        var formattedPrice = prop.price;
+        if (!isNaN(formattedPrice) && formattedPrice !== "") {
+            formattedPrice = Number(formattedPrice).toLocaleString();
+        }
 
-            // 3. 위아래 수직 밀착 정렬(Flex Column) 구조를 적용한 우측 배지-금액 레이아웃 생성
-            var dealBadgeHtml = '<div style="display: flex; flex-direction: column; align-items: flex-end; justify-content: flex-start; gap: 4px; float: right; margin-left: 10px;">' +
-                '<span class="badge" style="background: ' + badgeBg + '; color: #fff; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: bold; white-space: nowrap; display: inline-block;">' + badgeText + '</span>' +
-                '<div class="price" style="color: ' + badgeBg + '; font-size: 14px; font-weight: bold; margin-top: 2px; white-space: nowrap;">' + formattedPrice + '</div>' +
-            '</div>';
+        // 💡 아래층 코드들이 찾아서 헤매고 있던 원래 변수 이름(cleanPriceText)을 부활시켜 우리의 예쁜 상하 정렬 레이아웃을 통째로 주입합니다!
+        var cleanPriceText = formattedPrice;
+
+        var dealBadgeHtml = '<div style="display: flex; flex-direction: column; align-items: flex-end; justify-content: flex-start; gap: 4px; float: right; margin-left: 10px;">' +
+            '<span class="badge" style="background: ' + badgeBg + '; color: #fff; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: bold; white-space: nowrap; display: inline-block;">' + badgeText + '</span>' +
+            '<div class="price" style="color: ' + badgeBg + '; font-size: 14px; font-weight: bold; margin-top: 2px; white-space: nowrap;">' + formattedPrice + '</div>' +
+        '</div>';
 
             function convertToEok(wonVal) {
                 var num = parseFloat(wonVal);
