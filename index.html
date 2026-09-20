@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260920_1409</title>
+    <title>창공공인중개사사무소 - v.260920_1418</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -407,14 +407,8 @@
         var townCounts = {};
         var riCounts = {};
         
-        var showMaemae = document.getElementById("chk-maemae").checked;
-        var showWolse = document.getElementById("chk-wolse").checked;
-        
         properties.forEach(function(p) {
-            var matchCat = (currentCategories.indexOf(p.category) !== -1);
-            var matchDetail = (currentCategories.length === 0 || currentDetail.indexOf(p.detail_type) !== -1);
-            var isWolseData = p.price.indexOf("월세") !== -1;
-            var matchDealType = (showMaemae && !isWolseData) || (showWolse && isWolseData);
+            var matchDealType = currentDealTypes.indexOf(p.gubun) !== -1;
             
             if (matchCat && matchDetail && matchDealType) {
                 totalCount++;
@@ -607,35 +601,33 @@
     }
     function changeTown(town) { currentTown = town; currentRi = "전체"; var panel = document.getElementById("detail-selector"); if(panel) panel.style.display = "none"; applyFilters(); }
 
-    function applyFilters() {
+    function applyFilters() {{
         if (currentBoundaryCircle) currentBoundaryCircle.setMap(null);
         var vis = [];
-        var showM = document.getElementById("chk-maemae").checked;
-        var showW = document.getElementById("chk-wolse").checked;
 
-        markers.forEach(function(marker, i) {
+        markers.forEach(function(marker, i) {{
             var p = properties[i];
             var mCat = (currentCategories.indexOf(marker.get("category")) !== -1);
             var mDet = (currentCategories.length === 0 || currentDetail.indexOf(marker.get("detail_type")) !== -1);
             var mTown = (currentTown === "전체" || marker.get("town") === currentTown);
             var mRi = true;
-            if (currentTown !== "전체" && currentRi !== "전체") {
+            if (currentTown !== "전체" && currentRi !== "전체") {{
                 mRi = (p.name.indexOf(currentRi) !== -1);
-            }
+            }}
 
-            var isW = p.price.indexOf("월세") !== -1;
-            var mDeal = (showM && !isW) || (showW && isW);
+            // 👈 사라진 체크박스 대신 현재 켜져 있는 4색 단추 배열과 매물의 실제 구분 값을 칼같이 매칭합니다.
+            var mDeal = currentDealTypes.indexOf(p.gubun) !== -1;
             var item = document.getElementById("item-" + i);
 
-            if (mCat && mDet && mTown && mRi && mDeal) {
-                item.style.display = "block"; marker.setMap(map); vis.push(marker); 
-            } else {
-                item.style.display = "none"; var dEl = document.getElementById("detail-" + i); if(dEl) dEl.style.display = "none";
-                item.classList.remove("active"); marker.setMap(null); 
-            }
-        });
-        updateTownSelectorOptions(); updateClustering(vis); 
-    }
+            if (mCat && mDet && mTown && mRi && mDeal) {{
+                item.style.display = "block"; marker.setMap(map); vis.push(marker);
+            }} else {{
+                item.style.display = "none"; var dEl = document.getElementById("detail-" + i); if (dEl) dEl.style.display = "none";
+                item.classList.remove("active"); marker.setMap(null);
+            }}
+        }});
+        updateTownSelectorOptions(); updateClustering(vis);
+    }}
 
     function updateClustering(vis) {
         if (markerClustering) markerClustering.setMap(null);
