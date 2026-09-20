@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260920_1133</title>
+    <title>창공공인중개사사무소 - v.260920_1138</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -593,15 +593,9 @@
     }
     function changeTown(town) { currentTown = town; currentRi = "전체"; var panel = document.getElementById("detail-selector"); if(panel) panel.style.display = "none"; applyFilters(); }
 
-    function applyFilters() {{
+    function applyFilters() {
         if (currentBoundaryCircle) currentBoundaryCircle.setMap(null);
         var vis = [];
-
-        // 💡 체크박스 전면 폐기 완료 -> 4색 마스터 토글 배열(currentDealTypes)과 실시간 연동 시작
-
-        // 💡 [수복] 체크박스 대신 4색 마스터 토글 변수(currentDealTypes)를 기준으로 매물을 필터링하도록 연산식 교정
-        var showM = document.getElementById("chk-maemae").checked;
-        var showW = document.getElementById("chk-wolse").checked;
 
         markers.forEach(function(marker, i) {
             var p = properties[i];
@@ -618,13 +612,21 @@
             var item = document.getElementById("item-" + i);
 
             if (mCat && mDet && mTown && mRi && mDeal) {
-                item.style.display = "block"; marker.setMap(map); vis.push(marker); 
+                if (item) item.style.display = "block"; 
+                marker.setMap(map); 
+                vis.push(marker); 
             } else {
-                item.style.display = "none"; var dEl = document.getElementById("detail-" + i); if(dEl) dEl.style.display = "none";
-                item.classList.remove("active"); marker.setMap(null); 
+                if (item) {
+                    item.style.display = "none"; 
+                    var dEl = document.getElementById("detail-" + i); 
+                    if(dEl) dEl.style.display = "none";
+                    item.classList.remove("active");
+                }
+                marker.setMap(null); 
             }
         });
-        updateTownSelectorOptions(); updateClustering(vis); 
+        updateTownSelectorOptions(); 
+        if (typeof updateClustering === 'function') updateClustering(vis); 
     }
 
     function updateClustering(vis) {
