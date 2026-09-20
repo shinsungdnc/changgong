@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260920_1433</title>
+    <title>창공공인중개사사무소 - v.260920_1437</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -408,6 +408,8 @@
         var riCounts = {};
         
         properties.forEach(function(p) {
+            var matchCat = (currentCategories.indexOf(p.category) !== -1);
+            var matchDetail = (currentCategories.length === 0 || currentDetail.indexOf(p.detail_type) !== -1);
             var matchDealType = currentDealTypes.indexOf(p.detail_type) !== -1;
             
             if (matchCat && matchDetail && matchDealType) {
