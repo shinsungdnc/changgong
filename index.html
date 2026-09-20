@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260920_1612</title>
+    <title>창공공인중개사사무소 - v.260920_1624</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -410,7 +410,9 @@
         properties.forEach(function(p) {
             var matchCat = (currentCategories.indexOf(p.category) !== -1);
             var matchDetail = (currentCategories.length === 0 || currentDetail.indexOf(p.detail_type) !== -1);
-            var matchDealType = currentDealTypes.indexOf(p.detail_type) !== -1;
+            // 1번 위치 수정
+            var matchDealType = currentDealTypes.indexOf(p.price.indexOf("전세") !== -1 ? "전세" : p.price.indexOf("월세") !== -1 ? "월세" : p.price.indexOf("단기") !== -1 ? "단기" : "매매") !== -1;
+
             
             if (matchCat && matchDetail && matchDealType) {
                 totalCount++;
@@ -599,8 +601,9 @@
                 mRi = (p.name.indexOf(currentRi) !== -1);
             }}
 
-            // 💡 우리가 파이썬 133번 줄에서 "detail_type" 방에 실어 보낸 정제 텍스트("매매", "전세" 등)를 직접 대조합니다.
-            var mDeal = currentDealTypes.indexOf(p.detail_type) !== -1;
+            // 2번 위치 수정
+            var mDeal = currentDealTypes.indexOf(p.price.indexOf("전세") !== -1 ? "전세" : p.price.indexOf("월세") !== -1 ? "월세" : p.price.indexOf("단기") !== -1 ? "단기" : "매매") !== -1;
+
             var item = document.getElementById("item-" + i);
 
             if (mCat && mDet && mTown && mRi && mDeal) {{
