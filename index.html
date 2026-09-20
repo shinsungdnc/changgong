@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260920_1430</title>
+    <title>창공공인중개사사무소 - v.260920_1433</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -607,15 +607,17 @@
 
         markers.forEach(function(marker, i) {{
             var p = properties[i];
-            var mCat = (currentCategories.indexOf(marker.get("category")) !== -1);
-            var mDet = (currentCategories.length === 0 || currentDetail.indexOf(marker.get("detail_type")) !== -1);
-            var mTown = (currentTown === "전체" || marker.get("town") === currentTown);
+            
+            // 💡 네이버 마커 주머니(marker.get) 대신 순수 데이터 주머니(p)를 직접 대조하도록 연산을 전면 수정합니다.
+            var mCat = (currentCategories.indexOf(p.category) !== -1);
+            var mDet = (currentCategories.length === 0 || currentDetail.indexOf(p.detail_type) !== -1);
+            var mTown = (currentTown === "전체" || p.town === currentTown);
             var mRi = true;
             if (currentTown !== "전체" && currentRi !== "전체") {{
                 mRi = (p.name.indexOf(currentRi) !== -1);
             }}
 
-            // 👈 사라진 체크박스 대신 현재 켜져 있는 4색 단추 배열과 매물의 실제 구분 값을 칼같이 매칭합니다.
+            // 💡 우리가 파이썬 133번 줄에서 "detail_type" 방에 실어 보낸 정제 텍스트("매매", "전세" 등)를 직접 대조합니다.
             var mDeal = currentDealTypes.indexOf(p.detail_type) !== -1;
             var item = document.getElementById("item-" + i);
 
