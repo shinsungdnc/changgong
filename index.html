@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260920_0941</title>
+    <title>창공공인중개사사무소 - v.260920_0955</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -462,9 +462,37 @@
             var badgeText = isWolseData ? "월세" : "매매";
             var dealBadgeHtml = '<span style="display: inline-block; padding: 4px 10px; font-size: 13px; font-weight: bold; color: #fff; background: ' + badgeBg + '; border-radius: 4px; white-space: nowrap; line-height: 1.0;">' + badgeText + '</span>';
 
-            // 💡 순수 숫자 금액 가공 및 세트 색상 바인딩
-            var cleanPriceText = prop.price.replace("매매", "").replace("월세", "").trim();
+            // 💡 [교체] 금액 가공 및 소수점 억 단위 스위칭 엔진
+            var isWolseData = prop.price.indexOf("월세") !== -1;
             var priceColor = isWolseData ? "#e65100" : "#2b5c8f";
+            
+            var rawPrice = prop.price.replace("매매", "").replace("월세", "").replace(/,/g, "").trim();
+            var cleanPriceText = "";
+
+            function convertToEok(wonVal) {
+                var num = parseFloat(wonVal);
+                if (isNaN(num)) return wonVal;
+                if (num >= 10000) {
+                    var eok = num / 10000;
+                    return parseFloat(eok.toFixed(2)) + "억";
+                } else {
+                    return num.toLocaleString();
+                }
+            }
+
+        if (isWolseData) {
+            var parts = rawPrice.split("/");
+            if (parts.length >= 2) {
+                var bojung = convertToEok(parts[0].trim());
+                var wolse = parseFloat(parts[1].trim());
+                var wolseTxt = isNaN(wolse) ? parts[1].trim() : wolse.toLocaleString();
+                cleanPriceText = bojung + " / " + wolseTxt;
+            } else {
+                cleanPriceText = convertToEok(rawPrice);
+            }
+        } else {
+            cleanPriceText = convertToEok(rawPrice);
+        }
 
             // 💡 용도 라인 결합 로직을 문자열 결합 구조 안으로 안정적으로 조립
             var infoLeftHtml = '<b>면적:</b> ' + prop.area + '<br>' + ' <b>' + (prop.category === "공장" ? "대장" : "용도") + ':</b> ' + (prop.category === "공장" ? (function() {{ try {{ var dongs = JSON.parse(prop.Building_List_JSON); if (dongs && dongs.length > 0) return (dongs[0].structure || '-') + ' / ' + (dongs[0].use || '-') + ' / ' + (dongs[0].height || '-'); }} catch(e) {{}} return '대장없음'; }})() : prop.yongdo) + '<br>'.replace(/^'\s*\+\s*/, '').replace(/\s*\+\s*'$/, '');
