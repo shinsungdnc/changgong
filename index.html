@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260920_1809</title>
+    <title>창공공인중개사사무소 - v.260920_1816</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -50,8 +50,13 @@
         #sidebar-header { padding: 12px; background: #4ad3ff !important; border-radius: 5px 5px 0 0; backdrop-filter: blur(4px); font-family: 'Pretendard', sans-serif !important; }
         .filter-section { display: flex; flex-direction: column; gap: 8px; font-family: 'Pretendard', sans-serif !important; }
         .filter-tabs { display: flex; gap: 5px; font-family: 'Pretendard', sans-serif !important; }
-        .tab-btn { flex: 1; padding: 8px; font-size: 11px; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; background: #e9ecef; color: #495057; transition: all 0.2s; font-family: 'Pretendard', sans-serif !important; }
-        .tab-btn.active { background: #ff6e40; color: white; box-shadow: 0 2px 5px rgba(255,110,64,0.3); }
+        .tab-btn { flex: 1; padding: 10px 8px; font-size: 13px !important; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; background: #e9ecef; color: #666; transition: all 0.2s; font-family: 'Pretendard', sans-serif !important; }
+        
+        /* 🎨 하늘색과 조화를 이루는 파스텔 톤 전용 클래스 추가 */
+        .tab-btn.active-land { background: #C8E6C9 !important; color: #1B5E20 !important; box-shadow: 0 2px 4px rgba(0,0,0,0.08); }
+        .tab-btn.active-factory { background: #E1BEE7 !important; color: #4A148C !important; box-shadow: 0 2px 4px rgba(0,0,0,0.08); }
+        .tab-btn.active-house { background: #FFE0B2 !important; color: #E65100 !important; box-shadow: 0 2px 4px rgba(0,0,0,0.08); }
+
         .town-select { width: 100%; padding: 8px; font-size: 12px; border: 1px solid #ced4da; border-radius: 4px; font-weight: bold; background: rgba(255,255,255,0.95); color: #004b6e; font-family: 'Pretendard', sans-serif !important; }
         
         #deal-type-filter { font-family: 'Pretendard', sans-serif !important; }
@@ -146,9 +151,9 @@
             <div id="sidebar-header">
                 <div class="filter-section">
                     <div class="filter-tabs">
-                        <button class="tab-btn active" id="btn-land" onclick="toggleCategory('토지')">토지</button>
-                        <button class="tab-btn active" id="btn-factory" onclick="toggleCategory('공장')">공장/창고</button>
-                        <button class="tab-btn active" id="btn-house" onclick="toggleCategory('주택')">주택</button>
+                        <button class="tab-btn active-land" id="btn-land" onclick="toggleCategory('토지')">토지</button>
+                        <button class="tab-btn active-factory" id="btn-factory" onclick="toggleCategory('공장')">공장/창고</button>
+                        <button class="tab-btn active-house" id="btn-house" onclick="toggleCategory('주택')">주택</button>
                     </div>
                     <div style="display: flex; gap: 8px; width: 100%; box-sizing: border-box; pointer-events: auto; margin-top: 4px;">
                         <div id="filter-toggle-btn" class="filter-toggle-trigger" onclick="toggleDetailSelectorPanel()" style="display: none; flex: 1; margin-top: 0; padding: 0; background: rgba(255,255,255,0.9); border: 1px solid rgba(0,0,0,0.15); border-radius: 4px; font-size: 11px; font-weight: bold; color: #222; display: flex; align-items: center; justify-content: center; height: 32px; cursor: pointer;">
@@ -555,19 +560,21 @@
 
     function toggleCategory(cat) {
         var btnId = "";
-        if (cat === "토지") btnId = "btn-land";
-        if (cat === "공장") btnId = "btn-factory";
-        if (cat === "주택") btnId = "btn-house";
+        var activeClass = "";
+        
+        if (cat === "토지") { btnId = "btn-land"; activeClass = "active-land"; }
+        if (cat === "공장") { btnId = "btn-factory"; activeClass = "active-factory"; }
+        if (cat === "주택") { btnId = "btn-house"; activeClass = "active-house"; }
         
         var btn = document.getElementById(btnId);
         var idx = currentCategories.indexOf(cat);
         
         if (idx > -1) {
             currentCategories.splice(idx, 1);
-            if (btn) btn.classList.remove("active");
+            if (btn) btn.classList.remove(activeClass);
         } else {
             currentCategories.push(cat);
-            if (btn) btn.classList.add("active");
+            if (btn) btn.classList.add(activeClass);
         }
         
         updateDetailSelectorOptions(); 
