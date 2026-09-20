@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260920_1458</title>
+    <title>창공공인중개사사무소 - v.260920_1500</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -484,27 +484,29 @@
                 ? '<a href="' + "http://www.eum.go.kr/web/ar/lu/luLandDet.jsp?pnu=" + prop.pnu.trim() + '&isNoScr=script&mode=search" target="_blank" class="eum-land" onclick="event.stopPropagation();">토지이음</a>' 
                 : '<a class="eum-none" title="PNU 미생성" onclick="event.stopPropagation();">미매칭</a>';
 
+        // 💡 하단 다른 로직(549번 줄 등)이 애타게 찾는 옛날 변수 이름표들을 전부 복구하여 안착시킵니다.
         var isWolseData = (prop.detail_type === "월세");
         var rawPrice = prop.price;
-                        
+
         var badgeBg = "#1E3A8A";
         if (prop.detail_type === "전세") { badgeBg = "#15803D"; }
         else if (prop.detail_type === "월세") { badgeBg = "#EA580C"; }
         else if (prop.detail_type === "단기") { badgeBg = "#6D28D9"; }
 
         var badgeText = prop.detail_type;
+        var priceColor = badgeBg; // 💡 549번 줄에서 터지던 에러를 해결하며 금액 글자색을 배지와 100% 동일하게 통일합니다.
 
         var formattedPrice = prop.price;
         if (!isNaN(formattedPrice) && formattedPrice !== "") {
             formattedPrice = Number(formattedPrice).toLocaleString();
         }
 
-        // 💡 아래층 코드들이 찾아서 헤매고 있던 원래 변수 이름(cleanPriceText)을 부활시켜 우리의 예쁜 상하 정렬 레이아웃을 통째로 주입합니다!
+        // 아래층 리스트 조립 레이아웃이 헤매던 변수 이름 동기화
         var cleanPriceText = formattedPrice;
 
         var dealBadgeHtml = '<div style="display: flex; flex-direction: column; align-items: flex-end; justify-content: flex-start; gap: 4px; float: right; margin-left: 10px;">' +
             '<span class="badge" style="background: ' + badgeBg + '; color: #fff; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: bold; white-space: nowrap; display: inline-block;">' + badgeText + '</span>' +
-            '<div class="price" style="color: ' + badgeBg + '; font-size: 14px; font-weight: bold; margin-top: 2px; white-space: nowrap;">' + formattedPrice + '</div>' +
+            '<div class="price" style="color: ' + priceColor + '; font-size: 14px; font-weight: bold; margin-top: 2px; white-space: nowrap;">' + formattedPrice + '</div>' +
         '</div>';
 
             function convertToEok(wonVal) {
