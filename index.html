@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260921_0924</title>
+    <title>창공공인중개사사무소 - v.260921_0930</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -526,7 +526,7 @@
         listContainer.innerHTML = ""; markers = [];
         updateDetailSelectorOptions(); updateTownSelectorOptions();
 
-        // 🎯 [고속화 최종 종결] 2,000개를 한 번에 그리지 않고, 브라우저 프레임에 맞춰 50개씩 쪼개서 초고속 연쇄 배치를 수행합니다.
+        // 🎯 [마커 순차 노출 1단계] 50개씩 쪼개어 목록과 마커 핀을 지도 위에 실시간으로 동시 출력합니다.
         var chunkSize = 50;
         var currentIndex = 0;
 
@@ -546,6 +546,9 @@
 
                     var marker = new naver.maps.Marker({ position: latlng, icon: { content: markerHtml, anchor: new naver.maps.Point(0, 0) } });
                     marker.set("category", prop.category); marker.set("detail_type", prop.detail_type); marker.set("town", prop.town); marker.set("p_index", idx); markers.push(marker);
+
+                    // 🎯 [핵심 수복] 2,000개가 다 만들어질 때까지 대기하지 않고, 지금 그리는 50개 묶음의 마커를 지도 위에 즉시 실시간으로 심어버립니다!
+                    marker.setMap(map);
 
                     var danDisplayHtml = (prop.category === "토지") ? prop.py_price : '대지 ' + prop.py_price + ' / <span style="color:#2b5c8f; font-weight:bold;">연면적 ' + prop.year_price + '</span>';
                     var itemDiv = document.createElement("div"); itemDiv.className = "property-item " + (prop.category === "토지" ? "item-land" : prop.category === "주택" ? "item-house" : "item-factory"); itemDiv.id = "item-" + idx;
@@ -635,12 +638,14 @@
             }
 
             currentIndex = nextIndex;
-            // 🚀 프레임 드롭 없이 다음 50개를 초고속으로 바통 터치하며 이어 그립니다.
+            // 🚀 브라우저 렉 없이 다음 50개 묶음으로 즉시 릴레이를 넘겨 연속으로 이어 그립니다.
             if (currentIndex < properties.length) {
                 requestAnimationFrame(renderChunk);
             } else {
-                // 모든 분할 생성이 끝나면 필터 연산을 결합하여 마커 클러스터러를 최종 마감합니다.
-                applyFilters();
+                // 🎯 2,000개가 완전히 다 깔리고 나면, 켜져있는 마커들만 수집하여 마커 클러스터러를 한 번에 마감합니다.
+                var visibleMarkers = [];
+                markers.forEach(function(m) { if (m.getMap()) visibleMarkers.push(m); });
+                updateTownSelectorOptions(); updateClustering(visibleMarkers);
             }
         }
 
