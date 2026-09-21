@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260921_1212</title>
+    <title>창공공인중개사사무소 - v.260921_1217</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -715,46 +715,46 @@
 
 
     // 💡 [방사형 샤샤삭 엔진] 중심점 기준 거리 계산 함수
-    function getDistance(lat1, lng1, lat2, lng2) {{
+    function getDistance(lat1, lng1, lat2, lng2) {
         var deg2rad = Math.PI / 180;
         var dLat = (lat2 - lat1) * deg2rad;
         var dLng = (lng2 - lng1) * deg2rad;
         var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
                 Math.cos(lat1*deg2rad) * Math.cos(lat2*deg2rad) * Math.sin(dLng/2) * Math.sin(dLng/2);
         return 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    }}
+    }
 
     // 💡 글로벌 타이머 및 클러스터러 변수 세팅
     var activeTimers = [];
     var markerClustering = null; 
 
-    // 💡 클러스터러를 업데이트하는 독립 핵심 함수 (f-string 완전 방어)
-    function updateClustering(vis) {{
-        if (!markerClustering) {{
-            markerClustering = new MarkerClustering({{
+    // 💡 클러스터러를 업데이트하는 독립 핵심 함수 (순정 기반 복원)
+    function updateClustering(vis) {
+        if (!markerClustering) {
+            markerClustering = new MarkerClustering({
                 minClusterSize: 2, maxZoom: 16, map: map, markers: vis, gridSize: 120, disableClickZoom: false, 
                 icons: [
-                    {{ content: '<div class="cluster-badge" style="cursor:pointer; width:44px; height:44px; line-height:44px; font-size:12px; color:#fff; text-align:center; font-weight:bold; background:rgba(0, 140, 180, 0.95); border:2px solid #fff; border-radius:50%; box-shadow:0 3px 10px rgba(0,0,0,0.35);"></div>', anchor: new naver.maps.Point(22, 22) }},
-                    {{ content: '<div class="cluster-badge" style="cursor:pointer; width:52px; height:52px; line-height:52px; font-size:13px; color:#fff; text-align:center; font-weight:bold; background:rgba(230, 70, 20, 0.95); border:2px solid #fff; border-radius:50%; box-shadow:0 4px 12px rgba(0,0,0,0.4);"></div>', anchor: new naver.maps.Point(26, 26) }}
+                    { content: '<div class="cluster-badge" style="cursor:pointer; width:44px; height:44px; line-height:44px; font-size:12px; color:#fff; text-align:center; font-weight:bold; background:rgba(0, 140, 180, 0.95); border:2px solid #fff; border-radius:50%; box-shadow:0 3px 10px rgba(0,0,0,0.35);"></div>', anchor: new naver.maps.Point(22, 22) },
+                    { content: '<div class="cluster-badge" style="cursor:pointer; width:52px; height:52px; line-height:52px; font-size:13px; color:#fff; text-align:center; font-weight:bold; background:rgba(230, 70, 20, 0.95); border:2px solid #fff; border-radius:50%; box-shadow:0 4px 12px rgba(0,0,0,0.4);"></div>', anchor: new naver.maps.Point(26, 26) }
                 ],
-                indexGenerator: function(count) {{ return count < 15 ? 0 : 1; }}, 
-                stylingFunction: function(clusterMarker, count) {{
+                indexGenerator: function(count) { return count < 15 ? 0 : 1; }, 
+                stylingFunction: function(clusterMarker, count) {
                     var el = clusterMarker.getElement();
-                    if (el) {{ var bd = el.querySelector(".cluster-badge"); if (bd) bd.innerText = count; }}
-                }}
-            }});
-        }} else {{
+                    if (el) { var bd = el.querySelector(".cluster-badge"); if (bd) bd.innerText = count; }
+                }
+            });
+        } else {
             markerClustering.setMap(null);
             markerClustering.setMarkers(vis);
             markerClustering.setMap(map);
-        }}
-    }}
+        }
+    }
 
-    function applyFilters() {{
+    function applyFilters() {
         if (currentBoundaryCircle) currentBoundaryCircle.setMap(null);
         
         // 기존에 작동 중이던 분할 로딩 타이머가 있다면 모두 정지
-        activeTimers.forEach(function(t) {{ clearTimeout(t); }});
+        activeTimers.forEach(function(t) { clearTimeout(t); });
         activeTimers = [];
 
         var listContainer = document.getElementById("property-list");
@@ -764,20 +764,20 @@
         var filteredData = [];
 
         // 1단계: 필터 조건 검사 및 데이터 수집
-        markers.forEach(function(marker, i) {{
+        markers.forEach(function(marker, i) {
             var p = properties[i];
             var mCat = (currentCategories.indexOf(marker.get("category")) !== -1);
             var mDet = (currentCategories.length === 0 || currentDetail.indexOf(marker.get("detail_type")) !== -1);
             var mTown = (currentTown === "전체" || marker.get("town") === currentTown);
             var mRi = true;
-            if (currentTown !== "전체" && currentRi !== "전체") {{
+            if (currentTown !== "전체" && currentRi !== "전체") {
                 mRi = (p.name.indexOf(currentRi) !== -1);
-            }}
+            }
 
             var mDeal = false;
-            currentDealTypes.forEach(function(type) {{
-                if (p.price.indexOf(type) !== -1) {{ mDeal = true; }}
-            }});
+            currentDealTypes.forEach(function(type) {
+                if (p.price.indexOf(type) !== -1) { mDeal = true; }
+            });
 
             var item = document.getElementById("item-" + i);
             
@@ -785,57 +785,57 @@
             item.style.display = "none";
             marker.setMap(null);
 
-            if (mCat && mDet && mTown && mRi && mDeal) {{
+            if (mCat && mDet && mTown && mRi && mDeal) {
                 var dist = getDistance(cLat, cLng, p.lat, p.lng);
                 // 🎯 [실무 수복] 정렬 순서 제어를 위해 파이썬 장부로부터 전달된 원래의 주소 정렬 고유 순서(i)를 보존합니다.
-                filteredData.push({{ index: i, marker: marker, item: item, dist: dist }});
-            }} else {{
+                filteredData.push({ index: i, marker: marker, item: item, dist: dist });
+            } else {
                 var dEl = document.getElementById("detail-" + i); 
                 if(dEl) dEl.style.display = "none";
                 item.classList.remove("active");
-            }}
-        }});
+            }
+        });
 
         // 🎯 [장부 정렬 동기화 핵심 규칙]
-        // 거리순으로 목록을 흐트러뜨리지 않고, 파이썬이 간소화주소 기준으로 맞춰준 원래의 가나다 순서(0번~)대로 리스트 용기를 싹 재배치합니다.
+        // 거리순으로 목록을 흐트러뜨리지 않고, 파이썬이 처음 정렬해준 고유 순서(0번~)대로 리스트 용기를 싹 재배치합니다.
         // 이 덕분에 리스트 결과물은 항상 세종시 고운동부터 완벽한 주소순(오름차순)을 칼같이 유지합니다.
-        filteredData.sort(function(a, b) {{ return a.index - b.index; }});
-        filteredData.forEach(function(obj) {{
+        filteredData.sort(function(a, b) { return a.index - b.index; });
+        filteredData.forEach(function(obj) {
             listContainer.appendChild(obj.item);
-        }});
+        });
 
         // 2단계: 지도 위의 마커와 클러스터러 '방사형 샤샤삭 연출'을 위해서만 거리순 정렬 데이터셋을 별도로 복제합니다.
-        var mapAnimationData = filteredData.slice().sort(function(a, b) {{ return a.dist - b.dist; }});
+        var mapAnimationData = filteredData.slice().sort(function(a, b) { return a.dist - b.dist; });
 
         // 3단계: 청크(Chunk) 분할 및 시간차 방사형 로딩 시행
         var chunkSize = 50; 
         var delayStep = 35; 
         var visMarkers = [];
 
-        // 시간차 릴레이 시작 (지도는 중심부터 퍼지고, 리스트는 원래 고정된 주소 자리에서 물결치듯 추가됨)
-        for (var i = 0; i < mapAnimationData.length; i += chunkSize) {{
-            (function(startIdx) {{
-                var timerId = setTimeout(function() {{
+        // 시간차 릴레이 시작 (지도는 중심부터 퍼지고, 리스트는 원래 고정된 주소 자리에서 주르륵 활성화됨)
+        for (var i = 0; i < mapAnimationData.length; i += chunkSize) {
+            (function(startIdx) {
+                var timerId = setTimeout(function() {
                     var endIdx = Math.min(startIdx + chunkSize, mapAnimationData.length);
                     
-                    for (var j = startIdx; j < endIdx; j++) {{
+                    for (var j = startIdx; j < endIdx; j++) {
                         var target = mapAnimationData[j];
                         target.item.style.display = "block"; // 주소순으로 고정된 내 자리에서 리스트 상자가 켜짐
                         target.marker.setMap(map);          // 마커와 클러스터는 중심부부터 샤샤삭 생성
                         visMarkers.push(target.marker);
-                    }}
+                    }
                     
                     // 매물이 추가될 때마다 클러스터러 실시간 동기화 업데이트
                     updateClustering(visMarkers);
                 }, (startIdx / chunkSize) * delayStep);
                 
                 activeTimers.push(timerId);
-            }})(i);
-        }}
+            })(i);
+        }
 
         updateTownSelectorOptions();
-    }}
-
+    }
+    
     function selectProperty(index, marker) {
         var sidebar = document.getElementById("sidebar");
         var listContainer = document.getElementById("property-list");
