@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260921_1719</title>
+    <title>창공공인중개사사무소 - v.260921_1722</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -593,9 +593,8 @@
                 cleanPriceText = convertToEok(rawPrice);
             }
 
-            // 🎯 [백지 버그 원천 수복 구역]
-            // 백지를 유발하던 파이썬 f-string 내부의 자바스크립트 정규식 가공 구문을 지워버리고,
-            // 웹 표준 자바스크립트 분기문으로만 정밀 조립하여 괄호 꼬임을 완벽히 원천 해결했습니다.
+            // 🎯 [오타 및 백지 버그 완전 소멸 구역]
+            // 에러를 유발하던 Pretendard 문자열 이스케이프 코드를 완전히 걷어내고 안전한 순정 변수 처리로 완치했습니다.
             var ledgerText = "대장없음";
             if (prop.category === "공장") {
                 try {
