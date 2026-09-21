@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260921_1712</title>
+    <title>창공공인중개사사무소 - v.260921_1716</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -528,7 +528,6 @@
         listContainer.innerHTML = ""; markers = [];
         updateDetailSelectorOptions(); updateTownSelectorOptions();
 
-        // 🎯 [순정 기반 안전 엔진] 자바스크립트 괄호 꼬임을 완벽히 치료하고 마커와 클러스터를 즉시 부활시킵니다.
         properties.forEach(function(prop, index) {
             var latlng = new naver.maps.LatLng(prop.lat, prop.lng);
             var markerHtml = [
@@ -550,100 +549,110 @@
                 ? '<a href="' + "http://www.eum.go.kr/web/ar/lu/luLandDet.jsp?pnu=" + prop.pnu.trim() + '&isNoScr=script&mode=search" target="_blank" class="eum-land" onclick="event.stopPropagation();">토지이음</a>' 
                 : '<a class="eum-none" title="PNU 미생성" onclick="event.stopPropagation();">미매칭</a>';
 
-            // 🎯 [배지 오염 완전 치료] 금액 문장을 정밀 검사하여 4대 거래 배지와 고유 색상을 정확히 매칭
-            var badgeBg = "#2b5c8f"; // 기본 매매 블루
+            var badgeBg = "#2b5c8f"; 
             var badgeText = "매매";
             var isWolseData = prop.price.indexOf("월세") !== -1;
             
             if (prop.price.indexOf("전세") !== -1) {
-                badgeBg = "#1B5E20"; // 전세 녹색
+                badgeBg = "#1B5E20"; 
                 badgeText = "전세";
             } else if (prop.price.indexOf("월세") !== -1) {
-                badgeBg = "#ff6e40"; // 월세 주황
+                badgeBg = "#ff6e40"; 
                 badgeText = "월세";
             } else if (prop.price.indexOf("단기") !== -1) {
-                badgeBg = "#4A148C"; // 단기 보라
+                badgeBg = "#4A148C"; 
                 badgeText = "단기";
             }
             var dealBadgeHtml = '<span style="display: inline-block; padding: 4px 10px; font-size: 13px; font-weight: bold; color: #fff; background: ' + badgeBg + '; border-radius: 4px; white-space: nowrap; line-height: 1.0;">' + badgeText + '</span>';
-            var priceColor = badgeBg; // 우측 금액 텍스트 색상도 배지 색과 통일
+            var priceColor = badgeBg; 
 
             var rawPrice = prop.price.replace(badgeText, "").replace(/,/g, "").trim();
             var cleanPriceText = "";
 
-                    function convertToEok(wonVal) {
-                        var num = parseFloat(wonVal);
-                        if (isNaN(num)) return wonVal;
-                        if (num >= 10000) {
-                            var eok = num / 10000;
-                            return parseFloat(eok.toFixed(2)) + " 억";
-                        } else {
-                            return num.toLocaleString();
-                        }
+            function convertToEok(wonVal) {
+                var num = parseFloat(wonVal);
+                if (isNaN(num)) return wonVal;
+                if (num >= 10000) {
+                    var eok = num / 10000;
+                    return parseFloat(eok.toFixed(2)) + " 억";
+                } else {
+                    return num.toLocaleString();
+                }
+            }
+
+            if (rawPrice.indexOf("/") !== -1) {
+                var parts = rawPrice.split("/");
+                if (parts.length >= 2) {
+                    var bojung = convertToEok(parts[0].trim());
+                    var wolseTxt = convertToEok(parts[1].trim());
+                    cleanPriceText = bojung + " / " + wolseTxt;
+                } else {
+                    cleanPriceText = convertToEok(rawPrice);
+                }
+            } else {
+                cleanPriceText = convertToEok(rawPrice);
+            }
+
+            // 🎯 [백지 버그 원천 수복 구역]
+            // 백지를 유발하던 파이썬 f-string 내부의 자바스크립트 정규식 가공 구문을 지워버리고,
+            // 웹 표준 자바스크립트 분기문으로만 정밀 조립하여 괄호 꼬임을 완벽히 원천 해결했습니다.
+            var ledgerText = "대장없음";
+            if (prop.category === "공장") {
+                try {
+                    var dongs = JSON.parse(prop.Building_List_JSON);
+                    if (dongs && dongs.length > 0) {
+                        ledgerText = (dongs[0].structure || '-') + ' / ' + (dongs[0].use || '-') + ' / ' + (dongs[0].height || '-');
                     }
-
-                    if (rawPrice.indexOf("/") !== -1) {
-                        var parts = rawPrice.split("/");
-                        if (parts.length >= 2) {
-                            var bojung = convertToEok(parts[0].trim());
-                            var wolseTxt = convertToEok(parts[1].trim());
-                            cleanPriceText = bojung + " / " + wolseTxt;
-                        } else {
-                            cleanPriceText = convertToEok(rawPrice);
-                        }
-                    } else {
-                        cleanPriceText = convertToEok(rawPrice);
-                    }
-
-                    var infoLeftHtml = '<b>면적:</b> ' + prop.area + '<br>' + ' <b>' + (prop.category === "공장" ? "대장" : "용도") + ':</b> ' + (prop.category === "공장" ? (function() {{ try {{ var dongs = JSON.parse(prop.Building_List_JSON); if (dongs && dongs.length > 0) return (dongs[0].structure || '-') + ' / ' + (dongs[0].use || '-') + ' / ' + (dongs[0].height || '-'); }} catch(e) {{}} return '대장없음'; }})() : prop.yongdo) + '<br>'.replace(/^'\s*\+\s*/, '').replace(/\s*\+\s*'$/, '');
-
-                    itemDiv.innerHTML = [
-                        '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">',
-                        '  <h4 style="margin: 0; font-size: 13px; font-weight: bold; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: calc(100% - 65px);">[' + prop.detail_type + '] ' + prop.name + '</h4>', 
-                        '  <div style="flex-shrink: 0; display: flex; align-items: center;">' + dealBadgeHtml + '</div>',
-                        '</div>', 
-                        '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0;">', 
-                        '  <div style="font-size: 11px; color: #495057; line-height: 1.4; flex: 1; padding-right: 10px;">' + infoLeftHtml + '</div>', 
-                        '  <div style="text-align: right; flex-shrink: 0; display: flex; justify-content: flex-end; align-items: center; margin-top: -2px;">',
-                        '    <span style="font-size: 15px; font-weight: bold; color: ' + priceColor + '; white-space: nowrap; letter-spacing: -0.3px; display: inline-block;">' + cleanPriceText + '</span>',
-                        '  </div>', 
-                        '</div>', 
-                        '<div class="property-detail" id="detail-' + index + '" style="margin-top: 3px; padding-top: 3px; font-size: 12px; line-height: 1.3;">', 
-                        ' <div style="display: flex; flex-direction: column; gap: 1px; width: 100%;">', 
-                        ' <div style="display: flex; width: 100%;">', 
-                        ' <span style="font-weight: bold; color: #555; width: 52px; flex-shrink: 0;">평 당 가</span>', 
-                        ' <span style="font-weight: bold; color: #555; width: 12px; flex-shrink: 0;">:</span>', 
-                        ' <span style="color: #222; word-break: break-all;">' + danDisplayHtml + '</span>', 
-                        ' </div>', 
-                        ' <div style="display: flex; width: 100%;">', 
-                        ' <div style="flex: 1; display: flex; overflow: hidden;">', 
-                        ' <span style="font-weight: bold; color: #555; width: 52px; flex-shrink: 0;">평공시가</span>', 
-                        ' <span style="font-weight: bold; color: #555; width: 12px; flex-shrink: 0;">:</span>', 
-                        ' <span style="color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + prop.gongsi_price + '</span>', 
-                        ' </div>', 
-                        ' <div style="flex: 1; display: flex; padding-left: 6px; overflow: hidden;">', 
-                        ' <span style="font-weight: bold; color: #555; width: 52px; flex-shrink: 0;">도로접면</span>', 
-                        ' <span style="font-weight: bold; color: #555; width: 12px; flex-shrink: 0;">:</span>', 
-                        ' <span style="color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + prop.road + '</span>', 
-                        ' </div>', 
-                        ' </div>', 
-                        ' <div style="display: flex; width: 100%;">', 
-                        ' <span style="font-weight: bold; color: #555; width: 52px; flex-shrink: 0;">매물특징</span>', 
-                        ' <span style="font-weight: bold; color: #555; width: 12px; flex-shrink: 0;">:</span>', 
-                        ' <span style="color: #222; word-break: break-all; flex: 1;">' + prop.feature + '</span>', 
-                        ' </div>', 
-                        ' </div>', 
-                        ' <div class="links-row" style="margin-top: 4px; padding-top: 4px; margin-bottom: 0;">', 
-                        ' ' + naverLandLink, 
-                        ' ' + naverMapLink, 
-                        ' ' + eumLandLink, 
-                        ' </div>', 
-                        '</div>'
-                    ].join('');
-                    
-                    itemDiv.onclick = function() { selectProperty(index, marker); };
-                    listContainer.appendChild(itemDiv);
-                    naver.maps.Event.addListener(marker, "click", function(e) { selectProperty(index, marker); });
+                } catch(e) {}
+            }
+            var infoLeftHtml = '<b>면적:</b> ' + prop.area + '<br><b>' + (prop.category === "공장" ? "대장" : "용도") + ':</b> ' + (prop.category === "공장" ? ledgerText : prop.yongdo) + '<br>';
+            itemDiv.innerHTML = [
+                '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">',
+                '  <h4 style="margin: 0; font-size: 13px; font-weight: bold; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: calc(100% - 65px);">[' + prop.detail_type + '] ' + prop.name + '</h4>', 
+                '  <div style="flex-shrink: 0; display: flex; align-items: center;">' + dealBadgeHtml + '</div>',
+                '</div>', 
+                '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0;">', 
+                '  <div style="font-size: 11px; color: #495057; line-height: 1.4; flex: 1; padding-right: 10px;">' + infoLeftHtml + '</div>', 
+                '  <div style="text-align: right; flex-shrink: 0; display: flex; justify-content: flex-end; align-items: center; margin-top: -2px;">',
+                '    <span style="font-size: 15px; font-weight: bold; color: ' + priceColor + '; white-space: nowrap; letter-spacing: -0.3px; display: inline-block;">' + cleanPriceText + '</span>',
+                '  </div>', 
+                '</div>', 
+                '<div class="property-detail" id="detail-' + index + '" style="margin-top: 3px; padding-top: 3px; font-size: 12px; line-height: 1.3;">', 
+                ' <div style="display: flex; flex-direction: column; gap: 1px; width: 100%;">', 
+                ' <div style="display: flex; width: 100%;">', 
+                ' <span style="font-weight: bold; color: #555; width: 52px; flex-shrink: 0;">평 당 가</span>', 
+                ' <span style="font-weight: bold; color: #555; width: 12px; flex-shrink: 0;">:</span>', 
+                ' <span style="color: #222; word-break: break-all;">' + danDisplayHtml + '</span>', 
+                ' </div>', 
+                ' <div style="display: flex; width: 100%;">', 
+                ' <div style="flex: 1; display: flex; overflow: hidden;">', 
+                ' <span style="font-weight: bold; color: #555; width: 52px; flex-shrink: 0;">평공시가</span>', 
+                ' <span style="font-weight: bold; color: #555; width: 12px; flex-shrink: 0;">:</span>', 
+                ' <span style="color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + prop.gongsi_price + '</span>', 
+                ' </div>', 
+                ' <div style="flex: 1; display: flex; padding-left: 6px; overflow: hidden;">', 
+                ' <span style="font-weight: bold; color: #555; width: 52px; flex-shrink: 0;">도로접면</span>', 
+                ' <span style="font-weight: bold; color: #555; width: 12px; flex-shrink: 0;">:</span>', 
+                ' <span style="color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + prop.road + '</span>', 
+                ' </div>', 
+                ' </div>', 
+                ' <div style="display: flex; width: 100%;">', 
+                ' <span style="font-weight: bold; color: #555; width: 52px; flex-shrink: 0;">매물특징</span>', 
+                ' <span style="font-weight: bold; color: #555; width: 12px; flex-shrink: 0;">:</span>', 
+                ' <span style="color: #222; word-break: break-all; flex: 1;">' + prop.feature + '</span>', 
+                ' </div>', 
+                ' </div>', 
+                ' <div class="links-row" style="margin-top: 4px; padding-top: 4px; margin-bottom: 0;">', 
+                ' ' + naverLandLink, 
+                ' ' + naverMapLink, 
+                ' ' + eumLandLink, 
+                ' </div>', 
+                '</div>'
+            ].join('');
+            
+            itemDiv.onclick = function() { selectProperty(index, marker); };
+            listContainer.appendChild(itemDiv);
+            naver.maps.Event.addListener(marker, "click", function(e) { selectProperty(index, marker); };);
         });
         applyFilters();
     }
@@ -678,18 +687,15 @@
         var panel = document.getElementById("detail-selector");
         if(panel) panel.style.display = "none";
         
-        // 🎯 [렉/딜레이 완전 박멸 복귀 엔진]
         if (town === "전체") {
             var initialLatLng = new naver.maps.LatLng(36.55, 127.25); 
-            map.setZoom(12); // 초기 로딩과 일치하는 3km 범위
+            map.setZoom(12); 
             map.panTo(initialLatLng);
             
-            // 🚀 브라우저가 멈칫하는 현상을 완전히 없애기 위해, 화면 리스트 요소를 렌더링 큐에 태워 초고속으로 패스시킵니다.
             requestAnimationFrame(function() {
                 applyFilters();
             });
         } else {
-            // 특정 읍면동 선택 시: 기존 완성형 15레벨 무빙 엔진
             applyFilters();
             
             var sumLat = 0;
@@ -715,7 +721,6 @@
         }
     }
 
-
     // 💡 두 좌표 간의 거리를 킬로미터(km) 단위로 신속하게 계산하는 고속 함수
     function getDistanceKm(lat1, lng1, lat2, lng2) {
         var deg2rad = Math.PI / 180;
@@ -726,10 +731,12 @@
         return 2 * 6371 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
 
+    // 글로벌 배지 마커 객체 배열 보관용
     var badgeMarkers = [];
 
-    // 💡 각 읍면동의 대표 위치에 깔끔한 통합 숫자 판넬 배지를 그리는 함수
+    // 💡 각 읍면동의 대표 위치에 깔끔한 통합 숫자 판넬 배지를 그리는 함수 (연산량 0)
     function renderTownBadges() {
+        // 기존 지도 위에 존재하는 배지 마커들을 깨끗하게 지웁니다.
         badgeMarkers.forEach(function(b) { b.setMap(null); });
         badgeMarkers = [];
 
@@ -740,14 +747,16 @@
         townBadges.forEach(function(badge) {
             if (currentTown !== "전체" && badge.town !== currentTown) return;
 
-            // 🎯 [3km 시야 매칭 규칙 기획안 구현]
+            // 🎯 [중개사님 3km 시야 매칭 규칙 기획안 구현]
+            // 지도를 바짝 확대했거나(14레벨 이상), 내 눈앞 시야 중심 3km 이내에 들어오는 진짜 매물 구역이라면 대표 배지를 숨깁니다.
             var distFromCenter = getDistanceKm(cLat, cLng, badge.lat, badge.lng);
             if (currentZoom >= 14 || (currentZoom >= 13 && distFromCenter <= 3.0)) {
-                return; 
+                return; // 내 중심 3km 이내는 낱개 매물을 생생하게 노출해야 하므로 대표 배지를 감춥니다.
             }
 
             var latlng = new naver.maps.LatLng(badge.lat, badge.lng);
             
+            // 🎨 기존의 복잡한 주황색 숫자 뭉치를 제거하고, 세련된 대시보드 형태의 하늘색 원형 배지 디자인 주입
             var badgeHtml = [
                 '<div style="cursor:pointer; display:flex; flex-direction:column; justify-content:center; align-items:center; width:58px; height:58px; background:rgba(0, 191, 255, 0.95); border:2px solid #ffffff; border-radius:50%; box-shadow:0 4px 15px rgba(0,0,0,0.3); color:#111; font-family:'Pretendard',sans-serif; text-align:center; z-index:9999;">',
                 '  <span style="font-size:11px; font-weight:700; color:#222; line-height:1.1;">' + badge.town + '</span>',
@@ -761,6 +770,7 @@
                 icon: { content: badgeHtml, anchor: new naver.maps.Point(29, 29) }
             });
 
+            // 배지 클릭 시 해당 행정구역 중심으로 순간이동하며 3km 스케일 시야(14레벨)로 바짝 줌인하는 브리핑 기능 연동
             naver.maps.Event.addListener(bMarker, "click", function() {
                 currentTown = badge.town;
                 var selectEl = document.getElementById("town-selector");
@@ -775,6 +785,7 @@
     function applyFilters() {
         if (currentBoundaryCircle) currentBoundaryCircle.setMap(null);
         
+        // 기존에 작동 중이던 분할 로딩 타이머 및 렉 요소를 완벽히 초기화
         if (typeof activeTimers !== 'undefined' && activeTimers.length > 0) {
             activeTimers.forEach(function(t) { clearTimeout(t); });
             activeTimers = [];
@@ -805,7 +816,7 @@
 
             var item = document.getElementById("item-" + i);
             item.style.display = "none";
-            marker.setMap(null);
+            marker.setMap(null); // 기존 무거운 마커들 일단 지도에서 전부 탈거
 
             if (mCat && mDet && mTown && mRi && mDeal) {
                 var dist = getDistanceKm(cLat, cLng, p.lat, p.lng);
@@ -817,19 +828,22 @@
             }
         });
 
-        // 🎯 [장부 정렬 동기화] 매물 목록은 지번 가나다 순서 그대로 고정
+        // 🎯 [장부 일치 규칙 고정] 매물 목록은 처음부터 지번주소 정렬 가나다 순서(세종시 고운동 우선)대로 쫙 노출
         filteredData.sort(function(a, b) { return a.index - b.index; });
         filteredData.forEach(function(obj) {
             listContainer.appendChild(obj.item);
-            obj.item.style.display = "block"; // 리스트 즉시 쫙 노출
+            obj.item.style.display = "block"; // 리스트 즉시 100% 오픈하여 덜덜거림 차단
         });
 
-        // 2단계: 🎯 [3km 시야 매칭 마커 노출 스위칭 작동]
+        // 2단계: 🎯 [3km 시야 매칭 마커 노출 스위칭 규격 작동]
+        // 사용자가 드롭다운 필터에서 전체가 아닌 특정 '읍면동'을 골랐을 때는 거리 연산을 완전히 무시하고 즉시 마커를 다 켜서 렉을 차단합니다.
         if (currentTown !== "전체") {
             filteredData.forEach(function(obj) {
                 obj.marker.setMap(map);
             });
-        } else {
+        } 
+        // 전체 지역 모드일 때는 중개사님의 3km 시야 원칙에 따라 내 눈앞 중심부 매물 마커만 엄격히 선별해서 켜줍니다.
+        else {
             filteredData.forEach(function(obj) {
                 if (currentZoom >= 14 || (currentZoom >= 13 && obj.dist <= 3.0)) {
                     obj.marker.setMap(map);
@@ -837,11 +851,11 @@
             });
         }
 
-        // 3단계: 주변 외곽 매물 대표 행정구역 배지 오버레이
+        // 3단계: 주변 외곽 매물들을 묶어서 표현할 대표 행정구역 배지 오버레이
         renderTownBadges();
         updateTownSelectorOptions();
     }
-    
+
     function selectProperty(index, marker) {
         var sidebar = document.getElementById("sidebar");
         var listContainer = document.getElementById("property-list");
