@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260921_1335</title>
+    <title>창공공인중개사사무소 - v.260921_1344</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -960,11 +960,11 @@
         }
     });
 
-    // 🎯 [네이버맵 최우선 로딩] 7초 백지 렉 완벽 차단! 위성 지도 판넬을 0.01초 만에 먼저 깨끗하게 띄운 직후, 매물을 시간차 분할 로딩합니다.
+    // 🎯 [고속화 1단계] 지도가 먼저 깨끗하게 켜진 뒤, 0.15초 뒤에 리스트를 지연 분할 로딩하여 백지 렉을 지워냅니다.
     naver.maps.Event.once(map, "init_stylemap", function() {
-        requestAnimationFrame(function() {
+        setTimeout(function() {
             initMap();
-        });
+        }, 150);
     });
 </script>
 </body>
