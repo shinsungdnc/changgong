@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260921_1135</title>
+    <title>창공공인중개사사무소 - v.260921_1155</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -676,20 +676,21 @@
         var panel = document.getElementById("detail-selector");
         if(panel) panel.style.display = "none";
         
-        // 🎯 [렉/딜레이 완전 박멸 복귀 엔진]
+        // 🎯 [이동 딜레이 박멸 엔진 - f-string 안전 버전]
+        if (typeof activeTimers !== 'undefined' && activeTimers.length > 0) {
+            activeTimers.forEach(function(t) { clearTimeout(t); });
+            activeTimers = [];
+        }
+        
         if (town === "전체") {
             var initialLatLng = new naver.maps.LatLng(36.55, 127.25); 
-            map.setZoom(12); // 초기 로딩과 일치하는 3km 범위
+            map.setZoom(12);
             map.panTo(initialLatLng);
             
-            // 🚀 브라우저가 멈칫하는 현상을 완전히 없애기 위해, 화면 리스트 요소를 렌더링 큐에 태워 초고속으로 패스시킵니다.
             requestAnimationFrame(function() {
                 applyFilters();
             });
         } else {
-            // 특정 읍면동 선택 시: 기존 완성형 15레벨 무빙 엔진
-            applyFilters();
-            
             var sumLat = 0;
             var sumLng = 0;
             var matchCount = 0;
@@ -707,8 +708,16 @@
                 var avgLng = sumLng / matchCount;
                 var moveLatLng = new naver.maps.LatLng(avgLat, avgLng);
                 
+                // 렌즈 이동 연산을 우선 처리하여 끈적한 물리 렉을 지웁니다.
                 map.setZoom(13);
                 map.panTo(moveLatLng);
+                
+                // 카메라 무빙이 끝날 찰나(0.12초 뒤)에 필터를 태워 연산 충돌을 예방합니다.
+                setTimeout(function() {
+                    applyFilters();
+                }, 120);
+            } else {
+                applyFilters();
             }
         }
     }
