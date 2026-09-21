@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260921_0858</title>
+    <title>창공공인중개사사무소 - v.260921_0912</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -247,13 +247,12 @@
         currentRi = ri;
         applyFilters();
         
-        // 🎯 [2단계 초정밀 순간이동] '전체'가 아닌 특정 '리'를 선택했을 때만 카메라 무빙 발동
+        // 🎯 [2단계 초정밀 순간이동] '전체'가 아닌 특정 '리'를 선택했을 때
         if (ri !== "전체") {
             var sumLat = 0;
             var sumLng = 0;
             var matchCount = 0;
             
-            // 현재 선택된 읍면동(currentTown)과 선택한 '리'가 모두 일치하는 매물들의 좌표 집계
             properties.forEach(function(p) {
                 if (p.town === currentTown && p.name.indexOf(ri) !== -1) {
                     sumLat += p.lat;
@@ -262,14 +261,35 @@
                 }
             });
             
-            // 해당 '리' 구역에 매물이 존재한다면 정중앙 평균 좌표를 실시간 계산하여 카메라 무빙!
             if (matchCount > 0) {
                 var avgLat = sumLat / matchCount;
                 var avgLng = sumLng / matchCount;
                 var moveLatLng = new naver.maps.LatLng(avgLat, avgLng);
                 
-                // 🗺️ 개별 건물 형태와 땅 모양(지적도 필지선)이 굵직하게 꽂히는 초정밀 17레벨(90m 축척)로 자동 줌인 이동
-                map.setZoom(16);
+                map.setZoom(17); // 개별 건물/땅 모양 꽉 차는 17레벨 줌인
+                map.panTo(moveLatLng);
+            }
+        } 
+        // 🎯 [버그 완전 수복] '리 전체'를 선택했을 때 이전에 머물던 리에서 벗어나 읍면동 전체 시야(15레벨)로 안전 복귀!
+        else {
+            var sumLat = 0;
+            var sumLng = 0;
+            var matchCount = 0;
+            
+            properties.forEach(function(p) {
+                if (p.town === currentTown) {
+                    sumLat += p.lat;
+                    sumLng += p.lng;
+                    matchCount++;
+                }
+            });
+            
+            if (matchCount > 0) {
+                var avgLat = sumLat / matchCount;
+                var avgLng = sumLng / matchCount;
+                var moveLatLng = new naver.maps.LatLng(avgLat, avgLng);
+                
+                map.setZoom(15); // 🗺️ 읍면동 전체가 이쁘게 들어오는 15레벨로 화면을 다시 넓혀줍니다.
                 map.panTo(moveLatLng);
             }
         }
