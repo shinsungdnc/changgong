@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260921_1222</title>
+    <title>창공공인중개사사무소 - v.260921_1224</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -790,44 +790,52 @@
             }
         });
 
-        // 🎯 [완전 보정] 리스트 데이터 정렬을 원본 인덱스(주소순)로 완벽 고정
+        // 리스트 데이터 정렬을 원본 주소순(세종시 우선)으로 고정
         filteredData.sort(function(a, b) { return a.index - b.index; });
         
-        // 원본 주소순 정렬 상태 그대로 리스트 용기에 안전하게 삽입
+        // 목록 상자들을 순서대로 배치하고 화면에 즉시 쫙 오픈
         filteredData.forEach(function(obj) {
             listContainer.appendChild(obj.item);
-        });
-
-        // 2단계: 지도 연출용 거리순 배열 복제 분리
-        var mapAnimationData = filteredData.slice().sort(function(a, b) { return a.dist - b.dist; });
-
-        // 3단계: 릴레이 분할 가동 세트 분리
-        var chunkSize = 50; 
-        var delayStep = 35; 
-        
-        // 🌟 [리스트 선 노출] 리스트는 깜빡이거나 꼬이지 않게 처음부터 원래 순서대로 '쫙' 한 번에 다 보여줍니다.
-        filteredData.forEach(function(obj) {
             obj.item.style.display = "block";
         });
 
-        var visMarkers = [];
-        // 🌟 [지도 후 확산] 지도의 마커와 클러스터러만 부하가 없도록 거리순(중심부부터) 샤샤삭 켜줍니다.
-        for (var i = 0; i < mapAnimationData.length; i += chunkSize) {
-            (function(startIdx) {
-                var timerId = setTimeout(function() {
-                    var endIdx = Math.min(startIdx + chunkSize, mapAnimationData.length);
+        // 🎯 [중개사님 기획 반영: 작동 모드 분기 규칙]
+        // 현재 선택된 지역이 "전체"일 때만 대용량 렉 방지용 방사형(시간차) 애니메이션을 가동합니다.
+        if (currentTown === "전체") {
+            // 2단계: 지도 연출용 거리순 배열 복제 분리
+            var mapAnimationData = filteredData.slice().sort(function(a, b) { return a.dist - b.dist; });
+
+            var chunkSize = 50; 
+            var delayStep = 35; 
+            var visMarkers = [];
+
+            // 지도는 중심부부터 사방으로 샤샤삭 생성
+            for (var i = 0; i < mapAnimationData.length; i += chunkSize) {
+                (function(startIdx) {
+                    var timerId = setTimeout(function() {
+                        var endIdx = Math.min(startIdx + chunkSize, mapAnimationData.length);
+                        
+                        for (var j = startIdx; j < endIdx; j++) {
+                            var target = mapAnimationData[j];
+                            target.marker.setMap(map);
+                            visMarkers.push(target.marker);
+                        }
+                        updateClustering(visMarkers);
+                    }, (startIdx / chunkSize) * delayStep);
                     
-                    for (var j = startIdx; j < endIdx; j++) {
-                        var target = mapAnimationData[j];
-                        target.marker.setMap(map);
-                        visMarkers.push(target.marker);
-                    }
-                    
-                    updateClustering(visMarkers);
-                }, (startIdx / chunkSize) * delayStep);
-                
-                activeTimers.push(timerId);
-            })(i);
+                    activeTimers.push(timerId);
+                })(i);
+            }
+        } 
+        // 🎯 특정 읍면동(예: 연동면, 강내면)을 선택했을 때는 시간차 없이 0.01초 만에 즉시 지도에 마커를 찍어버립니다.
+        else {
+            var visMarkers = [];
+            filteredData.forEach(function(obj) {
+                obj.marker.setMap(map);
+                visMarkers.push(obj.marker);
+            });
+            // 한 번에 클러스터링 마감 처리하여 딜레이를 완벽히 제거
+            updateClustering(visMarkers);
         }
 
         updateTownSelectorOptions();
