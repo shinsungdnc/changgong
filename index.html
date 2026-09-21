@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260921_1708</title>
+    <title>창공공인중개사사무소 - v.260921_1712</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -726,12 +726,10 @@
         return 2 * 6371 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
 
-    // 글로벌 배지 마커 객체 배열 보관용
     var badgeMarkers = [];
 
-    // 💡 각 읍면동의 대표 위치에 깔끔한 통합 숫자 판넬 배지를 그리는 함수 (연산량 0)
+    // 💡 각 읍면동의 대표 위치에 깔끔한 통합 숫자 판넬 배지를 그리는 함수
     function renderTownBadges() {
-        // 기존 지도 위에 존재하는 배지 마커들을 깨끗하게 지웁니다.
         badgeMarkers.forEach(function(b) { b.setMap(null); });
         badgeMarkers = [];
 
@@ -742,16 +740,14 @@
         townBadges.forEach(function(badge) {
             if (currentTown !== "전체" && badge.town !== currentTown) return;
 
-            // 🎯 [중개사님 3km 시야 매칭 규칙 기획안 구현]
-            // 지도를 바짝 확대했거나(14레벨 이상), 내 눈앞 시야 중심 3km 이내에 들어오는 진짜 매물 구역이라면 대표 배지를 숨깁니다.
+            // 🎯 [3km 시야 매칭 규칙 기획안 구현]
             var distFromCenter = getDistanceKm(cLat, cLng, badge.lat, badge.lng);
             if (currentZoom >= 14 || (currentZoom >= 13 && distFromCenter <= 3.0)) {
-                return; // 내 중심 3km 이내는 낱개 매물을 생생하게 노출해야 하므로 대표 배지를 감춥니다.
+                return; 
             }
 
             var latlng = new naver.maps.LatLng(badge.lat, badge.lng);
             
-            // 🎨 기존의 복잡한 주황색 숫자 뭉치를 제거하고, 세련된 대시보드 형태의 하늘색 원형 배지 디자인 주입
             var badgeHtml = [
                 '<div style="cursor:pointer; display:flex; flex-direction:column; justify-content:center; align-items:center; width:58px; height:58px; background:rgba(0, 191, 255, 0.95); border:2px solid #ffffff; border-radius:50%; box-shadow:0 4px 15px rgba(0,0,0,0.3); color:#111; font-family:'Pretendard',sans-serif; text-align:center; z-index:9999;">',
                 '  <span style="font-size:11px; font-weight:700; color:#222; line-height:1.1;">' + badge.town + '</span>',
@@ -765,7 +761,6 @@
                 icon: { content: badgeHtml, anchor: new naver.maps.Point(29, 29) }
             });
 
-            // 배지 클릭 시 해당 행정구역 중심으로 순간이동하며 3km 스케일 시야(14레벨)로 바짝 줌인하는 브리핑 기능 연동
             naver.maps.Event.addListener(bMarker, "click", function() {
                 currentTown = badge.town;
                 var selectEl = document.getElementById("town-selector");
@@ -780,7 +775,6 @@
     function applyFilters() {
         if (currentBoundaryCircle) currentBoundaryCircle.setMap(null);
         
-        // 기존에 작동 중이던 분할 로딩 타이머 및 렉 요소를 완벽히 초기화
         if (typeof activeTimers !== 'undefined' && activeTimers.length > 0) {
             activeTimers.forEach(function(t) { clearTimeout(t); });
             activeTimers = [];
@@ -811,7 +805,7 @@
 
             var item = document.getElementById("item-" + i);
             item.style.display = "none";
-            marker.setMap(null); // 기존 무거운 마커들 일단 지도에서 전부 탈거
+            marker.setMap(null);
 
             if (mCat && mDet && mTown && mRi && mDeal) {
                 var dist = getDistanceKm(cLat, cLng, p.lat, p.lng);
@@ -823,22 +817,19 @@
             }
         });
 
-        // 🎯 [장부 일치 규칙 고정] 매물 목록은 처음부터 지번주소 정렬 가나다 순서(세종시 고운동 우선)대로 쫙 노출
+        // 🎯 [장부 정렬 동기화] 매물 목록은 지번 가나다 순서 그대로 고정
         filteredData.sort(function(a, b) { return a.index - b.index; });
         filteredData.forEach(function(obj) {
             listContainer.appendChild(obj.item);
-            obj.item.style.display = "block"; // 리스트 즉시 100% 오픈하여 덜덜거림 차단
+            obj.item.style.display = "block"; // 리스트 즉시 쫙 노출
         });
 
-        // 2단계: 🎯 [3km 시야 매칭 마커 노출 스위칭 규격 작동]
-        // 사용자가 드롭다운 필터에서 전체가 아닌 특정 '읍면동'을 골랐을 때는 거리 연산을 완전히 무시하고 즉시 마커를 다 켜서 렉을 차단합니다.
+        // 2단계: 🎯 [3km 시야 매칭 마커 노출 스위칭 작동]
         if (currentTown !== "전체") {
             filteredData.forEach(function(obj) {
                 obj.marker.setMap(map);
             });
-        } 
-        // 전체 지역 모드일 때는 중개사님의 3km 시야 원칙에 따라 내 눈앞 중심부 매물 마커만 엄격히 선별해서 켜줍니다.
-        else {
+        } else {
             filteredData.forEach(function(obj) {
                 if (currentZoom >= 14 || (currentZoom >= 13 && obj.dist <= 3.0)) {
                     obj.marker.setMap(map);
@@ -846,11 +837,11 @@
             });
         }
 
-        // 3단계: 주변 외곽 매물들을 묶어서 표현할 대표 행정구역 배지 오버레이
+        // 3단계: 주변 외곽 매물 대표 행정구역 배지 오버레이
         renderTownBadges();
         updateTownSelectorOptions();
     }
-
+    
     function selectProperty(index, marker) {
         var sidebar = document.getElementById("sidebar");
         var listContainer = document.getElementById("property-list");
