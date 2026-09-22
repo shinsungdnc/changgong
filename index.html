@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260923_0820</title>
+    <title>창공공인중개사사무소 - v.260923_0828</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -1036,12 +1036,14 @@
         }
     });
 
-    // 🎯 [초고속 가동 시퀀서] 위성 레이어 로딩 지연으로 인한 7초 백지 렉 현상을 완전히 막기 위해
-    // 네이티브 지도 엔진 틀이 생성 완료되는 즉시 지연 리스트 레이아웃을 시간차 분할 표출합니다.
+    // 🎯 [블랙 현상 원천 차단] 위성 지도가 브라우저에 첫 타일을 깨끗하게 올리는 시점(init_stylemap)을 감지하고,
+    // 브라우저의 그래픽 비동기 큐(setTimeout 100ms)를 활용해 지도 레이어를 먼저 100% 띄운 후 목록 연산을 분할 가동합니다.
     naver.maps.Event.once(map, "init_stylemap", function() {
-        requestAnimationFrame(function() {
-            initMap();
-        });
+        setTimeout(function() {
+            requestAnimationFrame(function() {
+                initMap();
+            });
+        }, 100); // 0.1초의 미세한 마이크로 타임 슬라이싱으로 화면 껌뻑임 현상 차단
     });
 </script>
 </body>
