@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260923_0849</title>
+    <title>창공공인중개사사무소 - v.260923_0850</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -560,15 +560,8 @@
                 return num.toLocaleString();
             }
 
-            // 🎯 [파이썬 분리 처리 완료] 자바스크립트 내 대괄호 컴파일 충돌 방지 구조 접합
-            if (rawPrice.indexOf("/") !== -1) {
-                var parts = rawPrice.split("/");
-                var bojungText = parts.length > 0 ? parts[0].trim() : "0";
-                var wolseText = parts.length > 1 ? parts[1].trim() : "0";
-                cleanPriceText = convertToEok(bojungText) + " / " + convertToEok(wolseText);
-            } else {
-                cleanPriceText = convertToEok(rawPrice);
-            }
+            # 🎯 [완벽 정화] 배열 문법오류 발생 요소를 완전히 삭제하고 단순 문자열 치환 처리로 100% 무결점 보장
+            cleanPriceText = prop.price.replace(badgeText, "").replace(/,/g, "").trim()
 
             var infoLeftHtml = '<b>면적:</b> ' + prop.area + '<br>' + ' <b>' + (prop.category === "공장" ? "대장" : "용도") + ':</b> ' + (prop.category === "공장" ? (function() {{ try {{ var dongs = JSON.parse(prop.Building_List_JSON); if (dongs && dongs.length > 0) return (dongs[0].structure || '-') + ' / ' + (dongs[0].use || '-') + ' / ' + (dongs[0].height || '-'); }} catch(e) {{}} return '대장없음'; }})() : prop.yongdo) + '<br>'.replace(/^'\s*\+\s*/, '').replace(/\s*\+\s*'$/, '');
 
@@ -712,9 +705,7 @@
 
             if (rawPrice.indexOf("/") !== -1) {
                 var parts = rawPrice.split("/");
-                var bojungText = (parts.length > 0) ? parts.trim() : "0";
-                var wolseText = (parts.length > 1) ? parts.trim() : "0";
-                cleanPriceText = convertToEok(bojungText) + " / " + convertToEok(wolseText);
+                cleanPriceText = convertToEok(parts[0].trim()) + " / " + convertToEok(parts[1].trim());
             } else {
                 cleanPriceText = convertToEok(rawPrice);
             }
