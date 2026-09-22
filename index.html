@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260923_0828</title>
+    <title>창공공인중개사사무소 - v.260923_0832</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -511,7 +511,7 @@
         updateDetailSelectorOptions(); 
         updateTownSelectorOptions();
 
-        // 🚀 [완벽 수복] 명품 서식 레이아웃 내용을 보존하면서 즉시 주입하여 목록 깨짐 현상 원천 차단
+        // 🚀 명품 서식 레이아웃 내용을 보존하면서 즉시 주입하여 목록 깨짐 현상 원천 차단
         properties.forEach(function(prop, index) {
             var danDisplayHtml = (prop.category === "토지") ? prop.py_price : '대지 ' + prop.py_price + ' / <span style="color:#2b5c8f; font-weight:bold;">연면적 ' + prop.year_price + '</span>';
             
@@ -539,9 +539,12 @@
                 return num.toLocaleString();
             }
 
+            // 🎯 [버그 수정 완료] 배열 객체에 잘못 선언된 .trim() 꼬임을 원천 분리 및 교정
             if (rawPrice.indexOf("/") !== -1) {
                 var parts = rawPrice.split("/");
-                cleanPriceText = convertToEok(parts[0].trim()) + " / " + convertToEok(parts[1].trim());
+                var bojungPart = parts[0] ? parts[0].trim() : "0";
+                var wolsePart = parts[1] ? parts[1].trim() : "0";
+                cleanPriceText = convertToEok(bojungPart) + " / " + convertToEok(wolsePart);
             } else {
                 cleanPriceText = convertToEok(rawPrice);
             }
