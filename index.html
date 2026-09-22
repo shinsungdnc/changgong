@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260923_0846</title>
+    <title>창공공인중개사사무소 - v.260923_0849</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -712,7 +712,9 @@
 
             if (rawPrice.indexOf("/") !== -1) {
                 var parts = rawPrice.split("/");
-                cleanPriceText = convertToEok(parts[0].trim()) + " / " + convertToEok(parts[1].trim());
+                var bojungText = (parts.length > 0) ? parts.trim() : "0";
+                var wolseText = (parts.length > 1) ? parts.trim() : "0";
+                cleanPriceText = convertToEok(bojungText) + " / " + convertToEok(wolseText);
             } else {
                 cleanPriceText = convertToEok(rawPrice);
             }
