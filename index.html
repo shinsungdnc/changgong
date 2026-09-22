@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260923_0844</title>
+    <title>창공공인중개사사무소 - v.260923_0846</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -501,7 +501,7 @@
         var listContainer = document.getElementById("property-list");
         listContainer.innerHTML = ""; 
         
-        // 기존 마커 전체 영구 파기
+        // 기존 마커 전체 영구 파기 (메모리 완전 초기화)
         markers.forEach(function(m) { if(m) m.setMap(null); });
         sumMarkers.forEach(function(m) { if(m) m.setMap(null); });
         markers = [];
@@ -560,11 +560,11 @@
                 return num.toLocaleString();
             }
 
-            // 🎯 [오류 원천 봉쇄] 배열 객체 주소 연산 버그를 제거하고 안전하게 인덱스 텍스트 추출하도록 우회 가공
+            // 🎯 [파이썬 분리 처리 완료] 자바스크립트 내 대괄호 컴파일 충돌 방지 구조 접합
             if (rawPrice.indexOf("/") !== -1) {
                 var parts = rawPrice.split("/");
-                var bojungText = (parts.length > 0) ? parts[0].trim() : "0";
-                var wolseText = (parts.length > 1) ? parts[1].trim() : "0";
+                var bojungText = parts.length > 0 ? parts[0].trim() : "0";
+                var wolseText = parts.length > 1 ? parts[1].trim() : "0";
                 cleanPriceText = convertToEok(bojungText) + " / " + convertToEok(wolseText);
             } else {
                 cleanPriceText = convertToEok(rawPrice);
