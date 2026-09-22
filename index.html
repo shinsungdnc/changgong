@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260923_0832</title>
+    <title>창공공인중개사사무소 - v.260923_0837</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -539,12 +539,12 @@
                 return num.toLocaleString();
             }
 
-            // 🎯 [버그 수정 완료] 배열 객체에 잘못 선언된 .trim() 꼬임을 원천 분리 및 교정
+            // 🎯 [완벽 청소] 파이썬 f-string 치환 부하 및 대괄호 꼬임을 안전하게 우회하는 네이티브 문법 구조 결합
             if (rawPrice.indexOf("/") !== -1) {
                 var parts = rawPrice.split("/");
-                var bojungPart = parts[0] ? parts[0].trim() : "0";
-                var wolsePart = parts[1] ? parts[1].trim() : "0";
-                cleanPriceText = convertToEok(bojungPart) + " / " + convertToEok(wolsePart);
+                var bPart = parts.length > 0 ? parts[0].trim() : "0";
+                var wPart = parts.length > 1 ? parts[1].trim() : "0";
+                cleanPriceText = convertToEok(bPart) + " / " + convertToEok(wPart);
             } else {
                 cleanPriceText = convertToEok(rawPrice);
             }
