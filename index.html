@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260923_0850</title>
+    <title>창공공인중개사사무소 - v.260923_0856</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -550,18 +550,9 @@
             
             var dealBadgeHtml = '<span style="display: inline-block; padding: 4px 10px; font-size: 13px; font-weight: bold; color: #fff; background: ' + badgeBg + '; border-radius: 4px; white-space: nowrap; line-height: 1.0;">' + badgeText + '</span>';
             var priceColor = badgeBg;
-            var rawPrice = prop.price.replace(badgeText, "").replace(/,/g, "").trim();
-            var cleanPriceText = "";
-
-            function convertToEok(wonVal) {
-                var num = parseFloat(wonVal);
-                if (isNaN(num)) return wonVal;
-                if (num >= 10000) return parseFloat((num / 10000).toFixed(2)) + " 억";
-                return num.toLocaleString();
-            }
-
-            # 🎯 [완벽 정화] 배열 문법오류 발생 요소를 완전히 삭제하고 단순 문자열 치환 처리로 100% 무결점 보장
-            cleanPriceText = prop.price.replace(badgeText, "").replace(/,/g, "").trim()
+            
+            // 🎯 자바스크립트 오류 원천 차단형 단순 치환 구조 적용
+            var cleanPriceText = prop.price.replace(badgeText, "").replace(/,/g, "").trim();
 
             var infoLeftHtml = '<b>면적:</b> ' + prop.area + '<br>' + ' <b>' + (prop.category === "공장" ? "대장" : "용도") + ':</b> ' + (prop.category === "공장" ? (function() {{ try {{ var dongs = JSON.parse(prop.Building_List_JSON); if (dongs && dongs.length > 0) return (dongs[0].structure || '-') + ' / ' + (dongs[0].use || '-') + ' / ' + (dongs[0].height || '-'); }} catch(e) {{}} return '대장없음'; }})() : prop.yongdo) + '<br>'.replace(/^'\s*\+\s*/, '').replace(/\s*\+\s*'$/, '');
 
@@ -640,151 +631,137 @@
         }
     }
 
-    function initMap() {
-        var listContainer = document.getElementById("property-list");
-        listContainer.innerHTML = ""; 
+    function applyFilters() {
+        if (currentBoundaryCircle) { currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }
         
-        // 기존 마커 전체 영구 파기
-        markers.forEach(function(m) { if(m) m.setMap(null); });
-        sumMarkers.forEach(function(m) { if(m) m.setMap(null); });
-        markers = [];
+        var townGroupStats = {};
+        var riGroupStats = {};
+        var activeIndices = [];
+
+        // 1단계: 실시간 필터 및 조건에 따른 매물 목록/마커 활성화 분류
+        markers.forEach(function(marker, i) {
+            var p = properties[i];
+            var mCat = (currentCategories.indexOf(marker.get("category")) !== -1);
+            var mDet = (currentCategories.length === 0 || currentDetail.indexOf(marker.get("detail_type")) !== -1);
+            var mTown = (currentTown === "전체" || marker.get("town") === currentTown);
+            var mRi = (currentTown === "전체" || currentRi === "전체" || p.name.indexOf(currentRi) !== -1);
+            
+            var mDeal = false;
+            currentDealTypes.forEach(function(type) {
+                if (p.price.indexOf(type) !== -1) mDeal = true;
+            });
+
+            var item = document.getElementById("item-" + i);
+
+            if (mCat && mDet && mTown && mRi && mDeal) {
+                if(item) item.style.display = "block";
+                activeIndices.push(i);
+
+                // 배지용 카운트 실시간 누적 집계
+                townGroupStats[p.town] = (townGroupStats[p.town] || 0) + 1;
+                if (p.town && p.name.indexOf(p.town) !== -1) {
+                    var remainAddr = p.name.split(p.town);
+                    var remainStr = remainAddr.length > 1 ? remainAddr[1].trim() : "";
+                    var tokens = remainStr.split(" ");
+                    if (tokens.length > 0 && tokens[0].endsWith("리")) {
+                        var riName = tokens[0].trim();
+                        if (!riGroupStats[p.town]) riGroupStats[p.town] = {};
+                        riGroupStats[p.town][riName] = (riGroupStats[p.town][riName] || 0) + 1;
+                    }
+                }
+            } else {
+                if(item) item.style.display = "none";
+                var dEl = document.getElementById("detail-" + i); if(dEl) dEl.style.display = "none";
+                if(item) item.classList.remove("active");
+                marker.setMap(null); // 필터 탈락 매물은 무조건 지도에서 끔
+            }
+        });
+
+        updateTownSelectorOptions();
+        
+        var zoom = map.getZoom();
+        
+        // 기존 요약 배지 마커 완전 초기화
+        sumMarkers.forEach(function(m) { m.setMap(null); });
         sumMarkers = [];
 
-        updateDetailSelectorOptions(); 
-        updateTownSelectorOptions();
-
-        properties.forEach(function(prop, index) {
-            var latlng = new naver.maps.LatLng(prop.lat, prop.lng);
-            var markerHtml = [
-                '<div class="m-box" style="position: absolute; transform: translate(-50%, -100%); margin-top: -65px; background-color: ' + prop.bg + '; border: 2px solid #00bfff; opacity: 0.98; border-radius: 6px; padding: 5px 10px; font-weight: bold; font-size: 11px; color: #111; white-space: nowrap; box-shadow: 0 4px 15px rgba(0,0,0,0.25); text-align: center; line-height: 1.3; cursor: pointer;">', 
-                ' ' + prop.marker_text + '<br>', 
-                ' <span style="font-size: 12px; font-weight: bold; color: #E65100; display: inline-block; margin-top: 1px;">' + prop.dan_text + '</span>', 
-                ' <div style="position: absolute; bottom: -55px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 55px solid #00bfff; opacity: 0.45; pointer-events: none;"></div>'
-            ].join('');
-
-            // 마커 인스턴스를 처음부터 완벽하게 선행 제조
-            var marker = new naver.maps.Marker({ 
-                position: latlng, 
-                icon: { content: markerHtml, anchor: new naver.maps.Point(0, 0) } 
+        // 2단계: 대표님 기획안 수복 - 줌 레벨 스케일에 따른 가시성 스위칭
+        if (zoom <= 14 && currentTown === "전체") {
+            // [광역 뷰]: 실제 핀은 전부 숨기고 각 동 중심점에 요약 배지만 표시
+            markers.forEach(function(m) { m.setMap(null); });
+            renderTownSummaryBadges(townGroupStats);
+        } 
+        else if (zoom <= 16 && currentTown !== "전체" && (currentTown.endsWith("읍") || currentTown.endsWith("면"))) {
+            // [중간 뷰]: 읍면 단위 진입 시 리 단위 요약 배지만 노출
+            markers.forEach(function(m) { m.setMap(null); });
+            renderRiSummaryBadges(riGroupStats[currentTown] || {});
+        } 
+        else {
+            // 🎯 [완벽 전개]: 줌 17 이상 상세 시야 또는 매물 클릭 시 개별 마커 핀 일제히 활성화 노출
+            activeIndices.forEach(function(idx) {
+                markers[idx].setMap(map);
             });
-            
-            marker.set("category", prop.category); 
-            marker.set("detail_type", prop.detail_type); 
-            marker.set("town", prop.town); 
-            marker.set("p_index", index); 
-            markers.push(marker);
-
-            // 목록 레이아웃 주입
-            var danDisplayHtml = (prop.category === "토지") ? prop.py_price : '대지 ' + prop.py_price + ' / <span style="color:#2b5c8f; font-weight:bold;">연면적 ' + prop.year_price + '</span>';
-            var itemDiv = document.createElement("div"); 
-            itemDiv.className = "property-item " + (prop.category === "토지" ? "item-land" : prop.category === "주택" ? "item-house" : "item-factory"); 
-            itemDiv.id = "item-" + index;
-            
-            var naverLandLink = '<a href="' + "https://fin.land.naver.com/articles/" + prop.id + '" target="_blank" class="naver-land" onclick="event.stopPropagation();">네이버부동산</a>';
-            var naverMapLink  = '<a href="' + "https://map.naver.com/p/search/" + prop.name + '" target="_blank" class="naver-map" onclick="event.stopPropagation();">네이버지도</a>';
-            var eumLandLink   = (prop.pnu && prop.pnu.trim() !== "") 
-                ? '<a href="' + "http://www.eum.go.kr/web/ar/lu/luLandDet.jsp?pnu=" + prop.pnu.trim() + '&isNoScr=script&mode=search" target="_blank" class="eum-land" onclick="event.stopPropagation();">토지이음</a>' 
-                : '<a class="eum-none" title="PNU 미생성" onclick="event.stopPropagation();">미매칭</a>';
-
-            var badgeBg = "#2b5c8f"; var badgeText = "매매";
-            if (prop.price.indexOf("전세") !== -1) { badgeBg = "#1B5E20"; badgeText = "전세"; } 
-            else if (prop.price.indexOf("월세") !== -1) { badgeBg = "#ff6e40"; badgeText = "월세"; } 
-            else if (prop.price.indexOf("단기") !== -1) { badgeBg = "#4A148C"; badgeText = "단기"; }
-            
-            var dealBadgeHtml = '<span style="display: inline-block; padding: 4px 10px; font-size: 13px; font-weight: bold; color: #fff; background: ' + badgeBg + '; border-radius: 4px; white-space: nowrap; line-height: 1.0;">' + badgeText + '</span>';
-            var priceColor = badgeBg;
-            var rawPrice = prop.price.replace(badgeText, "").replace(/,/g, "").trim();
-            var cleanPriceText = "";
-
-            function convertToEok(wonVal) {
-                var num = parseFloat(wonVal);
-                if (isNaN(num)) return wonVal;
-                if (num >= 10000) return parseFloat((num / 10000).toFixed(2)) + " 억";
-                return num.toLocaleString();
-            }
-
-            if (rawPrice.indexOf("/") !== -1) {
-                var parts = rawPrice.split("/");
-                cleanPriceText = convertToEok(parts[0].trim()) + " / " + convertToEok(parts[1].trim());
-            } else {
-                cleanPriceText = convertToEok(rawPrice);
-            }
-
-            var infoLeftHtml = '<b>면적:</b> ' + prop.area + '<br>' + ' <b>' + (prop.category === "공장" ? "대장" : "용도") + ':</b> ' + (prop.category === "공장" ? (function() {{ try {{ var dongs = JSON.parse(prop.Building_List_JSON); if (dongs && dongs.length > 0) return (dongs[0].structure || '-') + ' / ' + (dongs[0].use || '-') + ' / ' + (dongs[0].height || '-'); }} catch(e) {{}} return '대장없음'; }})() : prop.yongdo) + '<br>'.replace(/^'\s*\+\s*/, '').replace(/\s*\+\s*'$/, '');
-
-            itemDiv.innerHTML = [
-                '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">',
-                '  <h4 style="margin: 0; font-size: 13px; font-weight: bold; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: calc(100% - 65px);">[' + prop.detail_type + '] ' + prop.name + '</h4>', 
-                '  <div style="flex-shrink: 0; display: flex; align-items: center;">' + dealBadgeHtml + '</div>',
-                '</div>', 
-                '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0;">', 
-                '  <div style="font-size: 11px; color: #495057; line-height: 1.4; flex: 1; padding-right: 10px;">' + infoLeftHtml + '</div>', 
-                '  <div style="text-align: right; flex-shrink: 0; display: flex; justify-content: flex-end; align-items: center; margin-top: -2px;">',
-                '    <span style="font-size: 15px; font-weight: bold; color: ' + priceColor + '; white-space: nowrap; letter-spacing: -0.3px; display: inline-block;">' + cleanPriceText + '</span>',
-                '  </div>', 
-                '</div>', 
-                '<div class="property-detail" id="detail-' + index + '" style="margin-top: 3px; padding-top: 3px; font-size: 12px; line-height: 1.3;">', 
-                ' <div style="display: flex; flex-direction: column; gap: 1px; width: 100%;">', 
-                ' <div style="display: flex; width: 100%;">', 
-                ' <span style="font-weight: bold; color: #555; width: 52px; flex-shrink: 0;">평 당 가</span>', 
-                ' <span style="font-weight: bold; color: #555; width: 12px; flex-shrink: 0;">:</span>', 
-                ' <span style="color: #222; word-break: break-all;">' + danDisplayHtml + '</span>', 
-                ' </div>', 
-                ' <div style="display: flex; width: 100%;">', 
-                ' <div style="flex: 1; display: flex; overflow: hidden;">', 
-                ' <span style="font-weight: bold; color: #555; width: 52px; flex-shrink: 0;">평공시가</span>', 
-                ' <span style="font-weight: bold; color: #555; width: 12px; flex-shrink: 0;">:</span>', 
-                ' <span style="color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + prop.gongsi_price + '</span>', 
-                ' </div>', 
-                ' <div style="flex: 1; display: flex; padding-left: 6px; overflow: hidden;">', 
-                ' <span style="font-weight: bold; color: #555; width: 52px; flex-shrink: 0;">도로접면</span>', 
-                ' <span style="font-weight: bold; color: #555; width: 12px; flex-shrink: 0;">:</span>', 
-                ' <span style="color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + prop.road + '</span>', 
-                ' </div>', 
-                ' </div>', 
-                ' <div style="display: flex; width: 100%;">', 
-                ' <span style="font-weight: bold; color: #555; width: 52px; flex-shrink: 0;">매물특징</span>', 
-                ' <span style="font-weight: bold; color: #555; width: 12px; flex-shrink: 0;">:</span>', 
-                ' <span style="color: #222; word-break: break-all; flex: 1;">' + prop.feature + '</span>', 
-                ' </div>', 
-                ' </div>', 
-                '<div class="links-row" style="margin-top: 4px; padding-top: 4px; margin-bottom: 0;">', 
-                ' ' + naverLandLink, 
-                ' ' + naverMapLink, 
-                ' ' + eumLandLink, 
-                ' </div>', 
-                '</div>'
-            ].join('');
-            
-            itemDiv.onclick = function() { selectProperty(index, marker); };
-            listContainer.appendChild(itemDiv);
-            naver.maps.Event.addListener(marker, "click", function() { selectProperty(index, marker); });
-        });
-
-        applyFilters();
+        }
     }
 
-    function changeTown(town) {
-        currentTown = town;
-        currentRi = "전체";
-        var panel = document.getElementById("detail-selector");
-        if(panel) panel.style.display = "none";
-        
-        if (town === "전체") {
-            map.setZoom(12);
-            map.panTo(new naver.maps.LatLng(36.55, 127.25));
-            applyFilters();
-        } else {
-            applyFilters();
-            var sumLat = 0, sumLng = 0, matchCount = 0;
-            properties.forEach(function(p) {
-                if (p.town === town) { sumLat += p.lat; sumLng += p.lng; matchCount++; }
-            });
-            if (matchCount > 0) {
-                map.setZoom(13);
-                map.panTo(new naver.maps.LatLng(sumLat / matchCount, sumLng / matchCount));
+    function renderTownSummaryBadges(stats) {
+        properties.forEach(function(p) {
+            if (stats[p.town] && stats[p.town] > 0) {
+                var latlng = new naver.maps.LatLng(p.lat, p.lng);
+                var isExist = sumMarkers.some(function(sm) { return sm.get("town") === p.town; });
+                if (isExist) return;
+
+                var count = stats[p.town];
+                var badgeColor = count < 15 ? "rgba(0, 140, 180, 0.95)" : "rgba(230, 70, 20, 0.95)";
+                var clusterHtml = '<div class="cluster-badge" style="cursor:pointer; width:48px; height:48px; line-height:48px; font-size:12px; color:#fff; text-align:center; font-weight:bold; background:' + badgeColor + '; border:2px solid #fff; border-radius:50%; box-shadow:0 3px 10px rgba(0,0,0,0.35);">' + count + '</div>';
+
+                var sumMarker = new naver.maps.Marker({
+                    position: latlng,
+                    map: map,
+                    icon: { content: clusterHtml, anchor: new naver.maps.Point(24, 24) }
+                });
+                sumMarker.set("town", p.town);
+                
+                naver.maps.Event.addListener(sumMarker, "click", function() {
+                    var selectEl = document.getElementById("town-selector");
+                    if (selectEl) { selectEl.value = p.town; changeTown(p.town); }
+                });
+                sumMarkers.push(sumMarker);
             }
-        }
+        });
+    }
+
+    function renderRiSummaryBadges(riStats) {
+        var keys = Object.keys(riStats);
+        keys.forEach(function(riName) {
+            var count = riStats[riName];
+            if (count <= 0) return;
+
+            var targetProp = null;
+            for(var i=0; i<properties.length; i++) {
+                if (properties[i].town === currentTown && properties[i].name.indexOf(riName) !== -1) {
+                    targetProp = properties[i];
+                    break;
+                }
+            }
+            if (!targetProp) return;
+
+            var latlng = new naver.maps.LatLng(targetProp.lat, targetProp.lng);
+            var badgeColor = count < 15 ? "rgba(0, 140, 180, 0.95)" : "rgba(230, 70, 20, 0.95)";
+            var clusterHtml = '<div class="cluster-badge" style="cursor:pointer; width:44px; height:44px; line-height:44px; font-size:11px; color:#fff; text-align:center; font-weight:bold; background:' + badgeColor + '; border:2px solid #fff; border-radius:50%; box-shadow:0 3px 10px rgba(0,0,0,0.35);">' + count + '</div>';
+
+            var sumMarker = new naver.maps.Marker({
+                position: latlng,
+                map: map,
+                icon: { content: clusterHtml, anchor: new naver.maps.Point(22, 22) }
+            });
+            
+            naver.maps.Event.addListener(sumMarker, "click", function() {
+                var selectEl = document.getElementById("ri-selector");
+                if (selectEl) { selectEl.value = riName; changeRi(riName); }
+            });
+            sumMarkers.push(sumMarker);
+        });
     }
 
     function selectProperty(index, marker) {
