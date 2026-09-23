@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260923_0905</title>
+    <title>창공공인중개사사무소 - v.260923_0933</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -634,11 +634,18 @@
     function applyFilters() {
         if (currentBoundaryCircle) { currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }
         
+        var zoom = map.getZoom();
+        var bounds = map.getBounds(); // ⚡ 현재 지도 화면의 영역(바운드) 확보
+        
         var townGroupStats = {};
         var riGroupStats = {};
         var activeIndices = [];
 
-        // 1단계: 실시간 필터 및 조건에 따른 매물 목록/마커 활성화 분류
+        var totalCount = 0;
+        var townCounts = {};
+        var riCounts = {};
+
+        // 1단계: 단일 루프로 필터링 및 카운트 집계 통합 (이중 루프 제거)
         markers.forEach(function(marker, i) {
             var p = properties[i];
             var mCat = (currentCategories.indexOf(marker.get("category")) !== -1);
@@ -651,16 +658,15 @@
                 if (p.price.indexOf(type) !== -1) mDeal = true;
             });
 
+            var isMatched = (mCat && mDet && mTown && mRi && mDeal);
             var item = document.getElementById("item-" + i);
 
-            if (mCat && mDet && mTown && mRi && mDeal) {
-                if(item) item.style.display = "block";
+            if (isMatched) {
+                if (item && item.style.display !== "block") item.style.display = "block";
                 activeIndices.push(i);
 
-                // 배지용 카운트 실시간 누적 집계
                 townGroupStats[p.town] = (townGroupStats[p.town] || 0) + 1;
                 
-                // [안전 주소 파싱] 자바스크립트 배열 .trim() 에러 요소를 완벽히 제거한 순정 글자 추출 구조
                 if (p.town && p.name.indexOf(p.town) !== -1) {
                     var remainAddr = p.name.split(p.town);
                     if (remainAddr.length > 1) {
@@ -670,41 +676,93 @@
                             var riName = tokens[0].trim();
                             if (!riGroupStats[p.town]) riGroupStats[p.town] = {};
                             riGroupStats[p.town][riName] = (riGroupStats[p.town][riName] || 0) + 1;
+                            
+                            if (!riCounts[p.town]) riCounts[p.town] = {};
+                            riCounts[p.town][riName] = (riCounts[p.town][riName] || 0) + 1;
                         }
                     }
                 }
+
+                totalCount++;
+                townCounts[p.town] = (townCounts[p.town] || 0) + 1;
+
             } else {
-                if(item) item.style.display = "none";
-                var dEl = document.getElementById("detail-" + i); if(dEl) dEl.style.display = "none";
-                if(item) item.classList.remove("active");
-                marker.setMap(null); // 필터 탈락 매물은 무조건 지도에서 끔
+                if (item && item.style.display !== "none") {
+                    item.style.display = "none";
+                    var dEl = document.getElementById("detail-" + i); if(dEl) dEl.style.display = "none";
+                    item.classList.remove("active");
+                }
+                marker.setMap(null); 
             }
         });
 
-        updateTownSelectorOptions();
+        // ⚡ 중복 루프를 패스하고 집계된 데이터로 셀렉터를 즉시 갱신
+        updateTownSelectorOptionsDirect(totalCount, townCounts, riCounts);
         
-        var zoom = map.getZoom();
-        
-        // 기존 요약 배지 마커 완전 초기화
         sumMarkers.forEach(function(m) { m.setMap(null); });
         sumMarkers = [];
 
-        // 2단계: 대표님 기획안 수복 - 줌 레벨 스케일에 따른 가시성 스위칭
+        // 2단계: 줌 레벨 스케일 및 현재 화면(Bounds) 영역 기준 마커 가시성 최적화
         if (zoom <= 14 && currentTown === "전체") {
-            // [광역 뷰]: 실제 핀은 전부 숨기고 각 동 중심점에 요약 배지만 표시
             markers.forEach(function(m) { m.setMap(null); });
             renderTownSummaryBadges(townGroupStats);
         } 
         else if (zoom <= 16 && currentTown !== "전체" && (currentTown.endsWith("읍") || currentTown.endsWith("면"))) {
-            // [중간 뷰]: 읍면 단위 진입 시 리 단위 요약 배지만 노출
             markers.forEach(function(m) { m.setMap(null); });
             renderRiSummaryBadges(riGroupStats[currentTown] || {});
         } 
         else {
-            // 🎯 [완벽 전개]: 줌 17 이상 상세 시야 또는 매물 클릭 시 개별 마커 핀 일제히 활성화 노출
+            // 🎯 [핵심 최적화] 화면 영역 내부에 노출되는 마커 핀만 작동시켜 브라우저 연산량 감소
             activeIndices.forEach(function(idx) {
-                markers[idx].setMap(map);
+                var m = markers[idx];
+                if (bounds && bounds.hasLatLng(m.getPosition())) {
+                    if (m.getMap() !== map) m.setMap(map);
+                } else {
+                    if (m.getMap() === map) m.setMap(null);
+                }
             });
+        }
+    }
+
+    // ⚡ [경량화 UI 함수] 카운트 연산 루프 없이 데이터만 바인딩
+    function updateTownSelectorOptionsDirect(totalCount, townCounts, riCounts) {
+        var townSelector = document.getElementById("town-selector");
+        var riSelector = document.getElementById("ri-selector");
+        if (!townSelector) return;
+        
+        var savedTown = currentTown;
+        var savedRi = currentRi;
+        
+        townSelector.innerHTML = "<option value='전체'>📍 지역 선택 (전체: " + totalCount + "개)</option>";
+        townList.forEach(function(t) {
+            var count = townCounts[t] || 0;
+            if (count > 0) {
+                var opt = document.createElement("option"); opt.value = t; opt.innerText = "📍 " + t + " (" + count + ")";
+                if (t === savedTown) opt.selected = true;
+                townSelector.appendChild(opt);
+            }
+        });
+
+        if (currentTown !== "전체" && (currentTown.endsWith("읍") || currentTown.endsWith("면"))) {
+            if (riSelector) {
+                riSelector.style.display = "block";
+                var targetTownRis = riCounts[currentTown] || {};
+                var sortedRis = Object.keys(targetTownRis).sort();
+                var townTotal = townCounts[currentTown] || 0;
+                
+                riSelector.innerHTML = "<option value='전체'>📍 리 전체 (" + townTotal + ")</option>";
+                sortedRis.forEach(function(r) {
+                    var rCount = targetTownRis[r] || 0;
+                    var opt = document.createElement("option"); opt.value = r; opt.innerText = r + " (" + rCount + ")";
+                    if (r === savedRi) opt.selected = true;
+                    riSelector.appendChild(opt);
+                });
+            }
+        } else {
+            if (riSelector) {
+                riSelector.style.display = "none";
+                currentRi = "전체";
+            }
         }
     }
 
