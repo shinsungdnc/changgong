@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260924_1143</title>
+    <title>창공공인중개사사무소 - v.260924_1153</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -632,9 +632,24 @@
                         '</div>'
                     ].join('');
                     
-                    itemDiv.onclick = function() { [selectProperty(index, marker)] };
-                    fragment.appendChild(itemDiv);
-        });
+                    itemDiv.onclick = function() { selectProperty(index, markers[index]); };
+                    fragment.appendStyle || fragment.appendChild(itemDiv);
+
+                    // 🚀 [핵심 추가] 지도와 디자인이 연결되지 않은 초경량 더미 마커 생성 (클러스터러 주입용)
+                    var latlng = new naver.maps.LatLng(prop.lat, prop.lng);
+                    markers[index] = new naver.maps.Marker({
+                        position: latlng,
+                        map: null, // 초기에는 지도에 직접 그리지 않음 (렉 방어)
+                        category: prop.category,
+                        town: prop.town
+                    });
+                    
+                    // 마커 클릭 이벤트는 여기서 미리 한 번만 걸어둡니다.
+                    naver.maps.Event.addListener(markers[index], "click", function(e) {
+                        selectProperty(index, markers[index]);
+                    });
+                } );
+
         // 2. 루프가 끝난 직후, 메모리에 모인 조각들을 단 한 번에 리스트창에 꽂아 넣습니다.
         listContainer.appendChild(fragment);
         
@@ -961,29 +976,21 @@
                     var bounds = map.getBounds();
                     
                     
-            // 전체 2,150개 속성을 돌되, 마커 객체를 만드는 게 아니라 '현재 화면 안에 있는 것만' 골라 생성합니다.
             properties.forEach(function(prop, index) {
                 var m_lat = prop.lat;
                 var m_lng = prop.lng;
                 var latlng = new naver.maps.LatLng(m_lat, m_lng);
                 
                 if (bounds.hasLatLng(latlng) && prop.category) {
-                    if (!markers[index]) {
-                        var markerHtml = createMarkerHtml(prop, index);
-                        
-                        markers[index] = new naver.maps.Marker({
-                            position: latlng,
-                            map: map,
-                            icon: { content: markerHtml, anchor: new naver.maps.Point(0, 0) }
-                        });
-                        
-                        markers[index].set("category", prop.category);
-                        markers[index].set("town", prop.town);
-                        
-                        naver.maps.Event.addListener(markers[index], "click", function(e) {
-                            selectProperty(index, markers[index]);
-                        });
-                    } else {
+                    if (markers[index]) {
+                        // 줌 15 이상이고 화면 안에 들어왔을 때, 비로소 무거운 HTML 말풍선 디자인을 실시간 주입합니다!
+                        if (!markers[index].getIcon() || !markers[index].getIcon().content) {
+                            var markerHtml = createMarkerHtml(prop, index);
+                            markers[index].setIcon({
+                                content: markerHtml,
+                                anchor: new naver.maps.Point(0, 0)
+                            });
+                        }
                         markers[index].setMap(map);
                     }
                 } else {
