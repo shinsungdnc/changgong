@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260924_1155</title>
+    <title>창공공인중개사사무소 - v.260924_1202</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -635,20 +635,16 @@
                     itemDiv.onclick = function() { selectProperty(index, markers[index]); };
                     fragment.appendStyle || fragment.appendChild(itemDiv);
 
-                    // 🚀 [완벽 보정] 렉이 걸리지 않으면서 클러스터러 엔진을 강제로 깨우는 정밀 마커 주입
+                    // ⚡ [경량화 완료] 초기에는 진짜 네이버 마커 객체를 절대 만들지 않습니다.
+                    // 대신 클러스터러 라이브러리가 알아들을 수 있는 가벼운 좌표 정보만 배열에 담아둡니다.
                     var latlng = new naver.maps.LatLng(prop.lat, prop.lng);
-                    markers[index] = new naver.maps.Marker({
-                        position: latlng,
-                        map: map, // 1. 우선 지도 객체와 연결해 줍니다 (클러스터러가 인식할 수 있게)
+                    markers[index] = {
+                        getPosition: function() { return latlng; },
+                        getMap: function() { return null; },
+                        setMap: function() {},
                         category: prop.category,
-                        town: prop.town,
-                        visible: false // 2. [핵심] 대신 '투명(숨김)' 상태로 만들어 화면 렉을 원천 차단합니다!
-                    });
-                    
-                    // 마커 클릭 이벤트 연동
-                    naver.maps.Event.addListener(markers[index], "click", function(e) {
-                        selectProperty(index, markers[index]);
-                    });
+                        town: prop.town
+                    };
                 } );
 
         // 2. 루프가 끝난 직후, 메모리에 모인 조각들을 단 한 번에 리스트창에 꽂아 넣습니다.
@@ -759,10 +755,8 @@
     
     function updateClustering(vis) {
         if (!markerClustering) {
-            if (typeof MarkerClustering === 'undefined') {
-                console.error("❌ 클러스터러 라이브러리가 로드되지 않았습니다.");
-                return;
-            }
+            if (typeof MarkerClustering === 'undefined') return;
+            
             markerClustering = new MarkerClustering({
                 minClusterSize: 2, 
                 maxZoom: 14, 
