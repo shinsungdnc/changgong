@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260924_1140</title>
+    <title>창공공인중개사사무소 - v.260924_1143</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -723,7 +723,6 @@
                 mRi = (p.name.indexOf(currentRi) !== -1);
             }
 
-            // 🎯 [필터 꼬임 완전 수복] 선택된 거래 스위치 키워드가 매물 가격 문장에 포함되어 있다면 통과!
             var mDeal = false;
             currentDealTypes.forEach(function(type) {
                 if (p.price.indexOf(type) !== -1) { mDeal = true; }
@@ -732,16 +731,48 @@
             var item = document.getElementById("item-" + i);
 
             if (mCat && mDet && mTown && mRi && mDeal) {
-                item.style.display = "block"; marker.setMap(map); vis.push(marker); 
+                item.style.display = "block"; if (marker) marker.setMap(map); vis.push(marker); 
             } else {
                 item.style.display = "none"; var dEl = document.getElementById("detail-" + i); if(dEl) dEl.style.display = "none";
-                item.classList.remove("active"); marker.setMap(null); 
+                item.classList.remove("active"); if (marker) marker.setMap(null); 
             }
         });
         updateTownSelectorOptions(); updateClustering(vis); 
     }
 
-    {js_cluster_engine_logic}
+    
+    function updateClustering(vis) {
+        if (!markerClustering) {
+            if (typeof MarkerClustering === 'undefined') {
+                console.error("❌ 클러스터러 라이브러리가 로드되지 않았습니다.");
+                return;
+            }
+            markerClustering = new MarkerClustering({
+                minClusterSize: 2, 
+                maxZoom: 14, 
+                map: map, 
+                markers: vis, 
+                gridSize: 120, 
+                disableClickZoom: false,
+                icons: [
+                    { content: '<div class="cluster-badge" style="cursor:pointer; width:46px; height:46px; line-height:46px; background:rgba(30, 144, 255, 0.85); color:#fff; font-size:12px; font-weight:bold; border-radius:50%; text-align:center; border:1px solid rgba(255,255,255,0.6); box-shadow:0 2px 6px rgba(0,0,0,0.2);"></div>' },
+                    { content: '<div class="cluster-badge" style="cursor:pointer; width:54px; height:54px; line-height:54px; background:rgba(10, 80, 220, 0.88); color:#fff; font-size:13px; font-weight:bold; border-radius:50%; text-align:center; border:1px solid rgba(255,255,255,0.7); box-shadow:0 3px 8px rgba(0,0,0,0.25);"></div>' }
+                ],
+                indexGenerator: function(count) { return count > 50 ? 1 : 0; },
+                stylingFunction: function(clusterMarker, count) {
+                    var el = clusterMarker.getElement();
+                    if (el) { var bd = el.querySelector(".cluster-badge"); if (bd) bd.innerText = count; }
+                }
+            });
+        } else {
+            markerClustering.setMap(null);
+            markerClustering.setMarkers(vis);
+            if (map.getZoom() < 15) {
+                markerClustering.setMap(map);
+            }
+        }
+    }
+    
 
     function selectProperty(index, marker) {
         var sidebar = document.getElementById("sidebar");
