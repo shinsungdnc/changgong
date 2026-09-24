@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260924_1059</title>
+    <title>창공공인중개사사무소 - v.260924_1104</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -951,7 +951,10 @@
             
             // 전체 2,150개 속성을 돌되, 마커 객체를 만드는 게 아니라 '현재 화면 안에 있는 것만' 골라 생성합니다.
             properties.forEach(function(prop, index) {{
-                var latlng = new naver.maps.LatLng(prop.lat, prop.lng);
+                var m_lat = prop.lat;
+                var m_lng = prop.lng;
+                var latlng = new naver.maps.LatLng(m_lat, m_lng);
+
                 
                 // 1. 현재 화면 범위 안에 있고, 필터 카테고리가 켜져 있는 매물인가?
                 if (bounds.hasLatLng(latlng) && prop.category) {{
