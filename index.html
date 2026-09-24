@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260924_1116</title>
+    <title>창공공인중개사사무소 - v.260924_1119</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -941,9 +941,11 @@
         requestAnimationFrame(function() {
             initMap();
             
+            // 🗺️ 지도 줌 레벨 변경 이벤트 감시 엔진 가동
             naver.maps.Event.addListener(map, "zoom_changed", function() {
                 var currentZoom = map.getZoom();
 
+                // ⚡ [구상 반영] 줌 15 이상: 클러스터러를 끄고, 화면 안의 마커만 동적 생성
                 if (currentZoom >= 15) {
                     if (markerClustering) markerClustering.setMap(null);
                     
@@ -981,10 +983,10 @@
             });
     
                 } 
-                // 줌 15 미만 -> 마커 숨김, 대형 클러스터 구동
+                // ⚡ [구상 반영] 줌 15 미만 (초기 12레벨 포함): 마커들을 전부 숨기고 대형 클러스터러만 작동
                 else {
-                    markers.forEach(function(marker) {
-                        if (marker) marker.setMap(null);
+                    properties.forEach(function(prop, index) {
+                        if (markers[index]) markers[index].setMap(null);
                     });
                     if (markerClustering) markerClustering.setMap(map);
                 }
