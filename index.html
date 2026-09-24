@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260924_1109</title>
+    <title>창공공인중개사사무소 - v.260924_1116</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -936,67 +936,61 @@
     }
 
 
-    // 🎯 [네이버맵 최우선 로딩] 7초 백지 렉 완벽 차단! 위성 지도 판넬을 0.01초 만에 먼저 깨끗하게 띄운 직후, 매물을 시간차 분할 로딩합니다.
-    naver.maps.Event.once(map, "init_stylemap", function() {{
+    // 🎯 [네이버맵 최우선 로딩] 위성 지도 판넬을 먼저 깨끗하게 띄운 직후, 매물을 시간차 분할 로딩합니다.
+    naver.maps.Event.once(map, "init_stylemap", function() {
         requestAnimationFrame(function() {
             initMap();
             
-            naver.maps.Event.addListener(map, "zoom_changed", function() {{
-            var currentZoom = map.getZoom();
+            naver.maps.Event.addListener(map, "zoom_changed", function() {
+                var currentZoom = map.getZoom();
 
-        if (currentZoom >= 15) {{
-            if (markerClustering) markerClustering.setMap(null);
-            
-            var bounds = map.getBounds();
-            
+                if (currentZoom >= 15) {
+                    if (markerClustering) markerClustering.setMap(null);
+                    
+                    var bounds = map.getBounds();
+                    
+                    
             // 전체 2,150개 속성을 돌되, 마커 객체를 만드는 게 아니라 '현재 화면 안에 있는 것만' 골라 생성합니다.
-            properties.forEach(function(prop, index) {{
+            properties.forEach(function(prop, index) {
                 var m_lat = prop.lat;
                 var m_lng = prop.lng;
                 var latlng = new naver.maps.LatLng(m_lat, m_lng);
-
                 
-                // 1. 현재 화면 범위 안에 있고, 필터 카테고리가 켜져 있는 매물인가?
-                if (bounds.hasLatLng(latlng) && prop.category) {{
-                    
-                    // 2. 💡 [핵심] 이 매물의 마커가 아직 생성되지 않았다면, 지금 이 순간 '첫 생성(로드)' 합니다!
-                    if (!markers[index]) {{
-                        var markerHtml = createMarkerHtml(prop, index); // 말풍선 디자인 조립
+                if (bounds.hasLatLng(latlng) && prop.category) {
+                    if (!markers[index]) {
+                        var markerHtml = createMarkerHtml(prop, index);
                         
-                        markers[index] = new naver.maps.Marker({{
+                        markers[index] = new naver.maps.Marker({
                             position: latlng,
-                            map: map, // 생성과 동시에 지도에 즉시 로드
-                            icon: {{{ content: markerHtml, anchor: new naver.maps.Point(0, 0) }}}
-                        }});
+                            map: map,
+                            icon: { content: markerHtml, anchor: new naver.maps.Point(0, 0) }
+                        });
                         
-                        // 마커에 필터용 데이터 심기
                         markers[index].set("category", prop.category);
                         markers[index].set("town", prop.town);
                         
-                        // 클릭 이벤트 연동
-                        naver.maps.Event.addListener(markers[index], "click", function(e) {{
+                        naver.maps.Event.addListener(markers[index], "click", function(e) {
                             selectProperty(index, markers[index]);
-                        }});
-                    }} else {{
-                        // 이미 로드된 적이 있는 마커라면 화면에 그냥 보여주기만 합니다.
+                        });
+                    } else {
                         markers[index].setMap(map);
-                    }}
-                }} else {{
-                    // 화면 밖에 있거나 필터에서 꺼진 매물은 지도에서 숨김
+                    }
+                } else {
                     if (markers[index]) markers[index].setMap(null);
-                }}
-            }});
-        }} 
-        // 줌 15 미만 (축척 1,000m ~ 3,000m) -> 마커 숨김, 대형 클러스터 구동
-        else {{
-            markers.forEach(function(marker) {{
-                if (marker) marker.setMap(null);
-            }});
-            if (markerClustering) markerClustering.setMap(map);
-        }}
-        }});
+                }
+            });
+    
+                } 
+                // 줌 15 미만 -> 마커 숨김, 대형 클러스터 구동
+                else {
+                    markers.forEach(function(marker) {
+                        if (marker) marker.setMap(null);
+                    });
+                    if (markerClustering) markerClustering.setMap(map);
+                }
+            });
         });
-    }});
+    });
 </script>
 </body>
 </html>
