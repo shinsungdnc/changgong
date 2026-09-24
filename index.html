@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260924_1132</title>
+    <title>창공공인중개사사무소 - v.260924_1140</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -741,28 +741,7 @@
         updateTownSelectorOptions(); updateClustering(vis); 
     }
 
-    function updateClustering(vis) {
-        // 🎯 [고속화 2단계] 클러스터러 객체를 매번 새로 만들지 않고, 최초 1회 생성 후 내부 마커만 초고속으로 갈아 끼웁니다.
-        if (!markerClustering) {
-            markerClustering = new MarkerClustering({
-                minClusterSize: 2, maxZoom: 16, map: map, markers: vis, gridSize: 200, disableClickZoom: false, 
-                icons: [
-					{ content: '<div class="cluster-badge" style="cursor:pointer; width:46px; height:46px; line-height:46px; background:rgba(30, 144, 255, 0.85); color:#fff; font-size:12px; font-weight:bold; border-radius:50%; text-align:center; border:1px solid rgba(255,255,255,0.6); box-shadow:0 2px 6px rgba(0,0,0,0.2);"></div>' },
-					{ content: '<div class="cluster-badge" style="cursor:pointer; width:54px; height:54px; line-height:54px; background:rgba(10, 80, 220, 0.88); color:#fff; font-size:13px; font-weight:bold; border-radius:50%; text-align:center; border:1px solid rgba(255,255,255,0.7); box-shadow:0 3px 8px rgba(0,0,0,0.25);"></div>' },
-                ],
-                indexGenerator: function(count) {{ return 0; }},
-                stylingFunction: function(clusterMarker, count) {
-                    var el = clusterMarker.getElement();
-                    if (el) { var bd = el.querySelector(".cluster-badge"); if (bd) bd.innerText = count; }
-                }
-            });
-        } else {
-            // 객체가 이미 있다면 무겁게 새로 만들지 않고, 내부 알맹이 마커들만 0.001초 만에 뺐다 껴서 렉을 원천 박멸합니다.
-            markerClustering.setMap(null);
-            markerClustering.setMarkers(vis);
-            markerClustering.setMap(map);
-        }
-    }
+    {js_cluster_engine_logic}
 
     function selectProperty(index, marker) {
         var sidebar = document.getElementById("sidebar");
