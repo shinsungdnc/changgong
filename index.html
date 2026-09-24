@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260924_0920</title>
+    <title>창공공인중개사사무소 - v.260924_1040</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -531,18 +531,7 @@
         var fragment = document.createDocumentFragment();
         
         // 🎯 [순정 기반 안전 엔진] 자바스크립트 괄호 꼬임을 완벽히 치료하고 마커와 클러스터를 즉시 부활시킵니다.
-        properties.forEach(function(prop, index) {
-            var latlng = new naver.maps.LatLng(prop.lat, prop.lng);
-            var markerHtml = [
-                '<div class="m-box" style="position: absolute; transform: translate(-50%, -100%); margin-top: -65px; background-color: ' + prop.bg + '; border: 2px solid #00bfff; opacity: 0.98; border-radius: 6px; padding: 5px 10px; font-weight: bold; font-size: 11px; color: #111; white-space: nowrap; box-shadow: 0 4px 15px rgba(0,0,0,0.25); text-align: center; line-height: 1.3; cursor: pointer;">', 
-                ' ' + prop.marker_text + '<br>', 
-                ' <span style="font-size: 12px; font-weight: bold; color: #E65100; display: inline-block; margin-top: 1px;">' + prop.dan_text + '</span>', 
-                ' <div style="position: absolute; bottom: -55px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 55px solid #00bfff; opacity: 0.45; pointer-events: none;"></div>'
-            ].join('');
-
-            var marker = new naver.maps.Marker({ position: latlng, icon: { content: markerHtml, anchor: new naver.maps.Point(0, 0) } });
-            marker.set("category", prop.category); marker.set("detail_type", prop.detail_type); marker.set("town", prop.town); marker.set("p_index", index); markers.push(marker);
-
+        properties.forEach(function(prop, index) {            
             var danDisplayHtml = (prop.category === "토지") ? prop.py_price : '대지 ' + prop.py_price + ' / <span style="color:#2b5c8f; font-weight:bold;">연면적 ' + prop.year_price + '</span>';
             var itemDiv = document.createElement("div"); itemDiv.className = "property-item " + (prop.category === "토지" ? "item-land" : prop.category === "주택" ? "item-house" : "item-factory"); itemDiv.id = "item-" + index;
             
@@ -955,23 +944,53 @@
             naver.maps.Event.addListener(map, "zoom_changed", function() {{
             var currentZoom = map.getZoom();
 
-            if (currentZoom >= 15) {{
-                if (markerClustering) markerClustering.setMap(null);
+        if (currentZoom >= 15) {{
+            if (markerClustering) markerClustering.setMap(null);
+            
+            var bounds = map.getBounds();
+            
+            // 전체 2,150개 속성을 돌되, 마커 객체를 만드는 게 아니라 '현재 화면 안에 있는 것만' 골라 생성합니다.
+            properties.forEach(function(prop, index) {{
+                var latlng = new naver.maps.LatLng(prop.lat, prop.lng);
                 
-                var bounds = map.getBounds();
-                markers.forEach(function(marker) {{
-                    if (bounds.hasLatLng(marker.getPosition()) && marker.get("category")) {{
-                        marker.setMap(map); 
+                // 1. 현재 화면 범위 안에 있고, 필터 카테고리가 켜져 있는 매물인가?
+                if (bounds.hasLatLng(latlng) && prop.category) {{
+                    
+                    // 2. 💡 [핵심] 이 매물의 마커가 아직 생성되지 않았다면, 지금 이 순간 '첫 생성(로드)' 합니다!
+                    if (!markers[index]) {{
+                        var markerHtml = createMarkerHtml(prop, index); // 말풍선 디자인 조립
+                        
+                        markers[index] = new naver.maps.Marker({{
+                            position: latlng,
+                            map: map, // 생성과 동시에 지도에 즉시 로드
+                            icon: {{ content: markerHtml, anchor: new naver.maps.Point(0, 0) }}
+                        }});
+                        
+                        // 마커에 필터용 데이터 심기
+                        markers[index].set("category", prop.category);
+                        markers[index].set("town", prop.town);
+                        
+                        // 클릭 이벤트 연동
+                        naver.maps.Event.addListener(markers[index], "click", function(e) {{
+                            selectProperty(index, markers[index]);
+                        }});
                     }} else {{
-                        marker.setMap(null);
+                        // 이미 로드된 적이 있는 마커라면 화면에 그냥 보여주기만 합니다.
+                        markers[index].setMap(map);
                     }}
-                }});
-            }} else {{
-                markers.forEach(function(marker) {{
-                    marker.setMap(null);
-                }});
-                if (markerClustering) markerClustering.setMap(map);
-            }}
+                }} else {{
+                    // 화면 밖에 있거나 필터에서 꺼진 매물은 지도에서 숨김
+                    if (markers[index]) markers[index].setMap(null);
+                }}
+            }});
+        }} 
+        // 줌 15 미만 (축척 1,000m ~ 3,000m) -> 마커 숨김, 대형 클러스터 구동
+        else {{
+            markers.forEach(function(marker) {{
+                if (marker) marker.setMap(null);
+            }});
+            if (markerClustering) markerClustering.setMap(map);
+        }}
         }});
         });
     }});
