@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260925_0836</title>
+    <title>창공공인중개사사무소 - v.260925_1100</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=geocoder"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -768,11 +768,35 @@
         }
     }
 
+    function changeTown(selectObj) {
+        currentTown = selectObj.value;
+        currentRi = "전체"; // 읍면동이 바뀌면 리는 무조건 초기화
+        
+        // 💡 [핵심 버그 수정] 연동면 등을 선택하면 잠겨있던 리 선택 드롭다운 창을 즉시 노출시킵니다.
+        var riSelector = document.getElementById("ri-selector");
+        if (riSelector) {
+            if (currentTown === "전체") {
+                riSelector.style.display = "none";
+            } else {
+                riSelector.style.display = "inline-block";
+            }
+        }
+        
+        updateTownSelectorOptions(); // 상단 필터 옵션 글자(숫자) 재계산
+        applyFilters(); // 🎯 여기서 마커와 왼쪽 리스트 렌더링을 즉시 동시 실행합니다.
+    }
+
+    function changeRi(selectObj) {
+        currentRi = selectObj.value;
+        applyFilters();
+    }
+
     function applyFilters() {
         if (currentBoundaryCircle) currentBoundaryCircle.setMap(null);
         
         var currentZoom = map.getZoom();
-        var visMarkers = []; // 필터 조건에 맞고, 현재 지도에 표시되어야 할 마커들
+        var visMarkers = []; 
+        var filteredListIndexes = []; 
 
         markers.forEach(function(marker, i) {
             var p = properties[i];
@@ -789,71 +813,34 @@
                 if (p.price.indexOf(type) !== -1) { mDeal = true; }
             });
 
-            var item = document.getElementById("item-" + i);
-
-            // 1. 필터 조건(카테고리, 지역, 거래유형) 달성 여부 체크
             if (mCat && mDet && mTown && mRi && mDeal) {
-                if (item) item.style.display = "block"; 
-                
-                // 🎯 [핵심 기획 반영] 줌 레벨에 따른 개별 마커 지도 표시 조절
-                // 줌 13 이하(축척 1,000 이상)일 때는 개별 마커를 지도에서 숨김 (N)
-                // 줌 17 이상(축척 500 이하)일 때만 개별 마커를 지도에 표시 (Y)
+                // 🎯 [축척 1,000m 렉 원인 해결]
+                // 엑셀 기획서 지침에 따라 줌 레벨 13 이하(축척 1,000m 이상 넓은 시야)일 때는 
+                // 개별 마커를 단 한 개도 지도에 직접 띄우지 않고 완전히 숨깁니다 (N).
                 if (currentZoom <= 13) {
                     marker.setMap(null);
                 } else {
                     marker.setMap(map);
                 }
-                
                 visMarkers.push(marker); 
+                filteredListIndexes.push(i); 
             } else {
-                if (item) {
-                    item.style.display = "none"; 
-                    var dEl = document.getElementById("detail-" + i); 
-                    if(dEl) dEl.style.display = "none";
-                    item.classList.remove("active"); 
-                }
                 marker.setMap(null); 
             }
         });
         
-        updateTownSelectorOptions(); 
-        
-        // 🎯 [핵심 기획 반영] 줌 레벨에 따른 클러스터러 온/오프 제어
-        // 줌 13 이하일 때는 클러스터러 켬 (Y), 줌 17 이상일 때는 클러스터러 끔 (N)
+        // 🚀 걸러진 매물 인덱스 장부를 가지고 리스트 조립 함수 호출
+        renderListHTML(filteredListIndexes);
+
+        // 🎯 줌 레벨 13 이하일 때만 연산 효율이 극대화된 클러스터러 작동 (Y)
+        // 줌 레벨이 14 이상(화면을 확대해서 좁게 볼 때)으로 올라가면 클러스터러 오프 (N)
         if (currentZoom <= 13) {
             updateClustering(visMarkers);
         } else {
-            // 줌 17 이상일 때는 클러스터러를 지도에서 완전히 제거
             if (markerClustering) {
                 markerClustering.setMap(null);
                 markerClustering = null;
             }
-        }
-    }
-
-    function updateClustering(vis) {
-        if (!markerClustering) {
-            markerClustering = new MarkerClustering({
-                minClusterSize: 2, 
-                maxZoom: 13, // 🎯 읍면동 레벨(13)까지만 클러스터링 작동하도록 제한
-                map: map, 
-                markers: vis, 
-                gridSize: 120, 
-                disableClickZoom: false, 
-                icons: [
-                    { content: '<div class="cluster-badge" style="cursor:pointer; width:44px; height:44px; line-height:44px; font-size:12px; color:#fff; text-align:center; font-weight:bold; background:rgba(0, 140, 180, 0.95); border:2px solid #fff; border-radius:50%; box-shadow:0 3px 10px rgba(0,0,0,0.35);"></div>', anchor: new naver.maps.Point(22, 22) },
-                    { content: '<div class="cluster-badge" style="cursor:pointer; width:52px; height:52px; line-height:52px; font-size:13px; color:#fff; text-align:center; font-weight:bold; background:rgba(230, 70, 20, 0.95); border:2px solid #fff; border-radius:50%; box-shadow:0 4px 12px rgba(0,0,0,0.4);"></div>', anchor: new naver.maps.Point(26, 26) }
-                ],
-                indexGenerator: function(count) { return count < 15 ? 0 : 1; }, 
-                stylingFunction: function(clusterMarker, count) {
-                    var el = clusterMarker.getElement();
-                    if (el) { var bd = el.querySelector(".cluster-badge"); if (bd) bd.innerText = count; }
-                }
-            });
-        } else {
-            markerClustering.setMap(null);
-            markerClustering.setMarkers(vis);
-            markerClustering.setMap(map);
         }
     }
 
@@ -1029,13 +1016,12 @@
 
     /* ✨ [UX 종결] 줌 레벨 변화 감시 및 마커/클러스터러 실시간 스위칭 */
     naver.maps.Event.addListener(map, "zoom_changed", function() {
-        var currentZoom = map.getZoom();
-        
-        // 🎯 줌 레벨이 바뀔 때마다 기획서 규칙(마커 Y/N, 클러스터 Y/N)을 재계산하도록 트리거
+        // 🎯 사용자가 휠을 돌리거나 클러스터를 클릭해 줌이 바뀔 때마다 
+        // 13레벨 기준(마커 Y/N, 클러스터 Y/N)을 재연산하여 1,000m 축척 렉을 즉시 파괴합니다.
         applyFilters();
 
         if (currentBoundaryCircle && currentBoundaryCircle.getMap()) {
-            // 매물선택(줌 19) 및 해제(줌 17.5) 시 강조 원 반경 동적 조절
+            var currentZoom = map.getZoom();
             if (currentZoom >= 19) {
                 currentBoundaryCircle.setMap(map);
                 var dynamicRadius = 5;
@@ -1049,12 +1035,12 @@
         }
     });
 
-    // 🎯 지도를 0초 만에 먼저 깨끗하게 띄운 뒤, 0.3초 후에 뒤에서 조용히 매물 데이터를 연산합니다.
+    // 💡 초기 0.3초 시간차 분산 로딩 연동
     naver.maps.Event.once(map, "init_stylemap", function() {
         setTimeout(function() {
             initMap();
-        }, 300); // 300ms 시간차 이후에 매물 데이터 연산
-        });
+        }, 300);
+    });
 </script>
 </body>
 </html>
