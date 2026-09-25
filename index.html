@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260925_1835</title>
+    <title>창공공인중개사사무소 - v.260925_1838</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -955,7 +955,7 @@
         }
     }
 
-    // 🎯 [3단계 최종 완성] 단 한 개의 단일 중괄호도 허용하지 않는 파이썬 f-string 특화 철통 마감 코드
+    // 🎯 [3단계 최종 확정판] 그리드 사이즈 200 동기화 및 철통 마감 코드
     naver.maps.Event.addListener(map, "zoom_changed", function() {{
         var currentZoom = map.getZoom();
         
@@ -969,6 +969,8 @@
                 clusterer = new MarkerClustered({{
                     map: map,
                     markers: markers,
+                    // 📐 [보정 주입] 대표님이 구축해 두신 대형 바둑판 규격을 그대로 주입하여 광역 과부하를 파괴합니다.
+                    gridSize: 200, 
                     disableClickZoom: false,
                     // 🌀 중앙에서 시계방향 방사형으로 부드럽게 퍼져나가는 시각적 그래픽 효과 연동
                     animate: true,
@@ -980,20 +982,21 @@
         }} 
         // 2. 줌 레벨이 17 이상 (리, 매물선택, 매물해제 단위 -> 마커 Y / 클러스터러 N)
         else {{
-            // 🎯 [수복] 숨어있던 단일 괄호를 쌍중괄호로 완벽하게 묶어 백지 버그를 원천 치료합니다.
+            // 광역 묶음 동그라미(클러스터러)를 완전히 해제하여 화면에서 지웁니다.
             if (clusterer) {{
                 clusterer.setMap(null);
             }}
             
             // 숨겨두었던 개별 매물 마커들을 지도 위에 선명하게 일제히 부활시킵니다!
             markers.forEach(function(m, idx) {{
-                // 🎯 [수복] 타이머 내부의 단일 괄호까지 쌍중괄호로 완벽 밀봉하여 시계방향 방사형 딜레이를 활성화합니다.
+                // 🌀 시계방향 방사형 느낌을 극대화하기 위해 마커가 순차적으로 툭툭툭 켜지는 미세 딜레이 주입
                 setTimeout(function() {{
                     m.setMap(map);
                 }}, (idx % 10) * 12); 
             }});
         }}
     }});
+
 
     naver.maps.Event.once(map, "init_stylemap", function() {
         setTimeout(function() {
