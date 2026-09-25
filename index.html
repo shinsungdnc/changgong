@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260925_2258</title>
+    <title>창공공인중개사사무소 - v.260925_2317</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -588,7 +588,7 @@
                         cleanPriceText = convertToEok(rawPrice);
                     }
 
-                    var infoLeftHtml = '<b>면적:</b> ' + prop.area + '<br>' + ' <b>대장:</b> ' + (prop.category === "공장" ? (function() {{ try {{ var dongs = JSON.parse(prop.Building_List_JSON); if (dongs && dongs.length > 0) return (dongs[0].structure || '-') + ' / ' + (dongs[0].use || '-') + ' / ' + (dongs[0].height || '-'); }} catch(e) {{}} return '대장없음'; }})() : (prop.category === "주택" ? prop.house_ledger : prop.yongdo)) + '<br>'.replace(/^'\s*\+\s*/, '').replace(/\s*\+\s*'$/, '');
+                    var infoLeftHtml = '<b>면적:</b> ' + prop.area + '<br>' + (prop.category === "토지" ? ' <b>용도:</b> ' + prop.yongdo : ' <b>대장:</b> ' + (prop.category === "공장" ? (function() {{ try {{ var dongs = JSON.parse(prop.Building_List_JSON); if (dongs && dongs.length > 0) return (dongs.structure || '-') + ' / ' + (dongs.use || '-') + ' / ' + (dongs.height || '-'); }} catch(e) {{}} return '대장없음'; }})() : prop.house_ledger)) + '<br>'.replace(/^'\s*\+\s*/, '').replace(/\s*\+\s*'$/, '');
 
                     itemDiv.innerHTML = [
                         '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">',
