@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260925_1846</title>
+    <title>창공공인중개사사무소 - v.260925_1857</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -955,11 +955,9 @@
         }
     }
 
-    // 🎯 [철통 보안 마감] 자바스크립트 오타를 박멸하고 안정적인 네이버 공식 규격으로 동기화합니다.
     naver.maps.Event.addListener(map, "zoom_changed", function() {
         var currentZoom = map.getZoom();
         
-        // 1. 강조 원(반경선) 제어 (정상 작동 버전의 순정 UX 로직 보존)
         if (currentBoundaryCircle && currentBoundaryCircle.getMap()) {
             if (currentZoom >= 19) {
                 currentBoundaryCircle.setMap(map);
@@ -973,31 +971,29 @@
             }
         }
         
-        // 2. 클러스터러 제어 (오타 수정 및 안전 장치 보완)
-        // 줌 레벨 17 미만에서는 클러스터러 활성화, 17 이상에서는 개별 마커 선명화
-        if (currentZoom < 17) {
-            if (markerClustering) {
-                markerClustering.setMap(map);
-            }
-        } else {
-            if (markerClustering) {
-                markerClustering.setMap(null); // 축소 시에는 묶음 뒤로 숨김
-            }
-            // 숨겨진 매물 마커들을 지도 위에 순차적으로 안전하게 복원
-            markers.forEach(function(m, idx) {
-                if(!m.getMap()) {
-                    setTimeout(function() {
+        // 🎯 [기획 표 스펙 100% 강제 동기화] 
+        // 줌 레벨 17 미만 (12, 13 등 초기/읍면동) ➡️ 클러스터러 ON / 개별 마커 OFF
+        // 줌 레벨 17 이상 (17, 17.5, 19 등 리/매물선택/해제) ➡️ 클러스터러 OFF / 개별 마커 ON
+        window.requestAnimationFrame(function() {
+            if (currentZoom < 17) { 
+                // 읍면동 시야: 클러스터러 켜고 개별 마커는 전부 숨김
+                if (markerClustering) markerClustering.setMap(map);
+                markers.forEach(function(m) { m.setMap(null); });
+            } else {
+                // 리/매물 시야: 클러스터러 완전히 끄고 필터링된 마커만 부활
+                if (markerClustering) markerClustering.setMap(null);
+                markers.forEach(function(m) {
+                    var item = document.getElementById("item-" + m.get("p_index"));
+                    if (item && item.style.display !== "none") {
                         m.setMap(map);
-                    }, (idx % 10) * 12);
-                }
-            });
-        }
+                    }
+                });
+            }
+        });
     });
 
     naver.maps.Event.once(map, "init_stylemap", function() {
-        setTimeout(function() {
-            initMap();
-        }, 300); // 0.3초 분산 실행으로 초기 과부하 원천 차단
+        initMap();
     });
 </script>
 </body>
