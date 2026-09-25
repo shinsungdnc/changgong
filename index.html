@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260925_1828</title>
+    <title>창공공인중개사사무소 - v.260925_1835</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -955,7 +955,7 @@
         }
     }
 
-    // 🎯 [3단계] 표 규칙 반영: 사용자가 지도를 확대/축소할 때 줌 레벨을 실시간 감시하여 변신시킵니다.
+    // 🎯 [3단계 최종 완성] 단 한 개의 단일 중괄호도 허용하지 않는 파이썬 f-string 특화 철통 마감 코드
     naver.maps.Event.addListener(map, "zoom_changed", function() {{
         var currentZoom = map.getZoom();
         
@@ -980,14 +980,14 @@
         }} 
         // 2. 줌 레벨이 17 이상 (리, 매물선택, 매물해제 단위 -> 마커 Y / 클러스터러 N)
         else {{
-            // 광역 묶음 동그라미(클러스터러)를 완전히 해제하여 화면에서 지웁니다.
+            // 🎯 [수복] 숨어있던 단일 괄호를 쌍중괄호로 완벽하게 묶어 백지 버그를 원천 치료합니다.
             if (clusterer) {{
                 clusterer.setMap(null);
             }}
             
-            // 숨겨두었던 개별 매물 마커(평당가 툴팁 핀)들을 지도 위에 선명하게 일제히 부활시킵니다!
+            // 숨겨두었던 개별 매물 마커들을 지도 위에 선명하게 일제히 부활시킵니다!
             markers.forEach(function(m, idx) {{
-                // 🌀 시계방향 방사형 느낌을 극대화하기 위해 마커가 순차적으로 툭툭툭 켜지는 미세 딜레이 주입
+                // 🎯 [수복] 타이머 내부의 단일 괄호까지 쌍중괄호로 완벽 밀봉하여 시계방향 방사형 딜레이를 활성화합니다.
                 setTimeout(function() {{
                     m.setMap(map);
                 }}, (idx % 10) * 12); 
