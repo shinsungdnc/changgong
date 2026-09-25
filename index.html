@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260925_1838</title>
+    <title>창공공인중개사사무소 - v.260925_1846</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -955,53 +955,49 @@
         }
     }
 
-    // 🎯 [3단계 최종 확정판] 그리드 사이즈 200 동기화 및 철통 마감 코드
-    naver.maps.Event.addListener(map, "zoom_changed", function() {{
+    // 🎯 [철통 보안 마감] 자바스크립트 오타를 박멸하고 안정적인 네이버 공식 규격으로 동기화합니다.
+    naver.maps.Event.addListener(map, "zoom_changed", function() {
         var currentZoom = map.getZoom();
         
-        // 1. 줌 레벨이 17 미만 (초기, 전체지역, 읍면동 단위 -> 마커 N / 클러스터러 Y)
-        if (currentZoom < 17) {{
-            // 지도 위에 생으로 켜져 있던 개별 마커 핀들을 전부 안전하게 숨깁니다.
-            markers.forEach(function(m) {{ m.setMap(null); }});
-            
-            // 기존 클러스터러가 없다면 새로 생성하여 광역 묶음 동그라미를 즉시 활성화합니다.
-            if (!clusterer && typeof MarkerClustered !== "undefined") {{
-                clusterer = new MarkerClustered({{
-                    map: map,
-                    markers: markers,
-                    // 📐 [보정 주입] 대표님이 구축해 두신 대형 바둑판 규격을 그대로 주입하여 광역 과부하를 파괴합니다.
-                    gridSize: 200, 
-                    disableClickZoom: false,
-                    // 🌀 중앙에서 시계방향 방사형으로 부드럽게 퍼져나가는 시각적 그래픽 효과 연동
-                    animate: true,
-                    animationDuration: 280
-                }});
-            }} else if (clusterer) {{
-                clusterer.setMap(map);
-            }}
-        }} 
-        // 2. 줌 레벨이 17 이상 (리, 매물선택, 매물해제 단위 -> 마커 Y / 클러스터러 N)
-        else {{
-            // 광역 묶음 동그라미(클러스터러)를 완전히 해제하여 화면에서 지웁니다.
-            if (clusterer) {{
-                clusterer.setMap(null);
-            }}
-            
-            // 숨겨두었던 개별 매물 마커들을 지도 위에 선명하게 일제히 부활시킵니다!
-            markers.forEach(function(m, idx) {{
-                // 🌀 시계방향 방사형 느낌을 극대화하기 위해 마커가 순차적으로 툭툭툭 켜지는 미세 딜레이 주입
-                setTimeout(function() {{
-                    m.setMap(map);
-                }}, (idx % 10) * 12); 
-            }});
-        }}
-    }});
-
+        // 1. 강조 원(반경선) 제어 (정상 작동 버전의 순정 UX 로직 보존)
+        if (currentBoundaryCircle && currentBoundaryCircle.getMap()) {
+            if (currentZoom >= 19) {
+                currentBoundaryCircle.setMap(map);
+                var dynamicRadius = 5;
+                if (currentZoom === 21) dynamicRadius = 1.2;
+                else if (currentZoom === 20) dynamicRadius = 2.5;
+                else if (currentZoom === 19) dynamicRadius = 5;
+                currentBoundaryCircle.setRadius(dynamicRadius);
+            } else {
+                currentBoundaryCircle.setMap(null);
+            }
+        }
+        
+        // 2. 클러스터러 제어 (오타 수정 및 안전 장치 보완)
+        // 줌 레벨 17 미만에서는 클러스터러 활성화, 17 이상에서는 개별 마커 선명화
+        if (currentZoom < 17) {
+            if (markerClustering) {
+                markerClustering.setMap(map);
+            }
+        } else {
+            if (markerClustering) {
+                markerClustering.setMap(null); // 축소 시에는 묶음 뒤로 숨김
+            }
+            // 숨겨진 매물 마커들을 지도 위에 순차적으로 안전하게 복원
+            markers.forEach(function(m, idx) {
+                if(!m.getMap()) {
+                    setTimeout(function() {
+                        m.setMap(map);
+                    }, (idx % 10) * 12);
+                }
+            });
+        }
+    });
 
     naver.maps.Event.once(map, "init_stylemap", function() {
         setTimeout(function() {
             initMap();
-        }, 300); // 300ms(0.3초) 시간차를 주어 초기 실행 과부하를 완전히 분산시킵니다.
+        }, 300); // 0.3초 분산 실행으로 초기 과부하 원천 차단
     });
 </script>
 </body>
