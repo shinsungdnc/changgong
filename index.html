@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260925_1142</title>
+    <title>창공공인중개사사무소 - v.260925_1144</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=geocoder"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -501,24 +501,25 @@
             }
         });
 
-        if (currentTown !== "전체" && (currentTown.endsWith("읍") || currentTown.endsWith("면"))) {
-            riSelector.style.display = "block";
-            
-            var targetTownRis = riCounts[currentTown] || {};
-            var sortedRis = Object.keys(targetTownRis).sort();
-            var townTotal = townCounts[currentTown] || 0;
-            
-            riSelector.innerHTML = "<option value='전체'>📍 리 전체 (" + townTotal + ")</option>";
-            sortedRis.forEach(function(r) {
-                var rCount = targetTownRis[r] || 0;
-                var opt = document.createElement("option"); opt.value = r; opt.innerText = r + " (" + rCount + ")";
-                if (r === savedRi) opt.selected = true;
-                riSelector.appendChild(opt);
-            });
-        } else {
-            riSelector.style.display = "none";
-            currentRi = "전체";
-        }
+    if (currentTown && currentTown !== "전체" && (currentTown.endsWith("읍") || currentTown.endsWith("면"))) {
+        riSelector.style.display = "block";
+        
+        var targetTownRis = riCounts[currentTown] || {};
+        var sortedRis = Object.keys(targetTownRis).sort();
+        var townTotal = townCounts[currentTown] || 0;
+        
+        riSelector.innerHTML = "<option value='전체'>📍 리 전체 (" + townTotal + ")</option>";
+        sortedRis.forEach(function(r) {
+            var rCount = targetTownRis[r] || 0;
+            var opt = document.createElement("option"); opt.value = r; opt.innerText = r + " (" + rCount + ")";
+            if (r === savedRi) opt.selected = true;
+            riSelector.appendChild(opt);
+        });
+    } else {
+        riSelector.style.display = "none";
+        currentRi = "전체";
+    }
+
     }
 
 
@@ -1016,13 +1017,12 @@
 
     /* ✨ [UX 종결] 줌 레벨 변화 감시 및 마커/클러스터러 실시간 스위칭 */
     naver.maps.Event.addListener(map, "zoom_changed", function() {
-        var currentZoom = map.getZoom();
-        
-        // 🎯 줌 레벨이 바뀔 때마다 기획서 규칙(마커 Y/N, 클러스터 Y/N)을 재계산하도록 트리거
+        // 🎯 사용자가 휠을 돌리거나 클러스터를 클릭해 줌이 바뀔 때마다 
+        // 13레벨 기준(마커 Y/N, 클러스터 Y/N)을 재연산하여 1,000m 축척 렉을 즉시 파괴합니다.
         applyFilters();
 
         if (currentBoundaryCircle && currentBoundaryCircle.getMap()) {
-            // 매물선택(줌 19) 및 해제(줌 17.5) 시 강조 원 반경 동적 조절
+            var currentZoom = map.getZoom();
             if (currentZoom >= 19) {
                 currentBoundaryCircle.setMap(map);
                 var dynamicRadius = 5;
@@ -1036,12 +1036,12 @@
         }
     });
 
-    // 🎯 지도를 0초 만에 먼저 깨끗하게 띄운 뒤, 0.3초 후에 뒤에서 조용히 매물 데이터를 연산합니다.
+    // 💡 초기 0.3초 시간차 분산 로딩 연동
     naver.maps.Event.once(map, "init_stylemap", function() {
         setTimeout(function() {
             initMap();
-        }, 300); // 300ms 시간차 이후에 매물 데이터 연산
-        });
+        }, 300);
+    });
 </script>
 </body>
 </html>
