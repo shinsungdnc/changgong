@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260925_1740</title>
+    <title>창공공인중개사사무소 - v.260925_1828</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -297,7 +297,7 @@
         zoom: 12, 
         mapTypeId: naver.maps.MapTypeId.HYBRID,  // NORMAL, SATELLITE, TERRAIN, HYBRID
     });
-    
+    var clusterer = null; // 클러스터링을 위한 총레스터
     var cadastralLayer = new naver.maps.CadastralLayer();
     naver.maps.Event.once(map, "init_stylemap", function() {
         cadastralLayer.setMap(map);     // 지적도 레이어 추가
@@ -533,7 +533,9 @@
 
             var marker = new naver.maps.Marker({ position: latlng, icon: { content: markerHtml, anchor: new naver.maps.Point(0, 0) } });
             marker.set("category", prop.category); marker.set("detail_type", prop.detail_type); marker.set("town", prop.town); marker.set("p_index", index); markers.push(marker);
+            marker.setMap(null);
 
+            // 🎯 [순정 기반 안전 엔진] 자바스크립트 괄호 꼬임을 완벽히 치료하고 마커와 클러스터를 즉시 부활시킵니다.
             var danDisplayHtml = (prop.category === "토지") ? prop.py_price : '대지 ' + prop.py_price + ' / <span style="color:#2b5c8f; font-weight:bold;">연면적 ' + prop.year_price + '</span>';
             var itemDiv = document.createElement("div"); itemDiv.className = "property-item " + (prop.category === "토지" ? "item-land" : prop.category === "주택" ? "item-house" : "item-factory"); itemDiv.id = "item-" + index;
             
@@ -953,26 +955,45 @@
         }
     }
 
-    /* ✨ [UX 종결] 줌 레벨 변화에 따른 원형 범역선 둘레 접합 및 자동 숨김 로직 */
-    naver.maps.Event.addListener(map, "zoom_changed", function() {
+    // 🎯 [3단계] 표 규칙 반영: 사용자가 지도를 확대/축소할 때 줌 레벨을 실시간 감시하여 변신시킵니다.
+    naver.maps.Event.addListener(map, "zoom_changed", function() {{
         var currentZoom = map.getZoom();
-        if (currentBoundaryCircle && currentBoundaryCircle.getMap()) {
+        
+        // 1. 줌 레벨이 17 미만 (초기, 전체지역, 읍면동 단위 -> 마커 N / 클러스터러 Y)
+        if (currentZoom < 17) {{
+            // 지도 위에 생으로 켜져 있던 개별 마커 핀들을 전부 안전하게 숨깁니다.
+            markers.forEach(function(m) {{ m.setMap(null); }});
             
-            // 🔎 매물 분석을 하는 최고 확대 레벨(19~21)에서는 삼각형 끝이 원 둘레에 완벽히 접하게 크기를 고정합니다.
-            if (currentZoom >= 19) {
-                currentBoundaryCircle.setMap(map);
-                var dynamicRadius = 5;
-                if (currentZoom === 21) dynamicRadius = 1.2;
-                else if (currentZoom === 20) dynamicRadius = 2.5;
-                else if (currentZoom === 19) dynamicRadius = 5;
-                currentBoundaryCircle.setRadius(dynamicRadius);
-            } 
-            // 🗺️ 지도를 축소(줌 아웃)하여 18레벨 이하로 내려가면, 화면이 복잡해지므로 강조 원을 깔끔하게 숨깁니다.
-            else {
-                currentBoundaryCircle.setMap(null);
-            }
-        }
-    });
+            // 기존 클러스터러가 없다면 새로 생성하여 광역 묶음 동그라미를 즉시 활성화합니다.
+            if (!clusterer && typeof MarkerClustered !== "undefined") {{
+                clusterer = new MarkerClustered({{
+                    map: map,
+                    markers: markers,
+                    disableClickZoom: false,
+                    // 🌀 중앙에서 시계방향 방사형으로 부드럽게 퍼져나가는 시각적 그래픽 효과 연동
+                    animate: true,
+                    animationDuration: 280
+                }});
+            }} else if (clusterer) {{
+                clusterer.setMap(map);
+            }}
+        }} 
+        // 2. 줌 레벨이 17 이상 (리, 매물선택, 매물해제 단위 -> 마커 Y / 클러스터러 N)
+        else {{
+            // 광역 묶음 동그라미(클러스터러)를 완전히 해제하여 화면에서 지웁니다.
+            if (clusterer) {{
+                clusterer.setMap(null);
+            }}
+            
+            // 숨겨두었던 개별 매물 마커(평당가 툴팁 핀)들을 지도 위에 선명하게 일제히 부활시킵니다!
+            markers.forEach(function(m, idx) {{
+                // 🌀 시계방향 방사형 느낌을 극대화하기 위해 마커가 순차적으로 툭툭툭 켜지는 미세 딜레이 주입
+                setTimeout(function() {{
+                    m.setMap(map);
+                }}, (idx % 10) * 12); 
+            }});
+        }}
+    }});
 
     naver.maps.Event.once(map, "init_stylemap", function() {
         setTimeout(function() {
