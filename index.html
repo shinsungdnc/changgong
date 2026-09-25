@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260925_1605</title>
+    <title>창공공인중개사사무소 - v.260925_1620</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -172,26 +172,23 @@
                         <button class="tab-btn active-factory" id="btn-factory" onclick="toggleCategory('공장')">공장/창고</button>
                         <button class="tab-btn active-house" id="btn-house" onclick="toggleCategory('주택')">주택</button>
                     </div>
-					<!-- 🎛️ [교체] 종류 / 지적도 / 거래유형 4단 통합 초슬림 6단 리모컨 라인 -->
+					<!-- 🎛️ [6단 쌍둥이 완성판] 우측 버튼들과 100% 동일한 외형 규격 적용 -->
 					<div style="display: flex; gap: 4px; width: 100%; box-sizing: border-box; pointer-events: auto; margin-top: 6px; align-items: center; height: 32px;">
-						<!-- 1. 종류 버튼 (기존 조건설정 15% 압축) -->
-						<div id="filter-toggle-btn" class="filter-toggle-trigger" onclick="toggleDetailSelectorPanel()" style="width: 15%; flex-shrink: 0; margin-top: 0; padding: 0; background: rgba(255,255,255,0.9); border: 1px solid #ced4da; border-radius: 4px; font-size: 11px; font-weight: bold; color: #222; display: flex; align-items: center; justify-content: center; height: 100%; cursor: pointer; box-sizing: border-box;">
-							종류
-						</div>
+						<!-- 1. 종류 버튼 (우측 버튼 스타일 적용) -->
+						<button type="button" id="filter-toggle-btn" onclick="toggleDetailSelectorPanel()" class="deal-btn" style="width: 16%; flex-shrink: 0; background: #ffffff !important; color: #222 !important; border: 1px solid #ced4da !important; font-size: 11px !important; height: 100%; box-sizing: border-box; padding: 5px 0;">종류</button>
 						
-						<!-- 2. 지적도 실시간 토글 버튼 (18% 할당) -->
-						<button type="button" id="btn-cadastral" onclick="toggleCadastral()" style="width: 18%; flex-shrink: 0; background: #E65100; border: 1px solid transparent; border-radius: 4px; font-size: 11px; font-weight: bold; color: #fff; display: flex; align-items: center; justify-content: center; height: 100%; cursor: pointer; box-sizing: border-box;">
-							지적도
-						</button>
+						<!-- 2. 지적 버튼 (우측 버튼 스타일 및 주황색 테두리 1px 적용) -->
+						<button type="button" id="btn-cadastral" onclick="toggleCadastral()" class="deal-btn" style="width: 16%; flex-shrink: 0; background: #E65100 !important; color: #fff !important; border: 1px solid #B71C1C !important; font-size: 11px !important; height: 100%; box-sizing: border-box; padding: 5px 0;">지적</button>
 						
-						<!-- 3. 거래 유형 4단 버튼 구역 (남은 공간 균등 분할) -->
-						<div id="deal-type-filter" style="flex: 1; display: flex; gap: 3px; padding: 0; align-items: center; justify-content: space-between; height: 100%; box-sizing: border-box;">
-							<button class="deal-btn active-maemae" id="btn-maemae" onclick="toggleDealType('매매')" style="font-size: 11px !important;">매매</button>
-							<button class="deal-btn active-jeonse" id="btn-jeonse" onclick="toggleDealType('전세')" style="font-size: 11px !important;">전세</button>
-							<button class="deal-btn active-wolse" id="btn-wolse" onclick="toggleDealType('월세')" style="font-size: 11px !important;">월세</button>
-							<button class="deal-btn active-dangi" id="btn-dangi" onclick="toggleDealType('단기')" style="font-size: 11px !important;">단기</button>
+						<!-- 3. 거래 유형 4단 버튼 구역 (나머지 공간 균등 분할) -->
+						<div id="deal-type-filter" style="flex: 1; display: flex; gap: 4px; padding: 0; align-items: center; justify-content: space-between; height: 100%; box-sizing: border-box;">
+							<button class="deal-btn active-maemae" id="btn-maemae" onclick="toggleDealType('매매')" style="font-size: 11px !important; height: 100%; box-sizing: border-box; padding: 5px 0;">매매</button>
+							<button class="deal-btn active-jeonse" id="btn-jeonse" onclick="toggleDealType('전세')" style="font-size: 11px !important; height: 100%; box-sizing: border-box; padding: 5px 0;">전세</button>
+							<button class="deal-btn active-wolse" id="btn-wolse" onclick="toggleDealType('월세')" style="font-size: 11px !important; height: 100%; box-sizing: border-box; padding: 5px 0;">월세</button>
+							<button class="deal-btn active-dangi" id="btn-dangi" onclick="toggleDealType('단기')" style="font-size: 11px !important; height: 100%; box-sizing: border-box; padding: 5px 0;">단기</button>
 						</div>
 					</div>
+
                     <div id="detail-selector"></div>
                     <div style="display: flex; gap: 6px; width: 100%; box-sizing: border-box; margin-top: 4px;">
                         <select class="town-select" id="town-selector" onchange="changeTown(this.value)" style="flex: 1; width: 100%;">
