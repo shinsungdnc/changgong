@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260926_1724</title>
+    <title>창공공인중개사사무소 - v.260926_1727</title>
     <script defer type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script defer type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -295,19 +295,23 @@
     var map;
     var cadastralLayer;
 
-    // 💡 1. 지적도 레이어 객체를 먼저 안전하게 생성해 둡니다.
-    cadastralLayer = new naver.maps.CadastralLayer();
-
-    // 💡 2. 브라우저 로드가 완료되면 지도를 생성하고 초기 레이어를 세팅합니다.
+    // 💡 모든 네이버 지도 객체 생성은 브라우저 스크립트 다운로드가 완벽히 끝난 후(DOMContentLoaded) 실행합니다.
     document.addEventListener("DOMContentLoaded", function() {
+        // 1. 지도를 먼저 생성합니다.
         map = new naver.maps.Map("map", {
             center: new naver.maps.LatLng(36.55992266386555, 127.29711067671775),
             zoom: 12,
             mapTypeId: naver.maps.MapTypeId.HYBRID,
         });
         
-        // 초기 로딩 시 지적도를 기본으로 켜줍니다.
+        // 2. 지도 객체(map)가 정상 생성된 직후 지적도 레이어를 생성하고 결합합니다.
+        cadastralLayer = new naver.maps.CadastralLayer();
         cadastralLayer.setMap(map);
+        
+        // 3. 자바스크립트 엔진이 튕기지 않고 끝까지 무사히 내려왔으므로, 미뤄둔 매물 목록 생성 함수를 즉시 호출합니다.
+        if (typeof initMap === 'function') {
+            initMap();
+        }
     });
 
     var myLocationMarker = null;
