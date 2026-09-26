@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260927_0820</title>
+    <title>창공공인중개사사무소 - v.260927_0829</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -764,8 +764,8 @@
         var currentBounds = map.getBounds();
         var mapCenter = map.getCenter();
 
-        // 📐 [차단막 2단계] 엑셀 명세 표 반영: 축척 3,000m~1,000m 광역 시야 판정 (네이버맵 줌 레벨 15 이하 기준)
-        var isGwangyeokScale = (currentZoom <= 15); 
+        // 📐 [차단막 2단계] 엑셀 명세 표 반영: 축척 3,000m~1,000m 광역 시야 판정 (네이버맵 줌 레벨 14 이하 기준)
+        var isGwangyeokScale = (currentZoom <= 14); 
         var isDetailScale = (currentZoom >= 16); // 축척 100미터 이하 판단 기준선
 
         // 현재 지도 화면 중심점 좌표와 가장 가까운 SQL 기반 읍면동 이름 추출 연산
