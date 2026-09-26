@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260926_0935</title>
+    <title>창공공인중개사사무소 - v.260926_0940</title>
     <script defer type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script defer type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -292,22 +292,17 @@
         }
     }
 
-    // 🚀 [타이밍 수복] 네이버 지도 엔진의 로딩 상태를 검사하여 전역 객체로 안전하게 안착시킵니다.
-    var map;
-    var cadastralLayer;
+    // 🚀 [순정 완전 수복] 불완전한 함수를 철거하고 공식 문서 표준 전역 지도 생성 구조로 복원합니다.
+    var map = new naver.maps.Map("map", {
+        center: new naver.maps.LatLng(36.55992266386555, 127.29711067671775),
+        zoom: 12,
+        mapTypeId: naver.maps.MapTypeId.HYBRID, // NORMAL, SATELLITE, TERRAIN, HYBRID
+    });
 
-    naver.maps.onJSContentLoaded = function() {
-        map = new naver.maps.Map("map", {
-            center: new naver.maps.LatLng(36.55992266386555, 127.29711067671775),
-            zoom: 12,
-            mapTypeId: naver.maps.MapTypeId.HYBRID, // NORMAL, SATELLITE, TERRAIN, HYBRID
-        });
-
-        cadastralLayer = new naver.maps.CadastralLayer();
-        naver.maps.Event.once(map, "init_stylemap", function() {
-            cadastralLayer.setMap(map);     // 지적도 레이어 추가
-        });
-    };
+    var cadastralLayer = new naver.maps.CadastralLayer();
+    naver.maps.Event.once(map, "init_stylemap", function() {
+        cadastralLayer.setMap(map);     // 지적도 레이어 추가
+    });
 
     var myLocationMarker = null;
     var watchPositionId = null;
