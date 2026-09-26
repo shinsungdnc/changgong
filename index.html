@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260926_1631</title>
+    <title>창공공인중개사사무소 - v.260926_1650</title>
     <script defer type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script defer type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -637,42 +637,41 @@
                         '</div>'
                     ].join('');
                     
-                    itemDiv.onclick = function() {{ selectProperty(index, marker); }};
+                    itemDiv.onclick = function() { selectProperty(index, marker); };
                     listFragment.appendChild(itemDiv);
-                    naver.maps.Event.addListener(marker, "click", function(e) {{ selectProperty(index, marker);
-                }});
-        }});
+                    naver.maps.Event.addListener(marker, "click", function(e) { selectProperty(index, marker); });
+        });
 
         // 🚀 [초고속 마감] 1,493개 매물 카드가 담긴 가상 도화지를 단 1번만 실제 화면에 꽂아 넣습니다.
         listContainer.appendChild(listFragment);
 
         applyFilters();
-    }}
+    }
 
-    function toggleCategory(cat) {{
+    function toggleCategory(cat) {
         var btnId = "";
         var activeClass = "";
         
-        if (cat === "토지") {{ btnId = "btn-land"; activeClass = "active-land"; }}
-        if (cat === "공장") {{ btnId = "btn-factory"; activeClass = "active-factory"; }}
-        if (cat === "주택") {{ btnId = "btn-house"; activeClass = "active-house"; }}
+        if (cat === "토지") { btnId = "btn-land"; activeClass = "active-land"; }
+        if (cat === "공장") { btnId = "btn-factory"; activeClass = "active-factory"; }
+        if (cat === "주택") { btnId = "btn-house"; activeClass = "active-house"; }
         
         var btn = document.getElementById(btnId);
         var idx = currentCategories.indexOf(cat);
         
-        if (idx > -1) {{
+        if (idx > -1) {
             currentCategories.splice(idx, 1);
             if (btn) btn.classList.remove(activeClass);
-        }} else {{
+        } else {
             currentCategories.push(cat);
             if (btn) btn.classList.add(activeClass);
-        }}
+        }
         
         updateDetailSelectorOptions(); 
         applyFilters();
-    }}
+    }
     
-    function changeTown(town) {{
+    function changeTown(town) {
         currentTown = town;
         currentRi = "전체";
         
@@ -680,16 +679,16 @@
         if(panel) panel.style.display = "none";
         
         // 🎯 [렉/딜레이 완전 박멸 복귀 엔진]
-        if (town === "전체") {{
+        if (town === "전체") {
             var initialLatLng = new naver.maps.LatLng(36.55, 127.25); 
             map.setZoom(12); // 초기 로딩과 일치하는 3km 범위
             map.panTo(initialLatLng);
             
             // 🚀 브라우저가 멈칫하는 현상을 완전히 없애기 위해, 화면 리스트 요소를 렌더링 큐에 태워 초고속으로 패스시킵니다.
-            requestAnimationFrame(function() {{
+            requestAnimationFrame(function() {
                 applyFilters();
-            }});
-        }} else {{
+            });
+        } else {
             // 특정 읍면동 선택 시: 기존 완성형 15레벨 무빙 엔진
             applyFilters();
             
@@ -697,44 +696,44 @@
             var sumLng = 0;
             var matchCount = 0;
             
-            properties.forEach(function(p) {{
-                if (p.town === town) {{
+            properties.forEach(function(p) {
+                if (p.town === town) {
                     sumLat += p.lat;
                     sumLng += p.lng;
                     matchCount++;
-                }}
-            }});
+                }
+            });
             
-            if (matchCount > 0) {{
+            if (matchCount > 0) {
                 var avgLat = sumLat / matchCount;
                 var avgLng = sumLng / matchCount;
                 var moveLatLng = new naver.maps.LatLng(avgLat, avgLng);
                 
                 map.setZoom(13);
                 map.panTo(moveLatLng);
-            }}
-        }}
-    }}
+            }
+        }
+    }
 
-    function toggleCadastral() {{
+    function toggleCadastral() {
         var btn = document.getElementById("btn-cadastral");
         
-        if (cadastralLayer.getMap()) {{
+        if (cadastralLayer.getMap()) {
             cadastralLayer.setMap(null); // 지적도 OFF
-            if (btn) {{
+            if (btn) {
                 btn.style.setProperty("background", "transparent", "important"); 
                 btn.style.setProperty("color", "#666666", "important"); 
                 btn.style.setProperty("border", "1px solid transparent", "important");
-            }}
-        }} else {{
+            }
+        } else {
             cadastralLayer.setMap(map); // 지적도 ON
-            if (btn) {{
+            if (btn) {
                 btn.style.setProperty("background", "#DCF65C", "important"); 
                 btn.style.setProperty("color", "#111111", "important"); 
                 btn.style.setProperty("border", "1px solid #99bd0e", "important");
-            }}
-        }}
-    }}
+            }
+        }
+    }
 
         function applyFilters() {
             if (typeof naver === 'undefined' || !map) return;
