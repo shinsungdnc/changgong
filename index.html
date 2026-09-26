@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260926_1824</title>
+    <title>창공공인중개사사무소 - v.260926_1827</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -972,35 +972,9 @@
                 tableHtml += '<div style="text-align:center; color:#555; padding:20px 10px; background:#f8f9fa; border:1px solid #e9ecef; border-radius:4px; margin-top:10px; font-size:11px; line-height:1.4;">🏡 <b>안내</b><br>' + productTypeName + ' 상품은 개별 특성이 강하여 본 지도에서 실거래가 요약을 제공하지 않습니다.</div>';
             }
         }
-    
-        document.getElementById("stats-title").innerText = "📊 " + prop.town + " 실거래 분석";
-        var clickNotice = "";        
-        var styleOpen = " { ", styleClose = " } ", styleBody = "display: none !important;";
+     //맨 마지막 스크립트 마감 구역
 
-        document.getElementById("stats-content").innerHTML = [
-            '<div style="background: rgba(0,0,0,0.03); padding:6px 10px; border-radius:4px; margin-bottom:6px; font-size:12px; line-height:1.4; text-align:left;">', 
-            '  용도지역/지목 : <b>' + prop.yongdo + '</b><br>',  
-            '</div>', 
-            clickNotice, 
-            '<div style="margin-top:6px; border-top:1px dashed #ccc; padding-top:6px;">', 
-            '  <p style="color:#2b5c8f; font-weight:bold; font-size:11px; margin:0 0 5px 0; border-left:3px solid #2b5c8f; padding-left:6px;">' + noticeText + '</p>', 
-               tableHtml, 
-            '</div>'
-        ].join('');
-        
-        if (window.innerWidth <= 768) {
-            var styleEl = document.createElement("style");
-            styleEl.innerHTML = "#right-stats-panel.expanded .mobile-notice" + styleOpen + styleBody + styleClose;
-            document.head.appendChild(styleEl);
-        }
-
-        if (panel) {
-            panel.classList.remove("expanded");
-            panel.classList.add("active");
-        }
-    }
-
-    // 💡 [순서 수복] 네이버 지도 객체(map)가 생성된 후 실행될 DOMContentLoaded 구역
+    // 💡 [초고속 레이아웃 수복] 브라우저가 켜지자마자 무거운 매물 연산을 미루고 지도부터 1순위로 생성합니다.
     document.addEventListener("DOMContentLoaded", function() {
         if (typeof naver !== 'undefined' && map) {
             naver.maps.Event.addListener(map, "zoom_changed", function() {
@@ -1020,11 +994,13 @@
             });
         }
 
+        // 🚀 [핵심 교정] 지도가 뜨는 타이밍과 2,023개 카드가 뜨는 타이밍을 분리합니다.
+        // 브라우저가 하이브리드 지도 타일 이미지를 요청할 수 있는 숨통을 0.05초 열어주어 백지 상태를 없앱니다.
         setTimeout(function() {
             if (typeof initMap === 'function') {
                 initMap();
             }
-        }, 300);
+        }, 50);
     });
 </script>
 </body>
