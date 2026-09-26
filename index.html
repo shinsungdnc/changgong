@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260926_1812</title>
+    <title>창공공인중개사사무소 - v.260926_1818</title>
     <script defer type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script defer type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -748,6 +748,12 @@
     function applyFilters() {
         if (currentBoundaryCircle) currentBoundaryCircle.setMap(null);
         var vis = [];
+        
+        // 🎯 [기획서 기준점 변환] 네이버 지도 v3 스펙 매칭
+        // 줌 16 이상 = 축척 100m 이하 (리 선택, 매물선택 상태)
+        var currentZoom = map.getZoom();
+        var isDetailScale = (currentZoom >= 16);
+        var currentBounds = map.getBounds();
 
         markers.forEach(function(marker, i) {
             var p = properties[i];
@@ -759,37 +765,60 @@
                 mRi = (p.name.indexOf(currentRi) !== -1);
             }
 
-            // 🎯 [필터 꼬임 완전 수복] 선택된 거래 스위치 키워드가 매물 가격 문장에 포함되어 있다면 통과!
+            // 🎯 거래 방식 (매매, 전세, 월세, 단기) 필터 검사
             var mDeal = false;
             currentDealTypes.forEach(function(type) {
                 if (p.price.indexOf(type) !== -1) { mDeal = true; }
             });
 
-            // 🚀 [초고속 개선] 축척 100m 이하일 때 화면 영역(Bounds) 밖의 마커 연산을 격리 차단합니다.
-            var mBounds = true;
-            if (map.getZoom() >= 16) {
-                var currentBounds = map.getBounds();
+            var item = document.getElementById("item-" + i);
+
+            // 🚀 [초고속 가속 엔진 적용]
+            // 기획서 명세: 축척 300m 이상(줌 15 이하)에서는 개별 마커 연산을 완전히 배제(N)합니다.
+            // 축척 100m 이하(줌 16 이상)이면서 화면 영역(Bounds) 내부에 들어와 있을 때만 마커를 활성화(Y)합니다.
+            var mBounds = false;
+            if (isDetailScale) {
                 var markerLatLng = marker.getPosition();
                 mBounds = currentBounds.hasLatLng(markerLatLng);
             }
 
-            var item = document.getElementById("item-" + i);
-
-            if (mCat && mDet && mTown && mRi && mDeal && mBounds) {
-                item.style.display = "block"; marker.setMap(map); vis.push(marker); 
+            // 웹 리스트 항목 표시 여부 결정
+            if (mCat && mDet && mTown && mRi && mDeal) {
+                item.style.display = "block";
+                
+                // 기획서 100미터부터 마커 생성 조건 결합
+                if (isDetailScale && mBounds) {
+                    marker.setMap(map);
+                    vis.push(marker);
+                } else {
+                    marker.setMap(null);
+                }
             } else {
-                item.style.display = "none"; var dEl = document.getElementById("detail-" + i); if(dEl) dEl.style.display = "none";
-                item.classList.remove("active"); marker.setMap(null); 
+                item.style.display = "none";
+                var dEl = document.getElementById("detail-" + i);
+                if(dEl) dEl.style.display = "none";
+                item.classList.remove("active");
+                marker.setMap(null); 
             }
         });
-        updateTownSelectorOptions(); updateClustering(vis); 
+        
+        updateTownSelectorOptions();
+        updateClustering(vis); 
     }
 
     function updateClustering(vis) {
-        // 🎯 [고속화 2단계] 클러스터러 객체를 매번 새로 만들지 않고, 최초 1회 생성 후 내부 마커만 초고속으로 갈아 끼웁니다.
+        // 🎯 기획서 명세: 축척 300m까지(줌 15 이하)는 무조건 클러스터러 노출(Y)
+        // 축척 100m 이하(줌 16 이상) 정밀 시야로 진입하면 개별 마커가 표시되므로 클러스터러 자동 파괴
+        var currentZoom = map.getZoom();
+        
         if (!markerClustering) {
             markerClustering = new MarkerClustering({
-                minClusterSize: 2, maxZoom: 16, map: map, markers: vis, gridSize: 200, disableClickZoom: false, 
+                minClusterSize: 2, 
+                maxZoom: 15, // 💡 기획서 매칭: 줌 15(축척 300m)까지만 클러스터가 동작하고 16부터는 풀립니다.
+                map: map, 
+                markers: vis, 
+                gridSize: 120, 
+                disableClickZoom: false, 
                 icons: [
                     { content: '<div class="cluster-badge" style="cursor:pointer; width:44px; height:44px; line-height:44px; font-size:12px; color:#fff; text-align:center; font-weight:bold; background:rgba(0, 140, 180, 0.95); border:2px solid #fff; border-radius:50%; box-shadow:0 3px 10px rgba(0,0,0,0.35);"></div>', anchor: new naver.maps.Point(22, 22) },
                     { content: '<div class="cluster-badge" style="cursor:pointer; width:52px; height:52px; line-height:52px; font-size:13px; color:#fff; text-align:center; font-weight:bold; background:rgba(230, 70, 20, 0.95); border:2px solid #fff; border-radius:50%; box-shadow:0 4px 12px rgba(0,0,0,0.4);"></div>', anchor: new naver.maps.Point(26, 26) }
@@ -801,10 +830,12 @@
                 }
             });
         } else {
-            // 객체가 이미 있다면 무겁게 새로 만들지 않고, 내부 알맹이 마커들만 0.001초 만에 뺐다 껴서 렉을 원천 박멸합니다.
             markerClustering.setMap(null);
             markerClustering.setMarkers(vis);
-            markerClustering.setMap(map);
+            // 줌 레벨이 16 이상으로 올라가면 클러스터러 바인딩을 끊어 기획서 명세를 충족합니다.
+            if (currentZoom <= 15) {
+                markerClustering.setMap(map);
+            }
         }
     }
 
