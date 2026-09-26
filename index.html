@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260926_0957</title>
+    <title>창공공인중개사사무소 - v.260926_0959</title>
     <script defer type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script defer type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -758,11 +758,11 @@
 
             // 🚀 [초고속 개선] 축척 100m 이하일 때 화면 영역(Bounds) 밖의 마커 연산을 격리 차단합니다.
             var mBounds = true;
-            if (map.getScale() <= 100) {{
+            if (map.getScale() <= 100) {
                 var currentBounds = map.getBounds();
                 var markerLatLng = marker.getPosition();
                 mBounds = currentBounds.hasLatLng(markerLatLng);
-            }}
+            }
 
             var item = document.getElementById("item-" + i);
 
