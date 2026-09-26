@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260926_1919</title>
+    <title>창공공인중개사사무소 - v.260926_1924</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -719,6 +719,12 @@
         if (currentBoundaryCircle) currentBoundaryCircle.setMap(null);
         var vis = [];
         
+        // 🚀 [무한 스크롤 초기화] 필터 결과 보관함을 비우고 스크롤바를 맨 위로 올립니다.
+        filteredIndices = [];
+        loadedItemCount = 0;
+        var listContainer = document.getElementById("property-list");
+        if (listContainer) listContainer.scrollTop = 0;
+        
         // 🎯 줌 레벨 감지 (16 이상 = 축척 100m 이하 정밀 구역)
         var currentZoom = map.getZoom();
         var isDetailScale = (currentZoom >= 16);
@@ -740,36 +746,35 @@
                 if (p.price.indexOf(type) !== -1) { mDeal = true; }
             });
 
-            var item = document.getElementById("item-" + i);
-
-            // 🚀 [클러스터러 부활 가속 엔진]
-            // 기본 카테고리/지역/거래 필터를 통과한 매물이라면 일단 계산 후보(vis)에 무조건 포함시킵니다.
-            // 그래야 줌아웃 상태에서 '클러스터러(Y)'가 정상적으로 매물 갯수를 모아서 표현합니다.
+            // 🚀 [렉 원천 봉쇄 분기]
+            // 모든 조건을 통과한 매물이라면, 무식하게 화면에 카드를 다 그리지 않고 
+            // 가벼운 고유 번호(인덱스)만 filteredIndices 배열에 빠르게 수집합니다.
             if (mCat && mDet && mTown && mRi && mDeal) {
-                item.style.display = "block";
-                vis.push(marker); // 💡 클러스터러 엔진에 마커 후보군 데이터 전달
+                filteredIndices.push(i);
 
-                // 📐 기획서 명세 조건 분기
-                // 100미터 이하(줌 16 이상)이고 현재 화면 사각형 내부에 있을 때만 '개별 마커(Y)' 생성
+                // 📐 기획서 명세 조건 연동
+                // 축척 100미터 이하(줌 16 이상)이고 현재 화면 사각형 내부에 있을 때만 '개별 마커(Y)' 노출
                 if (isDetailScale) {
                     var markerLatLng = marker.getPosition();
                     if (currentBounds.hasLatLng(markerLatLng)) {
                         marker.setMap(map);
+                        vis.push(marker);
                     } else {
                         marker.setMap(null);
                     }
                 } else {
-                    // 300미터 이상(줌 15 이하)일 때는 개별 마커를 완전히 지도에서 숨김(N)
+                    // 축척 300미터 이상(줌 15 이하)일 때는 개별 마커를 완전히 지도에서 숨김(N)
                     marker.setMap(null);
+                    vis.push(marker); // 줌 아웃 시 클러스터러 갯수 연산을 위해 통계 바구니에 전달
                 }
             } else {
-                item.style.display = "none";
-                var dEl = document.getElementById("detail-" + i);
-                if(dEl) dEl.style.display = "none";
-                item.classList.remove("active");
                 marker.setMap(null); 
             }
         });
+        
+        // 🚀 [초고속 분할 렌더러 시동] 
+        // 1,500개를 한 번에 그리던 렉을 깨고, 상위 40개만 눈 깜짝할 사이에 먼저 화면에 띄웁니다.
+        renderNextItems();
         
         updateTownSelectorOptions();
         updateClustering(vis); 
@@ -781,10 +786,10 @@
         if (!markerClustering) {
             markerClustering = new MarkerClustering({
                 minClusterSize: 2, 
-                maxZoom: 15, 
+                maxZoom: 15, // 💡 기획서 일치: 줌 15(축척 300m)까지만 클러스터 노출(Y) 후 16부터 파괴
                 map: map, 
                 markers: vis, 
-                gridSize: 160, 
+                gridSize: 160, // 💡 클러스터러 알맹이들이 더 크게 묶이도록 그리드 범위 세팅
                 disableClickZoom: false, 
                 icons: [
                     { content: '<div class="cluster-badge" style="cursor:pointer; width:44px; height:44px; line-height:44px; font-size:12px; color:#fff; text-align:center; font-weight:bold; background:rgba(0, 140, 180, 0.95); border:2px solid #fff; border-radius:50%; box-shadow:0 3px 10px rgba(0,0,0,0.35);"></div>', anchor: new naver.maps.Point(22, 22) },
@@ -793,12 +798,12 @@
                 indexGenerator: function(count) { return count < 15 ? 0 : 1; }, 
                 stylingFunction: function(clusterMarker, count) {
                     var el = clusterMarker.getElement();
-                    if (el) {{ 
+                    if (el) { 
                         var bd = el.querySelector(".cluster-badge"); 
-                        if (bd) {{
+                        if (bd) {
                             bd.innerText = count;
                             
-                            // 🚀 [방사형 수복 엔진] 파이썬 쌍중괄호 규칙 완벽 준수 버전
+                            // 🚀 [방사형 수복 엔진] 지도의 현재 중심 좌표를 기준으로 거리 연산
                             var center = map.getCenter();
                             var pos = clusterMarker.getPosition();
                             
@@ -806,16 +811,17 @@
                             var dy = pos.lat() - center.lat();
                             var distance = Math.sqrt(dx * dx + dy * dy);
                             
-                            // 중심에서 멀어질수록 딜레이를 주어 방사형 폭발 효과 구현
+                            // 중심에서 멀어질수록 딜레이를 주어 사방으로 퍼져나가는 폭발 효과 구현
                             var delay = Math.min(distance * 3, 0.8); 
                             bd.style.animationDelay = delay + "s";
-                        }}
-                    }}
+                        } 
+                    }
                 }
             });
         } else {
             markerClustering.setMap(null);
             markerClustering.setMarkers(vis);
+            // 기획서 명세 연동: 축척 300m 이상(줌 15 이하) 광역 시야일 때만 클러스터러 맵 장착
             if (currentZoom <= 15) {
                 markerClustering.setMap(map);
             }
@@ -958,59 +964,37 @@
                 tableHtml += '<div style="text-align:center; color:#555; padding:20px 10px; background:#f8f9fa; border:1px solid #e9ecef; border-radius:4px; margin-top:10px; font-size:11px; line-height:1.4;">🏡 <b>안내</b><br>' + productTypeName + ' 상품은 개별 특성이 강하여 본 지도에서 실거래가 요약을 제공하지 않습니다.</div>';
             }
         }
-    
-        document.getElementById("stats-title").innerText = "📊 " + prop.town + " 실거래 분석";
-        var clickNotice = "";        
-        var styleOpen = " { ", styleClose = " } ", styleBody = "display: none !important;";
+     //맨 마지막 스크립트 마감 구역
 
-        document.getElementById("stats-content").innerHTML = [
-            '<div style="background: rgba(0,0,0,0.03); padding:6px 10px; border-radius:4px; margin-bottom:6px; font-size:12px; line-height:1.4; text-align:left;">', 
-            '  용도지역/지목 : <b>' + prop.yongdo + '</b><br>',  
-            '</div>', 
-            clickNotice, 
-            '<div style="margin-top:6px; border-top:1px dashed #ccc; padding-top:6px;">', 
-            '  <p style="color:#2b5c8f; font-weight:bold; font-size:11px; margin:0 0 5px 0; border-left:3px solid #2b5c8f; padding-left:6px;">' + noticeText + '</p>', 
-               tableHtml, 
-            '</div>'
-        ].join('');
-        
-        if (window.innerWidth <= 768) {
-            var styleEl = document.createElement("style");
-            styleEl.innerHTML = "#right-stats-panel.expanded .mobile-notice" + styleOpen + styleBody + styleClose;
-            document.head.appendChild(styleEl);
-        }
-
-        if (panel) {
-            panel.classList.remove("expanded");
-            panel.classList.add("active");
-        }
+    // 💡 [기획서 명세] 네이버 지도 줌 스위칭 이벤트를 안전하게 연동합니다.
+    if (typeof naver !== 'undefined' && map) {
+        naver.maps.Event.addListener(map, "zoom_changed", function() {
+            var currentZoom = map.getZoom();
+            if (currentBoundaryCircle && currentBoundaryCircle.getMap()) {
+                if (currentZoom >= 16) {
+                    currentBoundaryCircle.setMap(map);
+                    var dynamicRadius = 5;
+                    if (currentZoom === 18) dynamicRadius = 8;
+                    else if (currentZoom === 17) dynamicRadius = 15;
+                    else if (currentZoom === 16) dynamicRadius = 20;
+                    currentBoundaryCircle.setRadius(dynamicRadius);
+                } else {
+                    currentBoundaryCircle.setMap(null);
+                }
+            }
+        });
     }
 
-    // 💡 [순서 수복] 네이버 지도 객체(map)가 생성된 후 실행될 DOMContentLoaded 구역
+    // 🚀 [백지화 원천 차단 엔진]
+    // 브라우저가 화면 레이아웃 구성을 끝내자마자(DOMContentLoaded), 
+    // 하이브리드 지도 배경과 첫 40개의 상위 매물을 렉 없이 동시에 0초 만에 시동겁니다.
     document.addEventListener("DOMContentLoaded", function() {
-        if (typeof naver !== 'undefined' && map) {
-            naver.maps.Event.addListener(map, "zoom_changed", function() {
-                var currentZoom = map.getZoom();
-                if (currentBoundaryCircle && currentBoundaryCircle.getMap()) {
-                    if (currentZoom >= 16) {
-                        currentBoundaryCircle.setMap(map);
-                        var dynamicRadius = 5;
-                        if (currentZoom === 18) dynamicRadius = 8;
-                        else if (currentZoom === 17) dynamicRadius = 15;
-                        else if (currentZoom === 16) dynamicRadius = 20;
-                        currentBoundaryCircle.setRadius(dynamicRadius);
-                    } else {
-                        currentBoundaryCircle.setMap(null);
-                    }
-                }
+        if (typeof initMap === 'function') {
+            // 브라우저 렌더링 프레임 큐에 태워 깔끔하게 동시 구동합니다.
+            requestAnimationFrame(function() {
+                initMap();
             });
         }
-
-        setTimeout(function() {
-            if (typeof initMap === 'function') {
-                initMap();
-            }
-        }, 300);
     });
 </script>
 </body>
