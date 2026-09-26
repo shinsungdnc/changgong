@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260926_1924</title>
+    <title>창공공인중개사사무소 - v.260926_1928</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -967,35 +967,32 @@
      //맨 마지막 스크립트 마감 구역
 
     // 💡 [기획서 명세] 네이버 지도 줌 스위칭 이벤트를 안전하게 연동합니다.
-    if (typeof naver !== 'undefined' && map) {
-        naver.maps.Event.addListener(map, "zoom_changed", function() {
+    if (typeof naver !== 'undefined' && map) {{
+        naver.maps.Event.addListener(map, "zoom_changed", function() {{
             var currentZoom = map.getZoom();
-            if (currentBoundaryCircle && currentBoundaryCircle.getMap()) {
-                if (currentZoom >= 16) {
+            if (currentBoundaryCircle && currentBoundaryCircle.getMap()) {{
+                if (currentZoom >= 16) {{
                     currentBoundaryCircle.setMap(map);
                     var dynamicRadius = 5;
                     if (currentZoom === 18) dynamicRadius = 8;
                     else if (currentZoom === 17) dynamicRadius = 15;
                     else if (currentZoom === 16) dynamicRadius = 20;
                     currentBoundaryCircle.setRadius(dynamicRadius);
-                } else {
+                }} else {{
                     currentBoundaryCircle.setMap(null);
-                }
-            }
-        });
-    }
+                }}
+            }}
+        }});
+    }}
 
-    // 🚀 [백지화 원천 차단 엔진]
-    // 브라우저가 화면 레이아웃 구성을 끝내자마자(DOMContentLoaded), 
-    // 하이브리드 지도 배경과 첫 40개의 상위 매물을 렉 없이 동시에 0초 만에 시동겁니다.
-    document.addEventListener("DOMContentLoaded", function() {
-        if (typeof initMap === 'function') {
-            // 브라우저 렌더링 프레임 큐에 태워 깔끔하게 동시 구동합니다.
-            requestAnimationFrame(function() {
+    // 🚀 [백지화 원천 차단 엔진] 모든 단일 중괄호를 쌍중괄호화하여 파이썬 KeyError를 완치합니다.
+    document.addEventListener("DOMContentLoaded", function() {{
+        if (typeof initMap === 'function') {{
+            requestAnimationFrame(function() {{
                 initMap();
-            });
-        }
-    });
+            }});
+        }}
+    }});
 </script>
 </body>
 </html>
