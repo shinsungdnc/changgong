@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260926_1939</title>
+    <title>창공공인중개사사무소 - v.260926_1941</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -115,6 +115,33 @@
         .trade-table td { padding: 6px 4px; border: 1px solid #dee2e6; text-align: center; color: #495057; }
         .trade-table tr:nth-child(even) { background: #fdfdfd; }
         
+        /* 🎆 [방사형 팝업 엔진] 번쩍임 차단 및 출렁임 방지 보정 버전 */
+        .cluster-badge {
+            opacity: 0;
+            transform: scale(0.8); /* 💡 초기 크기를 키워 출렁거리는 요동을 원천 차단합니다. */
+            
+            /* 💡 부드러운 감속 곡선(ease-out)으로 변경하여 고급스러운 스며듦을 연출합니다. */
+            animation: radialBurst 0.55s ease-out forwards; 
+            
+            /* 💡 자바스크립트 연산이 끝나기 전까지 화면에 절대 번쩍이며 나타나지 않도록 락을 겁니다. */
+            visibility: hidden; 
+        }
+
+        @keyframes radialBurst {
+            0% { 
+                opacity: 0; 
+                transform: scale(0.8);
+                filter: blur(4px); /* 💡 몽환적으로 은은하게 번지는 효과 가동 */
+                visibility: visible;
+            }
+            100% { 
+                opacity: 1; 
+                transform: scale(1); 
+                filter: blur(0px);
+                visibility: visible;
+            }
+        }
+
         @keyframes blink { 0% { opacity: 0.3; } 50% { opacity: 1; } 100% { opacity: 0.3; } }
 
         @media (max-width: 768px) {
@@ -244,49 +271,39 @@
         currentRi = ri;
         applyFilters();
         
-        // 🎯 [2단계 초정밀 순간이동] '전체'가 아닌 특정 '리'를 선택했을 때
+        // 🎯 [기획서 명세] 특정 '리'를 선택했을 때 (축척 100m 타겟)
         if (ri !== "전체") {
-            var sumLat = 0;
-            var sumLng = 0;
-            var matchCount = 0;
-            
+            var sumLat = 0; var sumLng = 0; var matchCount = 0;
             properties.forEach(function(p) {
                 if (p.town === currentTown && p.name.indexOf(ri) !== -1) {
-                    sumLat += p.lat;
-                    sumLng += p.lng;
-                    matchCount++;
+                    sumLat += p.lat; sumLng += p.lng; matchCount++;
                 }
             });
             
             if (matchCount > 0) {
-                var avgLat = sumLat / matchCount;
-                var avgLng = sumLng / matchCount;
+                var avgLat = sumLat / matchCount; var avgLng = sumLng / matchCount;
                 var moveLatLng = new naver.maps.LatLng(avgLat, avgLng);
                 
-                map.setZoom(17); // 개별 건물/땅 모양 꽉 차는 17레벨 줌인
+                // 📐 기획서 명세: 100미터 시야에 정확히 대응되는 줌 레벨 16으로 진입!
+                map.setZoom(16); 
                 map.setCenter(moveLatLng);
             }
         } 
-        // 🎯 [버그 완전 수복] '리 전체'를 선택했을 때 이전에 머물던 리에서 벗어나 읍면동 전체 시야(15레벨)로 안전 복귀!
+        // 🎯 '리 전체'를 선택했을 때 읍면동 전체 시야로 안전 복귀
         else {
-            var sumLat = 0;
-            var sumLng = 0;
-            var matchCount = 0;
-            
+            var sumLat = 0; var sumLng = 0; var matchCount = 0;
             properties.forEach(function(p) {
                 if (p.town === currentTown) {
-                    sumLat += p.lat;
-                    sumLng += p.lng;
-                    matchCount++;
+                    sumLat += p.lat; sumLng += p.lng; matchCount++;
                 }
             });
             
             if (matchCount > 0) {
-                var avgLat = sumLat / matchCount;
-                var avgLng = sumLng / matchCount;
+                var avgLat = sumLat / matchCount; var avgLng = sumLng / matchCount;
                 var moveLatLng = new naver.maps.LatLng(avgLat, avgLng);
                 
-                map.setZoom(15); // 🗺️ 읍면동 전체가 이쁘게 들어오는 15레벨로 화면을 다시 넓혀줍니다.
+                // 📐 기획서 명세: 읍면동 전체 시야인 줌 레벨 15(축척 300m)로 복귀!
+                map.setZoom(15); 
                 map.setCenter(moveLatLng);
             }
         }
@@ -680,38 +697,30 @@
         var panel = document.getElementById("detail-selector");
         if(panel) panel.style.display = "none";
         
-        // 🎯 [렉/딜레이 완전 박멸 복귀 엔진]
         if (town === "전체") {
             var initialLatLng = new naver.maps.LatLng(36.55, 127.25); 
-            map.setZoom(12); // 초기 로딩과 일치하는 3km 범위
+            map.setZoom(12); // 초기 로딩 축척 3,000m 시야
             map.panTo(initialLatLng);
             
-            // 🚀 브라우저가 멈칫하는 현상을 완전히 없애기 위해, 화면 리스트 요소를 렌더링 큐에 태워 초고속으로 패스시킵니다.
             requestAnimationFrame(function() {
                 applyFilters();
             });
         } else {
-            // 특정 읍면동 선택 시: 기존 완성형 15레벨 무빙 엔진
             applyFilters();
             
-            var sumLat = 0;
-            var sumLng = 0;
-            var matchCount = 0;
-            
+            var sumLat = 0; var sumLng = 0; var matchCount = 0;
             properties.forEach(function(p) {
                 if (p.town === town) {
-                    sumLat += p.lat;
-                    sumLng += p.lng;
-                    matchCount++;
+                    sumLat += p.lat; sumLng += p.lng; matchCount++;
                 }
             });
             
             if (matchCount > 0) {
-                var avgLat = sumLat / matchCount;
-                var avgLng = sumLng / matchCount;
+                var avgLat = sumLat / matchCount; var avgLng = sumLng / matchCount;
                 var moveLatLng = new naver.maps.LatLng(avgLat, avgLng);
                 
-                map.setZoom(13);
+                // 📐 [기획서 명세 반영]: 읍면동 선택 시 축척 300m~500m 범위인 '줌 레벨 15'로 정밀 무빙!
+                map.setZoom(15);
                 map.panTo(moveLatLng);
             }
         }
@@ -803,10 +812,10 @@
         if (!markerClustering) {
             markerClustering = new MarkerClustering({
                 minClusterSize: 2, 
-                maxZoom: 15, // 💡 기획서 일치: 줌 15(축척 300m)까지만 클러스터 노출(Y) 후 16부터 파괴
+                maxZoom: 15, 
                 map: map, 
                 markers: vis, 
-                gridSize: 160, // 💡 클러스터러 알맹이들이 더 크게 묶이도록 그리드 범위 소폭 확장
+                gridSize: 160, 
                 disableClickZoom: false, 
                 icons: [
                     { content: '<div class="cluster-badge" style="cursor:pointer; width:44px; height:44px; line-height:44px; font-size:12px; color:#fff; text-align:center; font-weight:bold; background:rgba(0, 140, 180, 0.95); border:2px solid #fff; border-radius:50%; box-shadow:0 3px 10px rgba(0,0,0,0.35);"></div>', anchor: new naver.maps.Point(22, 22) },
@@ -815,13 +824,29 @@
                 indexGenerator: function(count) { return count < 15 ? 0 : 1; }, 
                 stylingFunction: function(clusterMarker, count) {
                     var el = clusterMarker.getElement();
-                    if (el) { var bd = el.querySelector(".cluster-badge"); if (bd) bd.innerText = count; }
+                    if (el) {{ 
+                        var bd = el.querySelector(".cluster-badge"); 
+                        if (bd) {{
+                            bd.innerText = count;
+                            
+                            // 🚀 [방사형 수복 엔진] 파이썬 쌍중괄호 규칙 완벽 준수 버전
+                            var center = map.getCenter();
+                            var pos = clusterMarker.getPosition();
+                            
+                            var dx = pos.lng() - center.lng();
+                            var dy = pos.lat() - center.lat();
+                            var distance = Math.sqrt(dx * dx + dy * dy);
+                            
+                            // 중심에서 멀어질수록 딜레이를 주어 방사형 폭발 효과 구현
+                            var delay = Math.min(distance * 3, 0.8); 
+                            bd.style.animationDelay = delay + "s";
+                        }}
+                    }}
                 }
             });
         } else {
             markerClustering.setMap(null);
             markerClustering.setMarkers(vis);
-            // 기획서 명세 연동: 축척 300m 이상(줌 15 이하) 광역 시야일 때만 클러스터러 맵 장착
             if (currentZoom <= 15) {
                 markerClustering.setMap(map);
             }
