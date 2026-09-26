@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260926_1742</title>
+    <title>창공공인중개사사무소 - v.260926_1800</title>
     <script defer type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script defer type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -838,10 +838,8 @@
         var targetPos = marker.getPosition(); map.setZoom(19); map.panTo(targetPos);            
         var prop = properties[index];
 
-        // 🏢 [교정] 외부 변수 f-string 치환 시 깨지던 자바스크립트 괄호 명확히 교정
         if (prop.category === "공장") {
             document.getElementById("stats-title").innerText = "🏢 [" + prop.town + "] 건축물대장 분석";
-            
             var bList = [];
             try { bList = JSON.parse(prop.Building_List_JSON); } catch(e) { bList = []; }
             
@@ -862,8 +860,8 @@
                     { key: 'ground_floors', label: '지상층수' },
                     { key: 'bcl_rt', label: '건폐율' },
                     { key: 'vlr_rt', label: '용적율' },
-                    { key: 'parking', label: '옥외주차' },         // 💡 '옥외주차대수'에서 변경
-                    { key: 'earthquake', label: '내진설계' },      // 💡 '내진설계적용여부'에서 변경
+                    { key: 'parking', label: '옥외주차' },         
+                    { key: 'earthquake', label: '내진설계' },      
                     { key: 'approved', label: '사용승인일' }
                 ];
                 
@@ -892,12 +890,10 @@
                    tableHtml, 
                 '</div>'
             ].join('');
-            
             if (panel) { panel.classList.remove("expanded"); panel.classList.add("active"); }
             return;
         }
-
-        // 🟩 이 하위 로직은 기존 순정 토지 및 주택 매물용 실거래가 트리거 엔진으로 100% 원형 보존 작동
+    
         var yParts = prop.yongdo.split("/");
         var mYongdo = (yParts && yParts[0] ? yParts[0].trim() : "").replace("지역", "") + "지역"; 
         var mJimok = (yParts && yParts[1] ? yParts[1].trim() : "");       
@@ -918,7 +914,6 @@
                 var houseYongdo = "단독다가구";
                 var houseJimok = (mDetail.indexOf("다가구") !== -1) ? "다가구" : "단독";
                 noticeText = '최근 5개년 ' + ((mDetail.indexOf("다가구") !== -1) ? "다가구주택" : "단독주택") + ' [매매] 실거래가 (대지평, 평당가)';
-                
                 if (realTradeStats[prop.town] && realTradeStats[prop.town][houseYongdo]) {
                     townBook = realTradeStats[prop.town][houseYongdo][houseJimok];
                 }
@@ -937,7 +932,6 @@
                     var yrTxt = isFirst ? yr : ""; 
                     var yrSty = isFirst ? 'style="font-weight:bold; color:#2b5c8f; white-space:nowrap; border-bottom:none;"' : 'style="border-top:none; border-bottom:none;"';
                     isFirst = false;
-                    
                     tableHtml += '<tr><td ' + yrSty + '>' + yrTxt + '</td><td style="font-weight:bold; color:#ff6e40; max-width:90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="'+row.ri+'">'+row.ri+'</td><td>'+row.count+'</td><td>'+row.volume.toLocaleString()+'</td><td>'+row.min.toLocaleString()+'</td><td style="font-weight:bold; color:#2b5c8f;">'+row.avg.toLocaleString()+'</td><td style="font-weight:bold; color:#e65100;">'+row.max.toLocaleString()+'</td></tr>';
                 });
             });
@@ -950,7 +944,7 @@
                 tableHtml += '<div style="text-align:center; color:#555; padding:20px 10px; background:#f8f9fa; border:1px solid #e9ecef; border-radius:4px; margin-top:10px; font-size:11px; line-height:1.4;">🏡 <b>안내</b><br>' + productTypeName + ' 상품은 개별 특성이 강하여 본 지도에서 실거래가 요약을 제공하지 않습니다.</div>';
             }
         }
-
+    
         document.getElementById("stats-title").innerText = "📊 " + prop.town + " 실거래 분석";
         var clickNotice = "";        
         var styleOpen = " { ", styleClose = " } ", styleBody = "display: none !important;";
@@ -977,40 +971,33 @@
             panel.classList.add("active");
         }
     }
- //맨 마지막 스크립트 마감 구역
 
-    // 💡 [순서 수복] 네이버 지도 객체(map)가 완벽히 생성되고 로드된 시점인 DOMContentLoaded 블록 내부에 결합합니다.
-    document.addEventListener("DOMContentLoaded", function() {{
-
-        // (위쪽에서 수복한 지도 생성 및 지적도 레이어 세팅 코드들이 여기에 위치해 있습니다.)
-
-        // 줌 변화 감시 이벤트를 이 안전한 구역 안쪽으로 배치합니다.
-        if (typeof naver !== 'undefined' && map) {{
-            naver.maps.Event.addListener(map, "zoom_changed", function() {{
+    // 💡 [순서 수복] 네이버 지도 객체(map)가 생성된 후 실행될 DOMContentLoaded 구역
+    document.addEventListener("DOMContentLoaded", function() {
+        if (typeof naver !== 'undefined' && map) {
+            naver.maps.Event.addListener(map, "zoom_changed", function() {
                 var currentZoom = map.getZoom();
-                if (currentBoundaryCircle && currentBoundaryCircle.getMap()) {{
-                    if (currentZoom >= 16) {{
+                if (currentBoundaryCircle && currentBoundaryCircle.getMap()) {
+                    if (currentZoom >= 16) {
                         currentBoundaryCircle.setMap(map);
                         var dynamicRadius = 5;
                         if (currentZoom === 18) dynamicRadius = 8;
                         else if (currentZoom === 17) dynamicRadius = 15;
                         else if (currentZoom === 16) dynamicRadius = 20;
                         currentBoundaryCircle.setRadius(dynamicRadius);
-                    }} else {{
+                    } else {
                         currentBoundaryCircle.setMap(null);
-                    }}
-                }}
-            }}
-        }});
+                    }
+                }
+            });
+        }
 
-        // 0.3초 시간차를 두고 초기 매물을 뿌려주던 기존 지연 실행 함수를 최종 호출합니다.
-        setTimeout(function() {{
-            if (typeof initMap === 'function') {{
+        setTimeout(function() {
+            if (typeof initMap === 'function') {
                 initMap();
-            }}
-        }}, 300);
-
-    }});
+            }
+        }, 300);
+    });
 </script>
 </body>
 </html>
