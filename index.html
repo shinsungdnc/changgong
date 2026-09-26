@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260926_2220</title>
+    <title>창공공인중개사사무소 - v.260926_2240</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -687,18 +687,42 @@
     }
     
     function changeTown(town) {
-        currentTown = town; currentRi = "전체";
-        var panel = document.getElementById("detail-selector"); if(panel) panel.style.display = "none";
+        currentTown = town;
+        currentRi = "전체";
+        
+        var panel = document.getElementById("detail-selector"); 
+        if(panel) panel.style.display = "none";
+        
         if (town === "전체") {
-            var initialLatLng = new naver.maps.LatLng(36.55, 127.25); map.setZoom(12); map.panTo(initialLatLng);
-            requestAnimationFrame(function() { applyFilters(); });
+            var initialLatLng = new naver.maps.LatLng(36.55, 127.25); 
+            map.setZoom(12); 
+            map.panTo(initialLatLng);
+            
+            requestAnimationFrame(function() {
+                applyFilters();
+            });
         } else {
-            applyFilters();
+            // 🚀 [순서 대수복]: 필터를 먼저 켜지 않고, 지도 이동 연산부터 최우선으로 실행합니다.
             var sumLat = 0; var sumLng = 0; var matchCount = 0;
-            properties.forEach(function(p) { if (p.town === town) { sumLat += p.lat; sumLng += p.lng; matchCount++; } });
+            properties.forEach(function(p) { 
+                if (p.town === town) { sumLat += p.lat; sumLng += p.lng; matchCount++; } 
+            });
+            
             if (matchCount > 0) {
                 var avgLat = sumLat / matchCount; var avgLng = sumLng / matchCount;
-                map.setZoom(15); map.panTo(new naver.maps.LatLng(avgLat, avgLng));
+                
+                // 1단계: 지도를 기획서 명세 축척(줌 15)과 좌표로 먼저 확실하게 이동시킵니다.
+                map.setZoom(15);
+                map.panTo(new naver.maps.LatLng(avgLat, avgLng));
+                
+                // 2단계: 지도가 날아간 직후, 브라우저 렌더링 프레임 큐(비동기)를 활용해 
+                // 해당 지역 매물 목록을 꼬임 없이 안전하고 깨끗하게 40개씩 새로 채워 넣습니다.
+                requestAnimationFrame(function() {
+                    applyFilters();
+                });
+            } else {
+                // 매물이 없는 지역일 경우에도 목록 리셋을 위해 필터 가동
+                applyFilters();
             }
         }
     }
