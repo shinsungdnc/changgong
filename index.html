@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260926_1847</title>
+    <title>창공공인중개사사무소 - v.260926_1852</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -115,27 +115,30 @@
         .trade-table td { padding: 6px 4px; border: 1px solid #dee2e6; text-align: center; color: #495057; }
         .trade-table tr:nth-child(even) { background: #fdfdfd; }
         
-        /* 🎆 [방사형 팝업 엔진] 347행 근처 수복용 쌍중괄호 이스케이프 완비 버전 */
+        /* 🎆 [방사형 팝업 엔진] 번쩍임 차단 및 출렁임 방지 보정 버전 */
         .cluster-badge {
             opacity: 0;
-            transform: scale(0.3) translateY(15px);
-            animation: radialBurst 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            transform: scale(0.8); /* 💡 초기 크기를 키워 출렁거리는 요동을 원천 차단합니다. */
+            
+            /* 💡 부드러운 감속 곡선(ease-out)으로 변경하여 고급스러운 스며듦을 연출합니다. */
+            animation: radialBurst 0.55s ease-out forwards; 
+            
+            /* 💡 자바스크립트 연산이 끝나기 전까지 화면에 절대 번쩍이며 나타나지 않도록 락을 겁니다. */
+            visibility: hidden; 
         }
 
         @keyframes radialBurst {
             0% { 
                 opacity: 0; 
-                transform: scale(0.3) translateY(15px); 
-                filter: blur(2px);
-            }
-            70% {
-                opacity: 0.8;
-                transform: scale(1.08) translateY(-2px);
-                filter: blur(0px);
+                transform: scale(0.8);
+                filter: blur(4px); /* 💡 몽환적으로 은은하게 번지는 효과 가동 */
+                visibility: visible;
             }
             100% { 
                 opacity: 1; 
-                transform: scale(1) translateY(0); 
+                transform: scale(1); 
+                filter: blur(0px);
+                visibility: visible;
             }
         }
 
