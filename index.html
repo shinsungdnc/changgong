@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260926_1727</title>
+    <title>창공공인중개사사무소 - v.260926_1732</title>
     <script defer type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script defer type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -977,33 +977,40 @@
             panel.classList.add("active");
         }
     }
+ 맨 마지막 스크립트 마감 구역
 
-    /* ✨ [UX 종결] 줌 레벨 변화에 따른 원형 범역선 둘레 접합 및 자동 숨김 로직 */
-    naver.maps.Event.addListener(map, "zoom_changed", function() {
-        var currentZoom = map.getZoom();
-        if (currentBoundaryCircle && currentBoundaryCircle.getMap()) {
-            
-            // 🔎 매물 분석을 하는 최고 확대 레벨(19~21)에서는 삼각형 끝이 원 둘레에 완벽히 접하게 크기를 고정합니다.
-            if (currentZoom >= 16) {
-                currentBoundaryCircle.setMap(map);
-                var dynamicRadius = 5;
-                if (currentZoom === 18) dynamicRadius = 8;
-                else if (currentZoom === 17) dynamicRadius = 15;
-                else if (currentZoom === 16) dynamicRadius = 20;
-                currentBoundaryCircle.setRadius(dynamicRadius);
-            } 
-            // 🗺️ 지도를 축소(줌 아웃)하여 18레벨 이하로 내려가면, 화면이 복잡해지므로 강조 원을 깔끔하게 숨깁니다.
-            else {
-                currentBoundaryCircle.setMap(map);
-            }
-        }
-    });
+    // 💡 [순서 수복] 네이버 지도 객체(map)가 완벽히 생성되고 로드된 시점인 DOMContentLoaded 블록 내부에 결합합니다.
+    document.addEventListener("DOMContentLoaded", function() {{
 
-    naver.maps.Event.once(map, "init_stylemap", function() {
-        setTimeout(function() {
-            initMap();
-        }, 300); // 300ms(0.3초) 시간차를 주어 초기 실행 과부하를 완전히 분산시킵니다.
-    });
+        // (위쪽에서 수복한 지도 생성 및 지적도 레이어 세팅 코드들이 여기에 위치해 있습니다.)
+
+        // 줌 변화 감시 이벤트를 이 안전한 구역 안쪽으로 배치합니다.
+        if (typeof naver !== 'undefined' && map) {{
+            naver.maps.Event.addListener(map, "zoom_changed", function() {{
+                var currentZoom = map.getZoom();
+                if (currentBoundaryCircle && currentBoundaryCircle.getMap()) {{
+                    if (currentZoom >= 16) {{
+                        currentBoundaryCircle.setMap(map);
+                        var dynamicRadius = 5;
+                        if (currentZoom === 18) dynamicRadius = 8;
+                        else if (currentZoom === 17) dynamicRadius = 15;
+                        else if (currentZoom === 16) dynamicRadius = 20;
+                        currentBoundaryCircle.setRadius(dynamicRadius);
+                    } else {{
+                        currentBoundaryCircle.setMap(null);
+                    }}
+                }
+            }});
+        }}
+
+        // 0.3초 시간차를 두고 초기 매물을 뿌려주던 기존 지연 실행 함수를 최종 호출합니다.
+        setTimeout(function() {{
+            if (typeof initMap === 'function') {{
+                initMap();
+            }}
+        }}, 300);
+
+    }});
 </script>
 </body>
 </html>
