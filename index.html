@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260927_0833</title>
+    <title>창공공인중개사사무소 - v.260927_0850</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -752,7 +752,7 @@
     }
 
     function applyFilters() {
-        // 🛡️ [차단막 1단계] 비교 잠금 모드 검사: 매물이 선택된 상태라면 목록/마커 변화를 전면 락(Lock)
+        // 🛡️ [차단막 1단계] 비교 잠금 모드 검사: 매물이 선택된 상태라면 모든 변화를 전면 락(Lock)
         if (selectedPropertyIndex !== null) {
             return; 
         }
@@ -764,8 +764,8 @@
         var currentBounds = map.getBounds();
         var mapCenter = map.getCenter();
 
-        // 📐 [차단막 2단계] 엑셀 명세 표 반영: 축척 3,000m~1,000m 광역 시야 판정 (네이버맵 줌 레벨 13 이하 기준)
-        var isGwangyeokScale = (currentZoom <= 13); // 축척 500미터 이하 판단 기준선
+        // 📐 [차단막 2단계] 엑셀 명세 표 반영: 축척 500m(줌 14 이하) 광역 시야 판단 기준선 조정
+        var isGwangyeokScale = (currentZoom <= 13); 
         var isDetailScale = (currentZoom >= 16); // 축척 100미터 이하 판단 기준선
 
         // 현재 지도 화면 중심점 좌표와 가장 가까운 SQL 기반 읍면동 이름 추출 연산
@@ -790,10 +790,8 @@
         if (currentTown === "전체") {
             // A. 광역 축척(3,000m) 상태라면 목록 스크롤을 움직이지 않고 무조건 고정
             if (isGwangyeokScale) {
-                // 단, 첫 로딩 시 리스트가 완전히 비어 있을 때만 최초 1회 화면을 채워줍니다.
                 if (listContainer && listContainer.innerHTML !== "") {
-                    // 리스트가 채워져 있다면 마우스 이동 시 목록 연산을 전면 파업(고정)하고, 마커 클러스터러만 업데이트하러 이동합니다.
-                    // 광역 시야일 때는 화면 바깥의 매물까지 1,980개 전체를 클러스터에 주입하기 위해 vis 배열을 채웁니다.
+                    // 지도 위 마커는 광역 시야 원칙에 따라 1,980개 전체를 클러스터에 주입
                     markers.forEach(function(marker) {
                         vis.push(marker);
                     });
@@ -803,12 +801,31 @@
             } 
             // B. 정밀 축척에서 중심 동네가 바뀌지 않은 미세 이동/경계선 이동인 경우 목록 고정
             else if (currentCenterTown === lastCenterTown && listContainer && listContainer.innerHTML !== "") {
-                // 목록은 고정하되, 눈(지도 마커)은 화면 범위 내에 유입되는 주변 마커들을 실시간 노출해 줍니다.
-                markers.forEach(function(marker) {
-                    var markerLatLng = marker.getPosition();
-                    if (currentBounds.hasLatLng(markerLatLng)) {
-                        marker.setMap(map);
-                        vis.push(marker);
+                // 🎯 [버그 완치 적용]: 목록은 고정하되, 지도 위 마커는 행정구역 상관없이 화면 내 매물 '전체 노출'
+                markers.forEach(function(marker, i) {
+                    var p = properties[i];
+                    
+                    // 카테고리/상세종류/거래방식 필터 합격 여부 체크
+                    var mCat = (currentCategories.indexOf(marker.get("category")) !== -1);
+                    var mDet = (currentCategories.length === 0 || currentDetail.indexOf(marker.get("detail_type")) !== -1);
+                    var mDeal = false;
+                    currentDealTypes.forEach(function(type) {
+                        if (p.price.indexOf(type) !== -1) { mDeal = true; }
+                    });
+
+                    if (mCat && mDet && mDeal) {
+                        if (isDetailScale) {
+                            var markerLatLng = marker.getPosition();
+                            if (currentBounds.hasLatLng(markerLatLng)) {
+                                marker.setMap(map);
+                                vis.push(marker);
+                            } else {
+                                marker.setMap(null);
+                            }
+                        } else {
+                            marker.setMap(null);
+                            vis.push(marker);
+                        }
                     } else {
                         marker.setMap(null);
                     }
@@ -822,43 +839,47 @@
         filteredIndices = [];
         loadedItemCount = 0;
         if (listContainer) {
-            listContainer.innerHTML = ""; // 기존 동네의 스크롤 잔상을 도화지에서 깨끗하게 지움
-            listContainer.scrollTop = 0;  // 💡 스크롤바 위치를 리스트 최상단(0번 포인트)으로 강제 리셋!
+            listContainer.innerHTML = ""; // 기존 동네 스크롤 카드 제거
+            listContainer.scrollTop = 0;  // 스크롤바 위치를 리스트 최상단으로 강제 초기화!
         }
 
-        // 지번 오름차순 골격 속에서 새로운 데이터 수집 시작
+        // 🎯 [기획 수복 핵심]: 목록용 데이터와 지도 마커용 데이터 수집의 완벽한 분리 독립 루프
         markers.forEach(function(marker, i) {
             var p = properties[i];
+            
+            // 공통 기본 필터 검사 (카테고리, 종류, 거래방식)
             var mCat = (currentCategories.indexOf(marker.get("category")) !== -1);
             var mDet = (currentCategories.length === 0 || currentDetail.indexOf(marker.get("detail_type")) !== -1);
+            var mDeal = false;
+            currentDealTypes.forEach(function(type) {
+                if (p.price.indexOf(type) !== -1) { mDeal = true; }
+            });
             
-            // 기획 명세: 광역 시야(전체)일 땐 1,980개 전체 수집, 정밀 시야(선택/이동)일 땐 중심점의 읍면동 매물만 싹 수집
-            var mTown = true;
-            if (currentTown !== "전체") {
-                mTown = (marker.get("town") === currentTown);
-            } else {
-                // 광역 시야가 아닐 때(500m 이하 구간)에만 오직 현재 화면 중심점의 읍면동 매물만 목록에 띄움
-                if (!isGwangyeokScale) {
-                    mTown = (marker.get("town") === currentCenterTown);
-                }
-            }
-
             var mRi = true;
             if (currentTown !== "전체" && currentRi !== "전체") {
                 mRi = (p.name.indexOf(currentRi) !== -1);
             }
 
-            var mDeal = false;
-            currentDealTypes.forEach(function(type) {
-                if (p.price.indexOf(type) !== -1) { mDeal = true; }
-            });
+            if (mCat && mDet && mRi && mDeal) {
+                
+                // 1️⃣ [좌측 매물 목록 창] 데이터 수집 판정 규칙
+                var mTownList = true;
+                if (currentTown !== "전체") {
+                    mTownList = (marker.get("town") === currentTown);
+                } else {
+                    // 광역 시야가 아닐 때(500m 이하 구간)에만 오직 현재 화면 중심점의 '그 읍면동' 매물만 수집
+                    if (!isGwangyeokScale) {
+                        mTownList = (marker.get("town") === currentCenterTown);
+                    }
+                }
+                
+                if (mTownList) {
+                    filteredIndices.push(i); // 읍면동 단위 지번 오름차순 골격 그대로 목록 바구니에 안착
+                }
 
-            if (mCat && mDet && mTown && mRi && mDeal) {
-                filteredIndices.push(i); // 지번 오름차순 정렬 원형 그대로 인덱스 바구니에 수집
-
-                // 지도 화면 위의 마커 노출 제어
+                // 2️⃣ [지도 화면 마커 노출] 판정 규칙 (행정구역 경계 락 전면 해제)
                 if (isDetailScale) {
-                    // 축척 100미터 이하에서는 행정구역 경계와 무관하게 화면 바운더리에 눈으로 보이는 이웃 매물 마커 전부 노출(Y)
+                    // 축척 100미터 이하 정밀 시야에서는 내 눈에 보이는 사각형 범위(Bounds) 내부라면 이웃 동네 매물까지 100% 전부 노출
                     var markerLatLng = marker.getPosition();
                     if (currentBounds.hasLatLng(markerLatLng)) {
                         marker.setMap(map);
@@ -867,9 +888,15 @@
                         marker.setMap(null);
                     }
                 } else {
-                    // 광역 축척(3,000m) 등 클러스터가 켜지는 구간에서는 개별 핀 마커는 완전히 숨김(N)
+                    // 광역 축척(3,000m) 등 클러스터 구간에서는 개별 마커 숨김
                     marker.setMap(null);
-                    vis.push(marker); // 1,980개 전체 매물 숫자가 클러스터에 정직하게 다 뜨도록 바구니에 유입
+                    
+                    // 광역 시야일 때는 1,980개 전체를, 특정 읍면동 필터일 때는 해당 읍면동 전체 매물을 통계 바구니에 전달
+                    if (currentTown !== "전체") {
+                        if (marker.get("town") === currentTown) vis.push(marker);
+                    } else {
+                        vis.push(marker);
+                    }
                 }
             } else {
                 marker.setMap(null); 
