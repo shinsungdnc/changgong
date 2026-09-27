@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260927_1324</title>
+    <title>창공공인중개사사무소 - v.260927_1338</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -951,47 +951,28 @@
                     { content: '<div class="cluster-badge" style="cursor:pointer; width:52px; height:52px; line-height:52px; font-size:13px; color:#fff; text-align:center; font-weight:bold; background:rgba(230, 70, 20, 0.95); border:2px solid #fff; border-radius:50%; box-shadow:0 4px 12px rgba(0,0,0,0.4);"></div>', anchor: new naver.maps.Point(26, 26) }
                 ],
                 indexGenerator: function(count) { return count < 15 ? 0 : 1; }, 
-                // 🚀 [초고속 워프 최종 완치 엔딩]: 배지가 화면에 그려지는 순간 순정 마우스 클릭 주권을 직접 강제 주입합니다.
                 stylingFunction: function(clusterMarker, count) {
                     var el = clusterMarker.getElement();
-                    if (el) {
-                        var bd = el.querySelector(".cluster-badge");
-                        if (bd) {
+                    if (el) {{ 
+                        var bd = el.querySelector(".cluster-badge"); 
+                        if (bd) {{
                             bd.innerText = count;
                             
-                            // 📐 [방사형 수복 엔진] 지도의 현재 중심 좌표를 기준으로 거리 연산
+                            // 🚀 [방사형 수복 엔진] 지도의 현재 중심 좌표를 기준으로 거리 연산
                             var center = map.getCenter();
                             var pos = clusterMarker.getPosition();
+                            
                             var dx = pos.lng() - center.lng();
                             var dy = pos.lat() - center.lat();
                             var distance = Math.sqrt(dx * dx + dy * dy);
-                            var delay = Math.min(distance * 3, 0.8);
-                            bd.style.animationDelay = delay + "s";
                             
-                            // 🎯 [완치 핵심]: 네이버 엔진의 소심한 1단계 기능을 0초 비동기로 완벽히 차단하고 100m로 새치기 워프 시킵니다.
-                            bd.onclick = function(e) {
-                                e.stopPropagation(); // 네이버 지도 자체의 소심한 1단계 클릭 줌인 전파를 완벽히 차단(박멸)!
-                                e.preventDefault();
-                                
-                                setTimeout(function() {
-                                    map.setZoom(16); // 📐 기획자님 최종 확정 사양: 실전 비교 시야인 100m로 수직 낙하
-                                    map.panTo(pos);  // "슈~욱" 하고 배지가 위치한 바로 그 자리 정중앙으로 미끄러지듯 안착
-                                }, 0);
-                            };
-                        }
-                    }
+                            // 중심에서 멀어질수록 딜레이를 주어 사방으로 퍼져나가는 폭발 효과 구현
+                            var delay = Math.min(distance * 3, 0.8); 
+                            bd.style.animationDelay = delay + "s";
+                        }}
+                    }}
                 }
             });
-
-			// 🚀 [초고속 워프 최종 완치 엔진]: 네이버 엔진이 방어막 자물쇠를 푸는 찰나에 0초 만에 새치기 기동하여 100m로 직진 시킵니다!
-			naver.maps.Event.addListener(markerClustering, "clusterclick", function(cluster) {
-				var clusterCenter = cluster.getCenter(); // 클릭한 배지의 정중앙 무게중심 좌표 추출
-				setTimeout(function() {
-					map.setZoom(16); // 📐 기획자님 최종 확정 사양: 실전 비교 시야인 100m로 수직 낙하
-					map.panTo(clusterCenter); // "슈~욱" 하고 부드럽게 화면을 미끄러트리며 정중앙 안착
-				}, 0);
-			});
-
         } else {
             markerClustering.setMap(null);
             markerClustering.setMarkers(vis);
