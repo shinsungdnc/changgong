@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260927_1041</title>
+    <title>창공공인중개사사무소 - v.260927_1102</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -862,7 +862,7 @@
 
         // 🎯 [완치 핵심]: 과거 줌 레벨의 무거운 캐시 잔상을 0초 만에 완전히 파괴하여 메모리를 청소합니다!
         if (markerClustering) { markerClustering.setMap(null); markerClustering = null; }
-                        
+
         if (listContainer) {
             listContainer.innerHTML = ""; 
             listContainer.scrollTop = 0;  // 스크롤바 위치를 리스트 최상단으로 강제 초기화!
@@ -945,7 +945,7 @@
                 map: map, 
                 markers: vis, 
                 gridSize: 200, 
-                disableClickZoom: false, 
+                disableClickZoom: true,     // 기본 제공 이동 단계 off
                 icons: [
                     { content: '<div class="cluster-badge" style="cursor:pointer; width:44px; height:44px; line-height:44px; font-size:12px; color:#fff; text-align:center; font-weight:bold; background:rgba(0, 140, 180, 0.95); border:2px solid #fff; border-radius:50%; box-shadow:0 3px 10px rgba(0,0,0,0.35);"></div>', anchor: new naver.maps.Point(22, 22) },
                     { content: '<div class="cluster-badge" style="cursor:pointer; width:52px; height:52px; line-height:52px; font-size:13px; color:#fff; text-align:center; font-weight:bold; background:rgba(230, 70, 20, 0.95); border:2px solid #fff; border-radius:50%; box-shadow:0 4px 12px rgba(0,0,0,0.4);"></div>', anchor: new naver.maps.Point(26, 26) }
@@ -973,6 +973,15 @@
                     }}
                 }
             });
+            // 🚀 [초고속 브리핑 수복 엔진]: 클러스터 배지를 클릭하면 중간 단계를 삭제하고 100m 시야로 다이렉트 워프 시킵니다.
+            naver.maps.Event.addListener(markerClustering, "clusterclick", function(cluster) {
+                var clusterCenter = cluster.getCenter(); // 클릭한 클러스터러 덩어리의 정중앙 좌표 추출
+                
+                // 📐 기획자님 최종 확정 사양: 중간 단계를 싹 삭제하고 개별 마커 핀이 촥 활성화되는 줌 16(100m)으로 한 방에 꽂아버립니다!
+                map.setZoom(16); 
+                map.panTo(clusterCenter); // "슈~욱" 하고 정중앙으로 부드럽게 화면을 미끄러트리며 이동
+            });
+
         } else {
             markerClustering.setMap(null);
             markerClustering.setMarkers(vis);
