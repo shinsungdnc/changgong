@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260927_1546</title>
+    <title>창공공인중개사사무소 - v.260927_1554</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -794,18 +794,6 @@
                     }
                 }
             }
-        }
-
-        // 🚀 [기획서 최종 명세: 100m 이상 구역 필터 자동 해제 완충 엔진]
-        if (!isSelectBoxFlying && currentTown !== "전체" && currentZoom <= 16 && currentCenterTown !== "전체" && currentCenterTown !== currentTown) {
-            currentTown = "전체"; currentRi = "전체"; lastCenterTown = currentCenterTown;
-            var tSelector = document.getElementById("town-selector");
-            if (tSelector) tSelector.value = "전체"; 
-            
-            setTimeout(function() {
-                applyFilters();
-            }, 100);
-            return; 
         }
 
         // 📐 [차단막 3단계 & 4단계] 광역 축척이거나 동일 읍면동 내 미세 이동일 때 목록 고정 처리
