@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260927_1603</title>
+    <title>창공공인중개사사무소 - v.260927_1614</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -1157,6 +1157,27 @@
 
     // 🚀 [백지화 원천 차단 및 0초 부팅 엔진] 모든 단일 중괄호를 쌍중괄호화 완료
     document.addEventListener("DOMContentLoaded", function() {{
+    
+        // ⌨️ [기획서 마스터 완치] 크롬 앱 창 활성화 상태에서 작동하는 ESC 계층형 순차 탈출 단축키 엔진 가동!
+        window.addEventListener("keydown", function(e) {{
+            if (e.key === "Escape" || e.keyCode === 27) {{
+                e.preventDefault(); // 브라우저 자체의 기본 ESC 기본 동작 간섭을 차단
+                
+                var tSel = document.getElementById("town-selector");
+                var rSel = document.getElementById("ri-selector");
+                
+                if (rSel && rSel.style.display !== "none" && rSel.value !== "전체") {{
+                    // 📐 1단계: 특정 '리'가 켜져 있다면, 해당 읍면은 유지하되 '리 전체' 시야로 1차 탈출!
+                    rSel.value = "전체";
+                    changeRi("전체");
+                }} else if (tSel && tSel.value !== "전체") {{
+                    // 📐 2단계: 읍면동이 고정된 상태라면, 세종시 전체 광역 시야로 최종 수직 탈출!
+                    tSel.value = "전체";
+                    changeTown("전체");
+                }}
+            }}
+        }});
+
         if (typeof naver !== 'undefined' && map) {{
             naver.maps.Event.addListener(map, "zoom_changed", function() {{
                 var currentZoom = map.getZoom();
