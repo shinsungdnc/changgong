@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260927_1753</title>
+    <title>창공공인중개사사무소 - v.260927_1804</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -418,7 +418,7 @@
     }
 
     // 🚀 [기획 고도화: 2단 통합 종류 패널 빌더 엔진] 1단(매물상세)과 2단(용도지역)을 한 울타리에 이중으로 그려냅니다.
-    // 🚀 [창공 마스터 최종 완결판] 1단 용도지역(위) + 2단 매물종류(아래) 대역전 엔진 및 초기화 렉 영구 박멸
+    // 🚀 [창공 마스터 최종 완결판] 첫 로딩 강제 개방 차단 및 전원 1px 칼선 테두리 수복형 2단 통합 종류 패널 엔진
     var currentYongdoFilters = ["계획", "생산", "농림", "기타"];
 
     function updateDetailSelectorOptions() {
@@ -427,12 +427,13 @@
         
         if (!container || !trigger) return;
         
+        // 📐 [기획서 명세 최종 완치] 첫 로딩 시 제멋대로 패널 상자가 열리던 display = "flex" 강제 개방 코드를 전면 파기(삭제)합니다!
+        // 토글 버튼 스위치 인프라만 깨워두고, 컨테이너 상자의 열고 닫히는 주권은 오직 소장님의 마우스 클릭 명령에만 100% 절대 복종하게 둡니다.
         trigger.style.display = "flex"; 
-        container.style.display = "flex";
         container.style.flexDirection = "column"; 
         container.style.gap = "10px";
         
-        // --- 1️⃣ [1단(위): 용도지역 필터 라인 (스카이블루 & 오렌지 하모니)] ---
+        // --- 1️⃣ [1단(위): 용도지역 필터 라인 (테두리 1px 오렌지 마감)] ---
         var row1 = document.createElement("div");
         row1.style = "display: flex; gap: 6px; width: 100%; padding-bottom: 2px; align-items: center;";
         
@@ -440,21 +441,22 @@
         var allYongdos = ["계획", "생산", "농림", "기타"];
         
         var yMasterWrapper = document.createElement("label");
-        yMasterWrapper.style = "display: inline-flex; align-items: center; font-size: 11px; font-weight: bold; cursor: pointer; padding: 4px 12px; border-radius: 4px; flex-shrink: 0; background:" + (currentYongdoFilters.length === allYongdos.length ? yActiveBg : "#e9ecef") + "; color:" + (currentYongdoFilters.length === allYongdos.length ? yActiveColor : "#868e96") + "; border: 2px solid " + (currentYongdoFilters.length === allYongdos.length ? yActiveBorder : "#ced4da");
+        // 📐 [기획서 명세 최종 완치] border 스펙을 전부 깔끔하게 1px solid 그레이/오렌지 칼선으로 대조 정렬!
+        yMasterWrapper.style = "display: inline-flex; align-items: center; font-size: 11px; font-weight: bold; cursor: pointer; padding: 4px 12px; border-radius: 4px; flex-shrink: 0; background:" + (currentYongdoFilters.length === allYongdos.length ? yActiveBg : "#e9ecef") + "; color:" + (currentYongdoFilters.length === allYongdos.length ? yActiveColor : "#868e96") + "; border: 1px solid " + (currentYongdoFilters.length === allYongdos.length ? yActiveBorder : "#ced4da");
         var yMasterChk = document.createElement("input"); yMasterChk.type = "checkbox"; yMasterChk.checked = (currentYongdoFilters.length === allYongdos.length); yMasterChk.style.display = "none";
         
         yMasterChk.onchange = function() {
             var isChecked = this.checked;
             yMasterWrapper.style.background = isChecked ? yActiveBg : "#e9ecef";
             yMasterWrapper.style.color = isChecked ? yActiveColor : "#868e96";
-            yMasterWrapper.style.border = isChecked ? "2px solid " + yActiveBorder : "2px solid #ced4da";
+            yMasterWrapper.style.border = isChecked ? "1px solid " + yActiveBorder : "1px solid #ced4da";
             row1.querySelectorAll(".yongdo-child-label").forEach(function(wrapper) {
                 var input = wrapper.querySelector("input");
                 if (input) {
                     input.checked = isChecked;
                     wrapper.style.background = isChecked ? yActiveBg : "#e9ecef";
                     wrapper.style.color = isChecked ? yActiveColor : "#868e96";
-                    wrapper.style.border = isChecked ? "2px solid " + yActiveBorder : "2px solid #ced4da";
+                    wrapper.style.border = isChecked ? "1px solid " + yActiveBorder : "1px solid #ced4da";
                 }
             });
             currentYongdoFilters = isChecked ? [...allYongdos] : [];
@@ -463,22 +465,22 @@
         yMasterWrapper.appendChild(yMasterChk); yMasterWrapper.appendChild(document.createTextNode("전체")); row1.appendChild(yMasterWrapper);
         
         allYongdos.forEach(function(y) {
-            var wrapper = document.createElement("label"); wrapper.className = "yongdo-child-label"; wrapper.style = "display: inline-flex; align-items: center; font-size: 11px; font-weight: bold; cursor: pointer; padding: 4px 12px; border-radius: 20px; flex-shrink: 0; background:" + (currentYongdoFilters.indexOf(y) !== -1 ? yActiveBg : "#e9ecef") + "; color:" + (currentYongdoFilters.indexOf(y) !== -1 ? yActiveColor : "#868e96") + "; border: 2px solid " + (currentYongdoFilters.indexOf(y) !== -1 ? yActiveBorder : "#ced4da");
+            var wrapper = document.createElement("label"); wrapper.className = "yongdo-child-label"; wrapper.style = "display: inline-flex; align-items: center; font-size: 11px; font-weight: bold; cursor: pointer; padding: 4px 12px; border-radius: 20px; flex-shrink: 0; background:" + (currentYongdoFilters.indexOf(y) !== -1 ? yActiveBg : "#e9ecef") + "; color:" + (currentYongdoFilters.indexOf(y) !== -1 ? yActiveColor : "#868e96") + "; border: 1px solid " + (currentYongdoFilters.indexOf(y) !== -1 ? yActiveBorder : "#ced4da");
             var chk = document.createElement("input"); chk.type = "checkbox"; chk.value = y; chk.checked = (currentYongdoFilters.indexOf(y) !== -1); chk.style.display = "none";
             chk.onchange = function() {
                 wrapper.style.background = this.checked ? yActiveBg : "#e9ecef";
                 wrapper.style.color = this.checked ? yActiveColor : "#868e96";
-                wrapper.style.border = this.checked ? "2px solid " + yActiveBorder : "2px solid #ced4da";
-                if (!this.checked) { yMasterChk.checked = false; yMasterWrapper.style.background = "#e9ecef"; yMasterWrapper.style.color = "#868e96"; yMasterWrapper.style.border = "2px solid #ced4da"; }
+                wrapper.style.border = this.checked ? "1px solid " + yActiveBorder : "1px solid #ced4da";
+                if (!this.checked) { yMasterChk.checked = false; yMasterWrapper.style.background = "#e9ecef"; yMasterWrapper.style.color = "#868e96"; yMasterWrapper.style.border = "1px solid #ced4da"; }
                 var checkedBoxes = row1.querySelectorAll(".yongdo-child-label input:checked");
                 currentYongdoFilters = Array.from(checkedBoxes).map(function(c) { return c.value; });
-                if (currentYongdoFilters.length === allYongdos.length) { yMasterChk.checked = true; yMasterWrapper.style.background = yActiveBg; yMasterWrapper.style.color = yActiveColor; yMasterWrapper.style.border = "2px solid " + yActiveBorder; }
+                if (currentYongdoFilters.length === allYongdos.length) { yMasterChk.checked = true; yMasterWrapper.style.background = yActiveBg; yMasterWrapper.style.color = yActiveColor; yMasterWrapper.style.border = "1px solid " + yActiveBorder; }
                 applyFilters();
             };
             wrapper.appendChild(chk); wrapper.appendChild(document.createTextNode(y)); row1.appendChild(wrapper);
         });
         
-        // --- 2️⃣ [2단(아래): 매물 상세 종류 라인 (스크롤 격리 배치)] ---
+        // --- 2️⃣ [2단(아래): 매물 상세 종류 라인 (테두리 1px 스카이블루 및 가로 스크롤 완벽 유지)] ---
         var detailsSet = new Set();
         properties.forEach(function(p) { 
             if (currentCategories.indexOf(p.category) !== -1) { detailsSet.add(p.detail_type); }
@@ -491,21 +493,21 @@
         var mActiveBg = "#ffffff", mActiveColor = "#004b6e", mActiveBorder = "#004b6e";
         
         var mMasterWrapper = document.createElement("label");
-        mMasterWrapper.style = "display: inline-flex; align-items: center; font-size: 11px; font-weight: bold; cursor: pointer; padding: 4px 12px; border-radius: 4px; flex-shrink: 0; background:" + (currentDetail.length === sortedDetails.length ? mActiveBg : "#e9ecef") + "; color:" + (currentDetail.length === sortedDetails.length ? mActiveColor : "#868e96") + "; border: 2px solid " + (currentDetail.length === sortedDetails.length ? mActiveBorder : "#ced4da");
+        mMasterWrapper.style = "display: inline-flex; align-items: center; font-size: 11px; font-weight: bold; cursor: pointer; padding: 4px 12px; border-radius: 4px; flex-shrink: 0; background:" + (currentDetail.length === sortedDetails.length ? mActiveBg : "#e9ecef") + "; color:" + (currentDetail.length === sortedDetails.length ? mActiveColor : "#868e96") + "; border: 1px solid " + (currentDetail.length === sortedDetails.length ? mActiveBorder : "#ced4da");
         var mMasterChk = document.createElement("input"); mMasterChk.type = "checkbox"; mMasterChk.checked = (currentDetail.length === sortedDetails.length); mMasterChk.style.display = "none";
         
         mMasterChk.onchange = function() {
             var isChecked = this.checked;
             mMasterWrapper.style.background = isChecked ? mActiveBg : "#e9ecef";
             mMasterWrapper.style.color = isChecked ? mActiveColor : "#868e96";
-            mMasterWrapper.style.border = isChecked ? "2px solid " + mActiveBorder : "2px solid #ced4da";
+            mMasterWrapper.style.border = isChecked ? "1px solid " + mActiveBorder : "1px solid #ced4da";
             row2.querySelectorAll(".child-label").forEach(function(wrapper) {
                 var input = wrapper.querySelector("input");
                 if (input) {
                     input.checked = isChecked;
                     wrapper.style.background = isChecked ? mActiveBg : "#e9ecef";
                     wrapper.style.color = isChecked ? mActiveColor : "#868e96";
-                    wrapper.style.border = isChecked ? "2px solid " + mActiveBorder : "2px solid #ced4da";
+                    wrapper.style.border = isChecked ? "1px solid " + mActiveBorder : "1px solid #ced4da";
                 }
             });
             currentDetail = isChecked ? [...sortedDetails] : [];
@@ -514,16 +516,16 @@
         mMasterWrapper.appendChild(mMasterChk); mMasterWrapper.appendChild(document.createTextNode("전체")); row2.appendChild(mMasterWrapper);
         
         sortedDetails.forEach(function(d) {
-            var wrapper = document.createElement("label"); wrapper.className = "child-label"; wrapper.style = "display: inline-flex; align-items: center; font-size: 11px; font-weight: bold; cursor: pointer; padding: 4px 12px; border-radius: 20px; flex-shrink: 0; background:" + (currentDetail.indexOf(d) !== -1 ? mActiveBg : "#e9ecef") + "; color:" + (currentDetail.indexOf(d) !== -1 ? mActiveColor : "#868e96") + "; border: 2px solid " + (currentDetail.indexOf(d) !== -1 ? mActiveBorder : "#ced4da");
+            var wrapper = document.createElement("label"); wrapper.className = "child-label"; wrapper.style = "display: inline-flex; align-items: center; font-size: 11px; font-weight: bold; cursor: pointer; padding: 4px 12px; border-radius: 20px; flex-shrink: 0; background:" + (currentDetail.indexOf(d) !== -1 ? mActiveBg : "#e9ecef") + "; color:" + (currentDetail.indexOf(d) !== -1 ? mActiveColor : "#868e96") + "; border: 1px solid " + (currentDetail.indexOf(d) !== -1 ? mActiveBorder : "#ced4da");
             var chk = document.createElement("input"); chk.type = "checkbox"; chk.value = d; chk.checked = (currentDetail.indexOf(d) !== -1); chk.style.display = "none";
             chk.onchange = function() {
                 wrapper.style.background = this.checked ? mActiveBg : "#e9ecef";
                 wrapper.style.color = this.checked ? mActiveColor : "#868e96";
-                wrapper.style.border = this.checked ? "2px solid " + mActiveBorder : "2px solid #ced4da";
-                if (!this.checked) { mMasterChk.checked = false; mMasterWrapper.style.background = "#e9ecef"; mMasterWrapper.style.color = "#868e96"; mMasterWrapper.style.border = "2px solid #ced4da"; }
+                wrapper.style.border = this.checked ? "1px solid " + mActiveBorder : "1px solid #ced4da";
+                if (!this.checked) { mMasterChk.checked = false; mMasterWrapper.style.background = "#e9ecef"; mMasterWrapper.style.color = "#868e96"; mMasterWrapper.style.border = "1px solid #ced4da"; }
                 var checkedBoxes = row2.querySelectorAll(".child-label input:checked");
                 currentDetail = Array.from(checkedBoxes).map(function(c) { return c.value; });
-                if (currentDetail.length === sortedDetails.length) { mMasterChk.checked = true; mMasterWrapper.style.background = mActiveBg; mMasterWrapper.style.color = mActiveColor; mMasterWrapper.style.border = "2px solid " + mActiveBorder; }
+                if (currentDetail.length === sortedDetails.length) { mMasterChk.checked = true; mMasterWrapper.style.background = mActiveBg; mMasterWrapper.style.color = mActiveColor; mMasterWrapper.style.border = "1px solid " + mActiveBorder; }
                 applyFilters();
             };
             wrapper.appendChild(chk); wrapper.appendChild(document.createTextNode(d)); row2.appendChild(wrapper);
