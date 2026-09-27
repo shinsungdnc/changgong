@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260927_1922</title>
+    <title>창공공인중개사사무소 - v.260927_1934</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -484,7 +484,7 @@
         // --- 2️⃣ [2단]: 매물 상세 선택 라인 (소프트 파스텔 민트/그린 테마) ---
         var detailsSet = new Set();
         properties.forEach(function(p) { 
-            if (currentCategories.indexOf(p.category) !== -1) { detailsSet.add(p.detail_type); }
+            if (currentCategories.indexOf(p.category) !== -1) { detailsSet.add(p.매물상세); }
         });
         var sortedDetails = Array.from(detailsSet).sort();
         
@@ -940,7 +940,7 @@
             var p = properties[i];
             
             var mCat = (currentCategories.indexOf(marker.get("category")) !== -1);
-            var mDet = (currentDetail.length === 0 || currentDetail.indexOf(marker.get("detail_type")) !== -1);
+            var mDet = (currentDetail.length === 0 || currentDetail.indexOf(marker.get("매물상세")) !== -1);
             var mDeal = false;
             currentDealTypes.forEach(function(type) {
                 if (p.price.indexOf(type) !== -1) { mDeal = true; }
@@ -957,7 +957,7 @@
             if (currentYongdoFilters.length === 0) {
                 mYongdoMatch = false; 
             } else {
-                var yongdoStr = p.yongdo || "";
+                var yongdoStr = p.Yongdo_3Part_Text || "";
                 currentYongdoFilters.forEach(function(yFilter) {
                     if (yFilter === "계획" && yongdoStr.indexOf("계획") !== -1) { 
                         mYongdoMatch = true; 
