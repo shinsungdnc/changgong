@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260927_1346</title>
+    <title>창공공인중개사사무소 - v.260927_1350</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -974,8 +974,8 @@
                                 e.preventDefault();
                                 
                                 setTimeout(function() {
-                                    map.setZoom(16); // 📐 기획자님 최종 확정 사양: 실전 비교 시야인 100m로 수직 낙하
-                                    map.panTo(pos);  // "슈~욱" 하고 배지가 위치한 바로 그 자리 정중앙으로 미끄러지듯 안착
+                                    map.setCenter(pos);  // "슈~욱" 하고 배지가 위치한 바로 그 자리 정중앙으로 미끄러지듯 안착
+									map.setZoom(16); // 📐 기획자님 최종 확정 사양: 실전 비교 시야인 100m로 수직 낙하
                                 }, 0);
                             };
                         }
