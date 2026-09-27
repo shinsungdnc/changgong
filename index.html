@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260927_1804</title>
+    <title>창공공인중개사사무소 - v.260927_1827</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -199,9 +199,9 @@
                         <button class="tab-btn active-factory" id="btn-factory" onclick="toggleCategory('공장')">공장/창고</button>
                         <button class="tab-btn active-house" id="btn-house" onclick="toggleCategory('주택')">주택</button>
                     </div>
-					<!-- 🎛️ [최종 보정] 종류 글자 정중앙 정렬 및 지적 버튼 연두 테마 가독성 확보 버전 -->
+					<!-- 🎛️ [최종 보정] 선택 글자 정중앙 정렬 및 지적 버튼 연두 테마 가독성 확보 버전 -->
 					<div style="display: flex; gap: 4px; width: 100%; box-sizing: border-box; pointer-events: auto; margin-top: 6px; align-items: center; height: 32px;">  
-						<button type="button" id="filter-toggle-btn" onclick="toggleDetailSelectorPanel()" class="deal-btn" style="flex: 1; background: #ffffff !important; color: #222 !important; border: 1px solid #ced4da !important; font-size: 11px !important; height: 100%; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; white-space: nowrap;">종류</button>
+						<button type="button" id="filter-toggle-btn" onclick="toggleDetailSelectorPanel()" class="deal-btn" style="flex: 1; background: #ffffff !important; color: #222 !important; border: 1px solid #ced4da !important; font-size: 11px !important; height: 100%; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; white-space: nowrap;">선택</button>
 						<button type="button" id="btn-cadastral" onclick="toggleCadastral()" class="deal-btn" style="flex: 1; background: #DCF65C !important; color: #111111 !important; border: 1px solid #9CBD0E !important; font-size: 11px !important; height: 100%; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; white-space: nowrap;">지적</button>   
 						<button type="button" id="btn-maemae" onclick="toggleDealType('매매')" class="deal-btn active-maemae" style="flex: 1; font-size: 11px !important; height: 100%; box-sizing: border-box; padding: 5px 0; white-space: nowrap;">매매</button>
 						<button type="button" id="btn-jeonse" onclick="toggleDealType('전세')" class="deal-btn active-jeonse" style="flex: 1; font-size: 11px !important; height: 100%; box-sizing: border-box; padding: 5px 0; white-space: nowrap;">전세</button>
@@ -417,8 +417,7 @@
         panel.style.display = (panel.style.display === "none" || panel.style.display === "") ? "flex" : "none";
     }
 
-    // 🚀 [기획 고도화: 2단 통합 종류 패널 빌더 엔진] 1단(매물상세)과 2단(용도지역)을 한 울타리에 이중으로 그려냅니다.
-    // 🚀 [창공 마스터 최종 완결판] 첫 로딩 강제 개방 차단 및 전원 1px 칼선 테두리 수복형 2단 통합 종류 패널 엔진
+    // 🚀 [창공 마스터 최종 완결판] 오렌지색 불빛 = 선택(ON) / 하얀 바탕 = 해제(OFF) 순정 철학 100% 엄수 배포본
     var currentYongdoFilters = ["계획", "생산", "농림", "기타"];
 
     function updateDetailSelectorOptions() {
@@ -427,36 +426,34 @@
         
         if (!container || !trigger) return;
         
-        // 📐 [기획서 명세 최종 완치] 첫 로딩 시 제멋대로 패널 상자가 열리던 display = "flex" 강제 개방 코드를 전면 파기(삭제)합니다!
-        // 토글 버튼 스위치 인프라만 깨워두고, 컨테이너 상자의 열고 닫히는 주권은 오직 소장님의 마우스 클릭 명령에만 100% 절대 복종하게 둡니다.
         trigger.style.display = "flex"; 
         container.style.flexDirection = "column"; 
         container.style.gap = "10px";
         
-        // --- 1️⃣ [1단(위): 용도지역 필터 라인 (테두리 1px 오렌지 마감)] ---
+        // --- 1️⃣ [1단(위): 용도지역 필터 라인 (오렌지색 불빛=선택 / 하얀 바탕=해제)] ---
         var row1 = document.createElement("div");
         row1.style = "display: flex; gap: 6px; width: 100%; padding-bottom: 2px; align-items: center;";
         
-        var yActiveBg = "#ffffff", yActiveColor = "#E65100", yActiveBorder = "#EF5703"; 
+        var yActiveBg = "#ffffff", yActiveColor = "#868e96", yActiveBorder = "#ced4da"; // 💡 해제(OFF) 시 깨끗한 하얀 바탕
+        var yNormalBg = "#e9ecef", yNormalColor = "#E65100", yNormalBorder = "#EF5703"; // 💡 선택(ON) 시 창공 명품 오렌지색 불빛
         var allYongdos = ["계획", "생산", "농림", "기타"];
         
         var yMasterWrapper = document.createElement("label");
-        // 📐 [기획서 명세 최종 완치] border 스펙을 전부 깔끔하게 1px solid 그레이/오렌지 칼선으로 대조 정렬!
-        yMasterWrapper.style = "display: inline-flex; align-items: center; font-size: 11px; font-weight: bold; cursor: pointer; padding: 4px 12px; border-radius: 4px; flex-shrink: 0; background:" + (currentYongdoFilters.length === allYongdos.length ? yActiveBg : "#e9ecef") + "; color:" + (currentYongdoFilters.length === allYongdos.length ? yActiveColor : "#868e96") + "; border: 1px solid " + (currentYongdoFilters.length === allYongdos.length ? yActiveBorder : "#ced4da");
+        yMasterWrapper.style = "display: inline-flex; align-items: center; font-size: 11px; font-weight: bold; cursor: pointer; padding: 4px 12px; border-radius: 4px; flex-shrink: 0; background:" + (currentYongdoFilters.length === allYongdos.length ? yNormalBg : yActiveBg) + "; color:" + (currentYongdoFilters.length === allYongdos.length ? yNormalColor : yActiveColor) + "; border: 1px solid " + (currentYongdoFilters.length === allYongdos.length ? yNormalBorder : yActiveBorder);
         var yMasterChk = document.createElement("input"); yMasterChk.type = "checkbox"; yMasterChk.checked = (currentYongdoFilters.length === allYongdos.length); yMasterChk.style.display = "none";
         
         yMasterChk.onchange = function() {
             var isChecked = this.checked;
-            yMasterWrapper.style.background = isChecked ? yActiveBg : "#e9ecef";
-            yMasterWrapper.style.color = isChecked ? yActiveColor : "#868e96";
-            yMasterWrapper.style.border = isChecked ? "1px solid " + yActiveBorder : "1px solid #ced4da";
+            yMasterWrapper.style.background = isChecked ? yNormalBg : yActiveBg;
+            yMasterWrapper.style.color = isChecked ? yNormalColor : yActiveColor;
+            yMasterWrapper.style.border = isChecked ? "1px solid " + yNormalBorder : "1px solid " + yActiveBorder;
             row1.querySelectorAll(".yongdo-child-label").forEach(function(wrapper) {
                 var input = wrapper.querySelector("input");
                 if (input) {
                     input.checked = isChecked;
-                    wrapper.style.background = isChecked ? yActiveBg : "#e9ecef";
-                    wrapper.style.color = isChecked ? yActiveColor : "#868e96";
-                    wrapper.style.border = isChecked ? "1px solid " + yActiveBorder : "1px solid #ced4da";
+                    wrapper.style.background = isChecked ? yNormalBg : yActiveBg;
+                    wrapper.style.color = isChecked ? yNormalColor : yActiveColor;
+                    wrapper.style.border = isChecked ? "1px solid " + yNormalBorder : "1px solid " + yActiveBorder;
                 }
             });
             currentYongdoFilters = isChecked ? [...allYongdos] : [];
@@ -465,22 +462,22 @@
         yMasterWrapper.appendChild(yMasterChk); yMasterWrapper.appendChild(document.createTextNode("전체")); row1.appendChild(yMasterWrapper);
         
         allYongdos.forEach(function(y) {
-            var wrapper = document.createElement("label"); wrapper.className = "yongdo-child-label"; wrapper.style = "display: inline-flex; align-items: center; font-size: 11px; font-weight: bold; cursor: pointer; padding: 4px 12px; border-radius: 20px; flex-shrink: 0; background:" + (currentYongdoFilters.indexOf(y) !== -1 ? yActiveBg : "#e9ecef") + "; color:" + (currentYongdoFilters.indexOf(y) !== -1 ? yActiveColor : "#868e96") + "; border: 1px solid " + (currentYongdoFilters.indexOf(y) !== -1 ? yActiveBorder : "#ced4da");
+            var wrapper = document.createElement("label"); wrapper.className = "yongdo-child-label"; wrapper.style = "display: inline-flex; align-items: center; font-size: 11px; font-weight: bold; cursor: pointer; padding: 4px 12px; border-radius: 20px; flex-shrink: 0; background:" + (currentYongdoFilters.indexOf(y) !== -1 ? yNormalBg : yActiveBg) + "; color:" + (currentYongdoFilters.indexOf(y) !== -1 ? yNormalColor : yActiveColor) + "; border: 1px solid " + (currentYongdoFilters.indexOf(y) !== -1 ? yNormalBorder : yActiveBorder);
             var chk = document.createElement("input"); chk.type = "checkbox"; chk.value = y; chk.checked = (currentYongdoFilters.indexOf(y) !== -1); chk.style.display = "none";
             chk.onchange = function() {
-                wrapper.style.background = this.checked ? yActiveBg : "#e9ecef";
-                wrapper.style.color = this.checked ? yActiveColor : "#868e96";
-                wrapper.style.border = this.checked ? "1px solid " + yActiveBorder : "1px solid #ced4da";
-                if (!this.checked) { yMasterChk.checked = false; yMasterWrapper.style.background = "#e9ecef"; yMasterWrapper.style.color = "#868e96"; yMasterWrapper.style.border = "1px solid #ced4da"; }
+                wrapper.style.background = this.checked ? yNormalBg : yActiveBg;
+                wrapper.style.color = this.checked ? yNormalColor : yActiveColor;
+                wrapper.style.border = this.checked ? "1px solid " + yNormalBorder : "1px solid " + yActiveBorder;
+                if (!this.checked) { yMasterChk.checked = false; yMasterWrapper.style.background = yActiveBg; yMasterWrapper.style.color = yActiveColor; yMasterWrapper.style.border = "1px solid " + yActiveBorder; }
                 var checkedBoxes = row1.querySelectorAll(".yongdo-child-label input:checked");
                 currentYongdoFilters = Array.from(checkedBoxes).map(function(c) { return c.value; });
-                if (currentYongdoFilters.length === allYongdos.length) { yMasterChk.checked = true; yMasterWrapper.style.background = yActiveBg; yMasterWrapper.style.color = yActiveColor; yMasterWrapper.style.border = "1px solid " + yActiveBorder; }
+                if (currentYongdoFilters.length === allYongdos.length) { yMasterChk.checked = true; yMasterWrapper.style.background = yNormalBg; yMasterWrapper.style.color = yNormalColor; yMasterWrapper.style.border = "1px solid " + yNormalBorder; }
                 applyFilters();
             };
             wrapper.appendChild(chk); wrapper.appendChild(document.createTextNode(y)); row1.appendChild(wrapper);
         });
         
-        // --- 2️⃣ [2단(아래): 매물 상세 종류 라인 (테두리 1px 스카이블루 및 가로 스크롤 완벽 유지)] ---
+        // --- 2️⃣ [2단(아래): 매물 상세 종류 라인 (기존과 100% 동일하게 회색 불빛 순정 가동)] ---
         var detailsSet = new Set();
         properties.forEach(function(p) { 
             if (currentCategories.indexOf(p.category) !== -1) { detailsSet.add(p.detail_type); }
@@ -490,24 +487,25 @@
         var row2 = document.createElement("div");
         row2.style = "display: flex; gap: 6px; overflow-x: auto; white-space: nowrap; width: 100%; border-top: 1px dashed rgba(0,0,0,0.1); padding-top: 8px; padding-bottom: 2px; align-items: center;";
         
-        var mActiveBg = "#ffffff", mActiveColor = "#004b6e", mActiveBorder = "#004b6e";
+        var mActiveBg = "#ffffff", mActiveColor = "#868e96", mActiveBorder = "#ced4da"; 
+        var mNormalBg = "#e9ecef", mNormalColor = "#004b6e", mNormalBorder = "#004b6e"; 
         
         var mMasterWrapper = document.createElement("label");
-        mMasterWrapper.style = "display: inline-flex; align-items: center; font-size: 11px; font-weight: bold; cursor: pointer; padding: 4px 12px; border-radius: 4px; flex-shrink: 0; background:" + (currentDetail.length === sortedDetails.length ? mActiveBg : "#e9ecef") + "; color:" + (currentDetail.length === sortedDetails.length ? mActiveColor : "#868e96") + "; border: 1px solid " + (currentDetail.length === sortedDetails.length ? mActiveBorder : "#ced4da");
+        mMasterWrapper.style = "display: inline-flex; align-items: center; font-size: 11px; font-weight: bold; cursor: pointer; padding: 4px 12px; border-radius: 4px; flex-shrink: 0; background:" + (currentDetail.length === sortedDetails.length ? mNormalBg : mActiveBg) + "; color:" + (currentDetail.length === sortedDetails.length ? mNormalColor : mActiveColor) + "; border: 1px solid " + (currentDetail.length === sortedDetails.length ? mNormalBorder : mActiveBorder);
         var mMasterChk = document.createElement("input"); mMasterChk.type = "checkbox"; mMasterChk.checked = (currentDetail.length === sortedDetails.length); mMasterChk.style.display = "none";
         
         mMasterChk.onchange = function() {
             var isChecked = this.checked;
-            mMasterWrapper.style.background = isChecked ? mActiveBg : "#e9ecef";
-            mMasterWrapper.style.color = isChecked ? mActiveColor : "#868e96";
-            mMasterWrapper.style.border = isChecked ? "1px solid " + mActiveBorder : "1px solid #ced4da";
+            mMasterWrapper.style.background = isChecked ? mNormalBg : mActiveBg;
+            mMasterWrapper.style.color = isChecked ? mNormalColor : mActiveColor;
+            mMasterWrapper.style.border = isChecked ? "1px solid " + mNormalBorder : "1px solid " + mActiveBorder;
             row2.querySelectorAll(".child-label").forEach(function(wrapper) {
                 var input = wrapper.querySelector("input");
                 if (input) {
                     input.checked = isChecked;
-                    wrapper.style.background = isChecked ? mActiveBg : "#e9ecef";
-                    wrapper.style.color = isChecked ? mActiveColor : "#868e96";
-                    wrapper.style.border = isChecked ? "1px solid " + mActiveBorder : "1px solid #ced4da";
+                    wrapper.style.background = isChecked ? mNormalBg : mActiveBg;
+                    wrapper.style.color = isChecked ? mNormalColor : mActiveColor;
+                    wrapper.style.border = isChecked ? "1px solid " + mNormalBorder : "1px solid " + mActiveBorder;
                 }
             });
             currentDetail = isChecked ? [...sortedDetails] : [];
@@ -516,16 +514,16 @@
         mMasterWrapper.appendChild(mMasterChk); mMasterWrapper.appendChild(document.createTextNode("전체")); row2.appendChild(mMasterWrapper);
         
         sortedDetails.forEach(function(d) {
-            var wrapper = document.createElement("label"); wrapper.className = "child-label"; wrapper.style = "display: inline-flex; align-items: center; font-size: 11px; font-weight: bold; cursor: pointer; padding: 4px 12px; border-radius: 20px; flex-shrink: 0; background:" + (currentDetail.indexOf(d) !== -1 ? mActiveBg : "#e9ecef") + "; color:" + (currentDetail.indexOf(d) !== -1 ? mActiveColor : "#868e96") + "; border: 1px solid " + (currentDetail.indexOf(d) !== -1 ? mActiveBorder : "#ced4da");
+            var wrapper = document.createElement("label"); wrapper.className = "child-label"; wrapper.style = "display: inline-flex; align-items: center; font-size: 11px; font-weight: bold; cursor: pointer; padding: 4px 12px; border-radius: 20px; flex-shrink: 0; background:" + (currentDetail.indexOf(d) !== -1 ? mNormalBg : mActiveBg) + "; color:" + (currentDetail.indexOf(d) !== -1 ? mNormalColor : mActiveColor) + "; border: 1px solid " + (currentDetail.indexOf(d) !== -1 ? mNormalBorder : mActiveBorder);
             var chk = document.createElement("input"); chk.type = "checkbox"; chk.value = d; chk.checked = (currentDetail.indexOf(d) !== -1); chk.style.display = "none";
             chk.onchange = function() {
-                wrapper.style.background = this.checked ? mActiveBg : "#e9ecef";
-                wrapper.style.color = this.checked ? mActiveColor : "#868e96";
-                wrapper.style.border = this.checked ? "1px solid " + mActiveBorder : "1px solid #ced4da";
-                if (!this.checked) { mMasterChk.checked = false; mMasterWrapper.style.background = "#e9ecef"; mMasterWrapper.style.color = "#868e96"; mMasterWrapper.style.border = "1px solid #ced4da"; }
+                wrapper.style.background = this.checked ? mNormalBg : mActiveBg;
+                wrapper.style.color = this.checked ? mNormalColor : mActiveColor;
+                wrapper.style.border = this.checked ? "1px solid " + mNormalBorder : "1px solid " + mActiveBorder;
+                if (!this.checked) { mMasterChk.checked = false; mMasterWrapper.style.background = mActiveBg; mMasterWrapper.style.color = mActiveColor; mMasterWrapper.style.border = "1px solid " + mActiveBorder; }
                 var checkedBoxes = row2.querySelectorAll(".child-label input:checked");
                 currentDetail = Array.from(checkedBoxes).map(function(c) { return c.value; });
-                if (currentDetail.length === sortedDetails.length) { mMasterChk.checked = true; mMasterWrapper.style.background = mActiveBg; mMasterWrapper.style.color = mActiveColor; mMasterWrapper.style.border = "1px solid " + mActiveBorder; }
+                if (currentDetail.length === sortedDetails.length) { mMasterChk.checked = true; mMasterWrapper.style.background = mNormalBg; mMasterWrapper.style.color = mNormalColor; mMasterWrapper.style.border = "1px solid " + mNormalBorder; }
                 applyFilters();
             };
             wrapper.appendChild(chk); wrapper.appendChild(document.createTextNode(d)); row2.appendChild(wrapper);
@@ -604,7 +602,7 @@
     }
 
     // 🚀 [무한 스크롤 제어 전역 변수 선언]
-    var filteredIndices = []; // 현재 필터 조건(지역, 종류 등)을 통과한 매물들의 번호 보관함
+    var filteredIndices = []; // 현재 필터 조건(지역, 선택 등)을 통과한 매물들의 번호 보관함
     var loadedItemCount = 0;  // 현재 좌측 리스트 화면에 실제로 그려진 카드의 개수
     var itemsPerLoad = 40;    // 스크롤이 바닥에 닿을 때마다 추가로 그려낼 카드 단위
 
@@ -944,18 +942,25 @@
 
             // 🚀 [기획서 마스터 최종 완치] 계획, 생산(단독), 농림, 기타 4대 분류 자석 스캔 센서 주입!
             var mYongdoMatch = false;
-            currentYongdoFilters.forEach(function(yFilter) {
-                if (yFilter === "계획") {
-                    if (prop.yongdo.indexOf("계획") !== -1) { mYongdoMatch = true; }
-                } else if (yFilter === "생산") {
-                    if (prop.yongdo.indexOf("생산") !== -1) { mYongdoMatch = true; }
-                } else if (yFilter === "농림") {
-                    if (prop.yongdo.indexOf("농림") !== -1) { mYongdoMatch = true; }
-                } else if (yFilter === "기타") {
-                    // 계획, 생산, 농림에 속하지 않는 나머지 모든 용도지역(보전관리, 주거, 상업, 공업, 녹지 등)을 기타 주머니에 완벽 격리
-                    if (prop.yongdo.indexOf("계획") === -1 && prop.yongdo.indexOf("생산") === -1 && prop.yongdo.indexOf("농림") === -1) { mYongdoMatch = true; }
-                }
-            });
+            
+            if (currentYongdoFilters.length === 0) {
+                mYongdoMatch = false; // 4개 칩이 전부 하얗게 꺼지면 매물은 0개가 됨
+            } else {
+                currentYongdoFilters.forEach(function(yFilter) {
+                    if (yFilter === "계획" && prop.yongdo.indexOf("계획") !== -1) { 
+                        mYongdoMatch = true; 
+                    }
+                    else if (yFilter === "생산" && prop.yongdo.indexOf("생산") !== -1) { 
+                        mYongdoMatch = true; 
+                    }
+                    else if (yFilter === "농림" && prop.yongdo.indexOf("농림") !== -1) { 
+                        mYongdoMatch = true; 
+                    }
+                    else if (yFilter === "기타" && prop.yongdo.indexOf("계획") === -1 && prop.yongdo.indexOf("생산") === -1 && prop.yongdo.indexOf("농림") === -1) { 
+                        mYongdoMatch = true; 
+                    }
+                });
+            }
 
             if (mCat && mDet && mRi && mDeal) {
                 
