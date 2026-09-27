@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260927_1913</title>
+    <title>창공공인중개사사무소 - v.260927_1922</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -942,75 +942,76 @@
             var mCat = (currentCategories.indexOf(marker.get("category")) !== -1);
             var mDet = (currentDetail.length === 0 || currentDetail.indexOf(marker.get("detail_type")) !== -1);
             var mDeal = false;
-            currentDealTypes.forEach(function(type) {{
-                if (p.price.indexOf(type) !== -1) {{ mDeal = true; }}
-            }});
+            currentDealTypes.forEach(function(type) {
+                if (p.price.indexOf(type) !== -1) { mDeal = true; }
+            });
             
             var mRi = true;
-            if (currentTown !== "전체" && currentRi !== "전체") {{
+            if (currentTown !== "전체" && currentRi !== "전체") {
                 mRi = (p.name.indexOf(currentRi) !== -1);
-            }}
+            }
 
             // 🚀 [창공 마스터 최종 완치] 계획, 생산, 농림, 기타 4대 분류 자석 스캔 센서 주입!
             var mYongdoMatch = false;
             
-            if (currentYongdoFilters.length === 0) {{
-                mYongdoMatch = false; // 💡 4개 칩이 전부 투명하게 꺼지면 매물은 0개가 됨 (기획 사양 반영)
-            }} else {{
+            if (currentYongdoFilters.length === 0) {
+                mYongdoMatch = false; 
+            } else {
                 var yongdoStr = p.yongdo || "";
-                currentYongdoFilters.forEach(function(yFilter) {{
-                    if (yFilter === "계획" && yongdoStr.indexOf("계획") !== -1) {{ 
+                currentYongdoFilters.forEach(function(yFilter) {
+                    if (yFilter === "계획" && yongdoStr.indexOf("계획") !== -1) { 
                         mYongdoMatch = true; 
-                    }}
-                    else if (yFilter === "생산" && yongdoStr.indexOf("생산") !== -1) {{ 
-                        mYongdoMatch = true; 
-                    }}
-                    else if (yFilter === "농림" && yongdoStr.indexOf("농림") !== -1) {{ 
-                        mYongdoMatch = true; 
-                    }}
-                    else if (yFilter === "기타" && yongdoStr.indexOf("계획") === -1 && yongdoStr.indexOf("생산") === -1 && yongdoStr.indexOf("농림") === -1) {{ 
-                        mYongdoMatch = true; 
-                    }}
-                }});
-            }}
-
-            // 🎯 [수복 최종 결합] 용도지역 조건(mYongdoMatch)까지 완벽히 통과해야 화면에 노출합니다.
-            if (mCat && mDet && mRi && mDeal && mYongdoMatch) {
-                
-                // 1️⃣ [좌측 매물 목록 창] 데이터 수집 판정 규칙
-                var mTownList = true;
-                if (currentTown !== "전체") {
-                    mTownList = (marker.get("town") === currentTown);
-                } else {
-                    if (!isGwangyeokScale) {
-                        mTownList = (marker.get("town") === currentCenterTown);
                     }
-                }
-                
-                if (mTownList) {
-                    filteredIndices.push(i); 
-                }
-
-                // 2️⃣ [지도 화면 마커 노출] 판정 규칙
-                // 🎯 [기획 명세 완전 정립]: 100m 이하(isDetailScale)에서만 마커를 켜고, 300m 이상 넓은 시야선 개별 마커 100% 차단!
-                if (isDetailScale) {
-                    var markerLatLng = marker.getPosition();
-                    if (currentBounds.hasLatLng(markerLatLng)) {
-                        marker.setMap(map);
-                        vis.push(marker);
-                    } else {
-                        marker.setMap(null);
+                    else if (yFilter === "생산" && yongdoStr.indexOf("생산") !== -1) { 
+                        mYongdoMatch = true; 
                     }
+                    else if (yFilter === "농림" && yongdoStr.indexOf("농림") !== -1) { 
+                        mYongdoMatch = true; 
+                    }
+                    else if (yFilter === "기타" && yongdoStr.indexOf("계획") === -1 && yongdoStr.indexOf("생산") === -1 && yongdoStr.indexOf("농림") === -1) { 
+                        mYongdoMatch = true; 
+                    }
+                });
+            }
+
+            // 🚀 [순정 철학 적용] 꼬이는 겹중괄호 완전 파괴! 불합격 매물은 홑중괄호 탈출선에서 즉시 컷!
+            if (!mCat || !mDet || !mRi || !mDeal || !mYongdoMatch) {
+                marker.setMap(null);
+                return;
+            }
+            // 🎯 이 아래부터는 위의 커트라인을 통과한 '합격 매물'만 내려오므로 else 중괄호가 필요 없습니다.
+            
+            // 1️⃣ [좌측 매물 목록 창] 데이터 수집 판정 규칙
+            var mTownList = true;
+            if (currentTown !== "전체") {
+                mTownList = (marker.get("town") === currentTown);
+            } else {
+                if (!isGwangyeokScale) {
+                    mTownList = (marker.get("town") === currentCenterTown);
+                }
+            }
+            
+            if (mTownList) {
+                filteredIndices.push(i); 
+            }
+
+            // 2️⃣ [지도 화면 마커 노출] 판정 규칙
+            // 🎯 [기획 명세 완전 정립]: 100m 이하(isDetailScale)에서만 마커를 켜고, 300m 이상 넓은 시야선 개별 마커 100% 차단!
+            if (isDetailScale) {
+                var markerLatLng = marker.getPosition();
+                if (currentBounds.hasLatLng(markerLatLng)) {
+                    marker.setMap(map);
+                    vis.push(marker);
                 } else {
                     marker.setMap(null);
-                    if (currentTown !== "전체") {
-                        if (marker.get("town") === currentTown) vis.push(marker);
-                    } else {
-                        vis.push(marker);
-                    }
                 }
             } else {
-                marker.setMap(null); 
+                marker.setMap(null);
+                if (currentTown !== "전체") {
+                    if (marker.get("town") === currentTown) vis.push(marker);
+                } else {
+                    vis.push(marker);
+                }
             }
         });
         
