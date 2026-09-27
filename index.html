@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260927_1537</title>
+    <title>창공공인중개사사무소 - v.260927_1546</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -796,33 +796,16 @@
             }
         }
 
-        // 🚀 [기획서 최종 명세 수복: 2단계 행정구역 순차 탈출 엔진]
-        // 소장님이 마우스로 지도를 직접 밀었을 때만(!isSelectBoxFlying) 작동하며, 축척 100m 이상 구간(currentZoom <= 16)에서 시야를 제어합니다.
-        if (!isSelectBoxFlying && currentZoom <= 16 && currentCenterTown !== "전체") {
+        // 🚀 [기획서 최종 명세: 100m 이상 구역 필터 자동 해제 완충 엔진]
+        if (!isSelectBoxFlying && currentTown !== "전체" && currentZoom <= 16 && currentCenterTown !== "전체" && currentCenterTown !== currentTown) {
+            currentTown = "전체"; currentRi = "전체"; lastCenterTown = currentCenterTown;
+            var tSelector = document.getElementById("town-selector");
+            if (tSelector) tSelector.value = "전체"; 
             
-            // [1단계 탈출]: '리'까지 정밀 선택된 상태에서 지도를 밀었으나, 현재 중심점이 여전히 '동일 읍면동' 내부인 경우
-            if (currentTown !== "전체" && currentRi !== "전체" && currentCenterTown === currentTown) {
-                // 💡 해당 읍면은 든든하게 유지하고, '리' 필터 장부와 select 박스 눈금만 자석처럼 '전체'로 부드럽게 초기화 복귀!
-                currentRi = "전체";
-                var rSelector = document.getElementById("ri-selector");
-                if (rSelector) rSelector.value = "전체";
-                
-                setTimeout(function() { applyFilters(); }, 50);
-                return;
-            }
-            
-            // [2단계 탈출]: 지도를 더 멀리 밀어 중심점이 내가 선택해 둔 읍면동 바운더리를 완전히 이탈해 버린 경우
-            if (currentTown !== "전체" && currentCenterTown !== currentTown) {
-                // 💡 사용자가 완전히 다른 권역으로 이동했으므로 읍면동과 리 필터 박스 2개를 동시에 깔끔하게 '전체'로 해제 리셋!
-                currentTown = "전체"; currentRi = "전체"; lastCenterTown = currentCenterTown;
-                var tSelector = document.getElementById("town-selector");
-                if (tSelector) tSelector.value = "전체";
-                var rSelector = document.getElementById("ri-selector");
-                if (rSelector) rSelector.value = "전체";
-                
-                setTimeout(function() { applyFilters(); }, 100);
-                return;
-            }
+            setTimeout(function() {
+                applyFilters();
+            }, 100);
+            return; 
         }
 
         // 📐 [차단막 3단계 & 4단계] 광역 축척이거나 동일 읍면동 내 미세 이동일 때 목록 고정 처리
