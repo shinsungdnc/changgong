@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260928_0841</title>
+    <title>창공공인중개사사무소 - v.260928_0843</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -1023,19 +1023,9 @@
         
         marker.setMap(map);
         if (currentBoundaryCircle) currentBoundaryCircle.setMap(null);
-        
-        // 🎯 [우회 완치] 중괄호를 완전히 배제하여 f-string 충돌 가능성을 기술적으로 원천 박멸합니다.
-        var circleOptions = new Object();
-        circleOptions.map = map;
-        circleOptions.center = marker.getPosition();
-        circleOptions.radius = 5;
-        circleOptions.fillColor = "#00bfff";
-        circleOptions.fillOpacity = 0.15;
-        circleOptions.strokeColor = "#ff0000";
-        circleOptions.strokeOpacity = 0.6;
-        circleOptions.strokeWeight = 1.5;
-        
-        currentBoundaryCircle = new naver.maps.Circle(circleOptions);
+        currentBoundaryCircle = new naver.maps.Circle({{
+            map: map, center: marker.getPosition(), radius: 5, fillColor: "#00bfff", fillOpacity: 0.15, strokeColor: "#ff0000", strokeOpacity: 0.6, strokeWeight: 1.5
+        }});
 
         // 🎯 [UX 교정] 번쩍임 완치 및 그 자리에서 초정밀 지적 시야(18레벨)로 부드러운 전방 하강 비행
         var targetPos = marker.getPosition(); 
