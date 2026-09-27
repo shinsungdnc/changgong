@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260927_1009</title>
+    <title>창공공인중개사사무소 - v.260927_1026</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -818,18 +818,15 @@
             } 
             // B. 정밀 축척에서 중심 동네가 바뀌지 않은 미세 이동/경계선 이동인 경우 목록 고정
             else if (currentCenterTown === lastCenterTown && listContainer && listContainer.innerHTML !== "") {
-                // 목록은 고정하되, 지도 위 마커는 행정구역 상관없이 화면 내 매물 '전체 노출'
                 markers.forEach(function(marker, i) {
                     var p = properties[i];
-                    
                     var mCat = (currentCategories.indexOf(marker.get("category")) !== -1);
                     var mDet = (currentCategories.length === 0 || currentDetail.indexOf(marker.get("detail_type")) !== -1);
                     var mDeal = false;
-                    currentDealTypes.forEach(function(type) {
-                        if (p.price.indexOf(type) !== -1) { mDeal = true; }
-                    });
+                    currentDealTypes.forEach(function(type) { if (p.price.indexOf(type) !== -1) { mDeal = true; } });
 
                     if (mCat && mDet && mDeal) {
+                        // 🎯 [기획 명세 최종 수복]: 줌 16(100m 이하)일 때만 개별 마커를 지도 화면에 뿌립니다!
                         if (isDetailScale) {
                             var markerLatLng = marker.getPosition();
                             if (currentBounds.hasLatLng(markerLatLng)) {
@@ -838,7 +835,10 @@
                             } else {
                                 marker.setMap(null);
                             }
-                        } else {
+                        } 
+                        // 🎯 [버그 완치 핵심]: 줌 14, 15(500m~300m 클러스터 구간)일 때는 미세 이동 중이더라도 
+                        // 지저분한 개별 마커를 100% 무조건 숨기고(null) 통계 바구니(vis)에만 안전하게 전달합니다!
+                        else {
                             marker.setMap(null);
                             vis.push(marker);
                         }
@@ -848,7 +848,7 @@
                 });
                 updateClustering(vis);
                 return;
-            }
+            }}
         }
 
         // 🚀 [스크롤 엇박자 완치] 거대 이동으로 인해 중심 읍면동이 실제로 바뀌는 순간 발동
