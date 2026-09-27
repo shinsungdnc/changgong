@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260928_0848</title>
+    <title>창공공인중개사사무소 - v.260928_0858</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -199,9 +199,9 @@
                         <button class="tab-btn active-factory" id="btn-factory" onclick="toggleCategory('공장')">공장/창고</button>
                         <button class="tab-btn active-house" id="btn-house" onclick="toggleCategory('주택')">주택</button>
                     </div>
-					<!-- 🎛️ [최종 보정] 선택 글자 정중앙 정렬 및 지적 버튼 연두 테마 가독성 확보 버전 -->
+					<!-- 🎛️ [최종 보정] 종류 글자 정중앙 정렬 및 지적 버튼 연두 테마 가독성 확보 버전 -->
 					<div style="display: flex; gap: 4px; width: 100%; box-sizing: border-box; pointer-events: auto; margin-top: 6px; align-items: center; height: 32px;">  
-						<button type="button" id="filter-toggle-btn" onclick="toggleDetailSelectorPanel()" class="deal-btn" style="flex: 1; background: #ffffff !important; color: #222 !important; border: 1px solid #ced4da !important; font-size: 11px !important; height: 100%; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; white-space: nowrap;">선택</button>
+						<button type="button" id="filter-toggle-btn" onclick="toggleDetailSelectorPanel()" class="deal-btn" style="flex: 1; background: #ffffff !important; color: #222 !important; border: 1px solid #ced4da !important; font-size: 11px !important; height: 100%; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; white-space: nowrap;">종류</button>
 						<button type="button" id="btn-cadastral" onclick="toggleCadastral()" class="deal-btn" style="flex: 1; background: #DCF65C !important; color: #111111 !important; border: 1px solid #9CBD0E !important; font-size: 11px !important; height: 100%; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; white-space: nowrap;">지적</button>   
 						<button type="button" id="btn-maemae" onclick="toggleDealType('매매')" class="deal-btn active-maemae" style="flex: 1; font-size: 11px !important; height: 100%; box-sizing: border-box; padding: 5px 0; white-space: nowrap;">매매</button>
 						<button type="button" id="btn-jeonse" onclick="toggleDealType('전세')" class="deal-btn active-jeonse" style="flex: 1; font-size: 11px !important; height: 100%; box-sizing: border-box; padding: 5px 0; white-space: nowrap;">전세</button>
@@ -545,7 +545,7 @@
     }
 
     // 🚀 [무한 스크롤 제어 전역 변수 선언]
-    var filteredIndices = []; // 현재 필터 조건(지역, 선택 등)을 통과한 매물들의 번호 보관함
+    var filteredIndices = []; // 현재 필터 조건(지역, 종류 등)을 통과한 매물들의 번호 보관함
     var loadedItemCount = 0;  // 현재 좌측 리스트 화면에 실제로 그려진 카드의 개수
     var itemsPerLoad = 40;    // 스크롤이 바닥에 닿을 때마다 추가로 그려낼 카드 단위
 
@@ -990,56 +990,38 @@
 
         if (sidebar.classList.contains("hidden")) sidebar.classList.remove("hidden");
         
-        // 🔄 선택된 매물을 다시 클릭하여 해제하는 순간 (Unlock - 제자리 줌아웃 주변 비교)
+        // 🔄 선택된 매물을 다시 클릭하여 해제하는 순간 (Unlock)
         if (targetItem && targetItem.classList.contains("active")) {
-            targetItem.classList.remove("active"); 
-            if (targetDetail) targetDetail.style.display = "none";
+            targetItem.classList.remove("active"); if (targetDetail) targetDetail.style.display = "none";
             if (currentBoundaryCircle) { currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }
             if (panel) { panel.classList.remove("active"); panel.classList.remove("expanded"); }
             
-            // 🎯 [기획 엄수] 리스트 튕김을 막기 위해 전체 필터 리셋을 가동하지 않고 포커스 해제
+            // // [UX 교정] 스크롤 튕김을 원천 차단하기 위해 전체 필터 리셋 없이 선택 상태값만 해제
             selectedPropertyIndex = null; 
             
-            // 🎯 [기획 엄수] 해제한 매물 위치에서 그대로 부드럽게 줌아웃(16레벨)하여 주변과 입지 대조
+            // // [기획 엄수] 해제한 매물 위치에서 1픽셀도 이동하지 않고 주변 비교를 위해 부드럽게 줌아웃(16레벨)
             var currentPos = marker.getPosition();
             map.morph(currentPos, 16); 
             return;
         }
 
-        // 다른 매물들의 기존 활성화 상태 초기화 정돈
         document.querySelectorAll(".property-detail").forEach(function(el) { el.style.display = "none"; });
         document.querySelectorAll(".property-item").forEach(function(el) { el.classList.remove("active"); });
-        
         if (targetDetail) targetDetail.style.display = "block"; 
         if (targetItem) targetItem.classList.add("active");
         
-        // 🛡️ 매물 확정 선택 시 자동 동네 판독 센서 일시 잠금(Lock)
-        selectedPropertyIndex = index; 
+        selectedPropertyIndex = index; // 🚀 [기획 추가] 매물 확정 선택 시 비교 잠금 모드(Lock) 강제 가동!
         
-        // 🎯 [기획 엄수] 선택된 매물 카드가 좌측 목록창의 최상단(맨 위)에 정렬 (이전 목록으로 위로 스크롤 가능)
-        if (listContainer && targetItem) {
-            listContainer.scrollTop = targetItem.offsetTop - listContainer.offsetTop;
-        }
+        if (listContainer && targetItem) listContainer.scrollTop = targetItem.offsetTop - listContainer.offsetTop;
         
         marker.setMap(map);
         if (currentBoundaryCircle) currentBoundaryCircle.setMap(null);
-        
-        // 🎯 [오류 원천 차단] 자바스크립트 표준 객체 선언 방식을 엄수하여 문법 충돌 완치
-        var circleOpts = new Object();
-        circleOpts.map = map;
-        circleOpts.center = marker.getPosition();
-        circleOpts.radius = 5;
-        circleOpts.fillColor = "#00bfff";
-        circleOpts.fillOpacity = 0.15;
-        circleOpts.strokeColor = "#ff0000";
-        circleOpts.strokeOpacity = 0.6;
-        circleOpts.strokeWeight = 1.5;
-        currentBoundaryCircle = new naver.maps.Circle(circleOpts);
+        currentBoundaryCircle = new naver.maps.Circle({
+            map: map, center: marker.getPosition(), radius: 5, fillColor: "#00bfff", fillOpacity: 0.15, strokeColor: "#ff0000", strokeOpacity: 0.6, strokeWeight: 1.5
+        });
 
-        // 🎯 [UX 교정] 튐 현상 차단, 그 자리에서 초정밀 시야(18레벨)로 미끄러지듯 하강 진입
         var targetPos = marker.getPosition(); 
-        map.morph(targetPos, 18); 
-                    
+        map.morph(targetPos, 18);
         var prop = properties[index];
 
         if (prop.category === "공장") {
@@ -1106,49 +1088,49 @@
         var noticeText = '최근 5개년 토지 [매매] 실거래가 (평, 평당가)'; 
         var townBook = null;
 
-        if (prop.category === "토지") {{
+        if (prop.category === "토지") {
             noticeText = '최근 5개년 토지 [매매] 실거래가 (평, 평당가)';
             townBook = (realTradeStats[prop.town] && realTradeStats[prop.town][mYongdo]) ? realTradeStats[prop.town][mYongdo][mJimok] : null;
-        }} 
-        else if (prop.category === "주택") {{
+        } 
+        else if (prop.category === "주택") {
             var mDetail = prop.detail_type ? prop.detail_type.trim() : "";
             var isSingleHouse = (mDetail.indexOf("단독") !== -1 || mDetail.indexOf("다가구") !== -1);
             
-            if (isSingleHouse) {{
+            if (isSingleHouse) {
                 var houseYongdo = "단독다가구";
                 var houseJimok = (mDetail.indexOf("다가구") !== -1) ? "다가구" : "단독";
                 noticeText = '최근 5개년 ' + ((mDetail.indexOf("다가구") !== -1) ? "다가구주택" : "단독주택") + ' [매매] 실거래가 (대지평, 평당가)';
-                if (realTradeStats[prop.town] && realTradeStats[prop.town][houseYongdo]) {{
+                if (realTradeStats[prop.town] && realTradeStats[prop.town][houseYongdo]) {
                     townBook = realTradeStats[prop.town][houseYongdo][houseJimok];
-                }}
-            }} else {{
+                }
+            } else {
                 townBook = null;
-            }}
-        }}
+            }
+        }
 
-        if (townBook) {{
+        if (townBook) {
             tableHtml += '<table class="trade-table"><tr><th style="width:14% !important; white-space:nowrap;">년도</th><th>리</th><th>건수</th><th>면적</th><th>최저</th><th>평균</th><th>최고</th></tr>';
-            var sortedYears = Object.keys(townBook).sort(function(a, b){{ return b - a; }});
+            var sortedYears = Object.keys(townBook).sort(function(a, b){ return b - a; });
 
-            sortedYears.forEach(function(yr) {{
+            sortedYears.forEach(function(yr) {
                 var isFirst = true;
-                townBook[yr].forEach(function(row) {{
+                townBook[yr].forEach(function(row) {
                     var yrTxt = isFirst ? yr : ""; 
                     var yrSty = isFirst ? 'style="font-weight:bold; color:#2b5c8f; white-space:nowrap; border-bottom:none;"' : 'style="border-top:none; border-bottom:none;"';
                     isFirst = false;
                     tableHtml += '<tr><td ' + yrSty + '>' + yrTxt + '</td><td style="font-weight:bold; color:#ff6e40; max-width:90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="'+row.ri+'">'+row.ri+'</td><td>'+row.count+'</td><td>'+row.volume.toLocaleString()+'</td><td>'+row.min.toLocaleString()+'</td><td style="font-weight:bold; color:#2b5c8f;">'+row.avg.toLocaleString()+'</td><td style="font-weight:bold; color:#e65100;">'+row.max.toLocaleString()+'</td></tr>';
-                }});
-            }});
+                });
+            });
             tableHtml += '</table>';
-        }} else {{
-            if (prop.category === "토지" || (prop.category === "주택" && (prop.detail_type.indexOf("단독") !== -1 || prop.detail_type.indexOf("다가구") !== -1))) {{
+        } else {
+            if (prop.category === "토지" || (prop.category === "주택" && (prop.detail_type.indexOf("단독") !== -1 || prop.detail_type.indexOf("다가구") !== -1))) {
                 tableHtml += '<p style="color:#999; text-align:center; margin-top:20px; font-size:11px;">해당 지역은 최근 [매매] 실거래 정보가 대조되지 않습니다.</p>';
-            }} else {{
+            } else {
                 var productTypeName = (prop.category === "주택") ? "연립/다세대" : "공장/창고";
                 tableHtml += '<div style="text-align:center; color:#555; padding:20px 10px; background:#f8f9fa; border:1px solid #e9ecef; border-radius:4px; margin-top:10px; font-size:11px; line-height:1.4;">🏡 <b>안내</b><br>' + productTypeName + ' 상품은 개별 특성이 강하여 본 지도에서 실거래가 요약을 제공하지 않습니다.</div>';
-            }}
-        }}
-
+            }
+        }
+    
         document.getElementById("stats-title").innerText = "📊 " + prop.town + " 실거래 분석";
         var clickNotice = "";        
         var styleOpen = " { ", styleClose = " } ", styleBody = "display: none !important;";
@@ -1164,41 +1146,41 @@
             '</div>'
         ].join('');
         
-        if (window.innerWidth <= 768) {{
+        if (window.innerWidth <= 768) {
             var styleEl = document.createElement("style");
             styleEl.innerHTML = "#right-stats-panel.expanded .mobile-notice" + styleOpen + styleBody + styleClose;
             document.head.appendChild(styleEl);
-        }}
+        }
 
-        if (panel) {{
+        if (panel) {
             panel.classList.remove("expanded");
             panel.classList.add("active");
-        }}
+        }
     }
 
-# =========================================================================
-# [블록 12 최종완결판] 무한스크롤 엔진 연동형 백지화 완치 및 즉시 시동 구역
-# =========================================================================
+    // 🚀 [백지화 원천 차단 및 0초 부팅 엔진] 모든 단일 중괄호를 쌍중괄호화 완료
     document.addEventListener("DOMContentLoaded", function() {{
 
-        // ⌨️ ESC 계층형 순차 탈출 단축키 엔진 가동
+        // ⌨️ [기획서 마스터 완치] 크롬 앱 창 활성화 상태에서 작동하는 ESC 계층형 순차 탈출 단축키 엔진 가동!
         window.addEventListener("keydown", function(e) {{
             if (e.key === "Escape" || e.keyCode === 27) {{
-                e.preventDefault(); 
+                e.preventDefault(); // 브라우저 자체의 기본 ESC 기본 동작 간섭을 차단
+                
                 var tSel = document.getElementById("town-selector");
                 var rSel = document.getElementById("ri-selector");
                 
                 if (rSel && rSel.style.display !== "none" && rSel.value !== "전체") {{
+                    // 📐 1단계: 특정 '리'가 켜져 있다면, 해당 읍면은 유지하되 '리 전체' 시야로 1차 탈출!
                     rSel.value = "전체";
                     changeRi("전체");
                 }} else if (tSel && tSel.value !== "전체") {{
+                    // 📐 2단계: 읍면동이 고정된 상태라면, 세종시 전체 광역 시야로 최종 수직 탈출!
                     tSel.value = "전체";
                     changeTown("전체");
                 }}
             }}
         }});
 
-        // 🎯 [UX 교정] 매물 선택 모드일 때 불필요한 자동 필터 가동으로 마커가 번쩍이는 현상 격리 제어
         if (typeof naver !== 'undefined' && map) {{
             naver.maps.Event.addListener(map, "zoom_changed", function() {{
                 var currentZoom = map.getZoom();
@@ -1218,6 +1200,7 @@
         }}
 
         if (typeof initMap === 'function') {{
+            // 브라우저 렌더링 큐에 태워 화면 구성과 동시에 렉 없이 초고속 가동합니다.
             requestAnimationFrame(function() {{
                 initMap();
             }});
