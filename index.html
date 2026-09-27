@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260928_0828</title>
+    <title>창공공인중개사사무소 - v.260928_0834</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -199,9 +199,9 @@
                         <button class="tab-btn active-factory" id="btn-factory" onclick="toggleCategory('공장')">공장/창고</button>
                         <button class="tab-btn active-house" id="btn-house" onclick="toggleCategory('주택')">주택</button>
                     </div>
-					<!-- 🎛️ [최종 보정] 종류 글자 정중앙 정렬 및 지적 버튼 연두 테마 가독성 확보 버전 -->
+					<!-- 🎛️ [최종 보정] 선택 글자 정중앙 정렬 및 지적 버튼 연두 테마 가독성 확보 버전 -->
 					<div style="display: flex; gap: 4px; width: 100%; box-sizing: border-box; pointer-events: auto; margin-top: 6px; align-items: center; height: 32px;">  
-						<button type="button" id="filter-toggle-btn" onclick="toggleDetailSelectorPanel()" class="deal-btn" style="flex: 1; background: #ffffff !important; color: #222 !important; border: 1px solid #ced4da !important; font-size: 11px !important; height: 100%; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; white-space: nowrap;">종류</button>
+						<button type="button" id="filter-toggle-btn" onclick="toggleDetailSelectorPanel()" class="deal-btn" style="flex: 1; background: #ffffff !important; color: #222 !important; border: 1px solid #ced4da !important; font-size: 11px !important; height: 100%; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; white-space: nowrap;">선택</button>
 						<button type="button" id="btn-cadastral" onclick="toggleCadastral()" class="deal-btn" style="flex: 1; background: #DCF65C !important; color: #111111 !important; border: 1px solid #9CBD0E !important; font-size: 11px !important; height: 100%; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; white-space: nowrap;">지적</button>   
 						<button type="button" id="btn-maemae" onclick="toggleDealType('매매')" class="deal-btn active-maemae" style="flex: 1; font-size: 11px !important; height: 100%; box-sizing: border-box; padding: 5px 0; white-space: nowrap;">매매</button>
 						<button type="button" id="btn-jeonse" onclick="toggleDealType('전세')" class="deal-btn active-jeonse" style="flex: 1; font-size: 11px !important; height: 100%; box-sizing: border-box; padding: 5px 0; white-space: nowrap;">전세</button>
@@ -545,7 +545,7 @@
     }
 
     // 🚀 [무한 스크롤 제어 전역 변수 선언]
-    var filteredIndices = []; // 현재 필터 조건(지역, 종류 등)을 통과한 매물들의 번호 보관함
+    var filteredIndices = []; // 현재 필터 조건(지역, 선택 등)을 통과한 매물들의 번호 보관함
     var loadedItemCount = 0;  // 현재 좌측 리스트 화면에 실제로 그려진 카드의 개수
     var itemsPerLoad = 40;    // 스크롤이 바닥에 닿을 때마다 추가로 그려낼 카드 단위
 
@@ -991,11 +991,11 @@
         if (sidebar.classList.contains("hidden")) sidebar.classList.remove("hidden");
         
         // 🔄 선택된 매물을 다시 클릭하여 해제하는 순간 (Unlock - 주변 비교 탐색 모드 진입)
-        if (targetItem && targetItem.classList.contains("active")) {
+        if (targetItem && targetItem.classList.contains("active")) {{
             targetItem.classList.remove("active"); 
             if (targetDetail) targetDetail.style.display = "none";
-            if (currentBoundaryCircle) { currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }
-            if (panel) { panel.classList.remove("active"); panel.classList.remove("expanded"); }
+            if (currentBoundaryCircle) {{ currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }}
+            if (panel) {{ panel.classList.remove("active"); panel.classList.remove("expanded"); }}
             
             // 🎯 [UX 교정] 스크롤 튕김을 원천 차단하기 위해 전체 필터 리셋 없이 선택 상태값만 해제
             selectedPropertyIndex = null; 
@@ -1004,11 +1004,11 @@
             var currentPos = marker.getPosition();
             map.morph(currentPos, 16); 
             return;
-        }
+        }}
 
         // 다른 매물들의 기존 액티브 활성화 상태 초기화 정돈
-        document.querySelectorAll(".property-detail").forEach(function(el) { el.style.display = "none"; });
-        document.querySelectorAll(".property-item").forEach(function(el) { el.classList.remove("active"); });
+        document.querySelectorAll(".property-detail").forEach(function(el) {{ el.style.display = "none"; }});
+        document.querySelectorAll(".property-item").forEach(function(el) {{ el.classList.remove("active"); }});
         
         if (targetDetail) targetDetail.style.display = "block"; 
         if (targetItem) targetItem.classList.add("active");
@@ -1016,16 +1016,16 @@
         // 🛡️ 매물 확정 선택 시 자동 행정구역 판독 센서에 자물쇠(Lock) 가동
         selectedPropertyIndex = index; 
         
-        // 🎯 [기획 엄수] 선택된 매물 카드가 좌측 목록창의 맨 위(최상단)에 딱 붙도록 정렬 (위로 스크롤 가동)
-        if (listContainer && targetItem) {
+        // 🎯 [기획 엄수] 선택된 매물 카드가 좌측 목록창의 맨 위(최상단)에 딱 붙도록 정렬 (위로 스크롤 개방)
+        if (listContainer && targetItem) {{
             listContainer.scrollTop = targetItem.offsetTop - listContainer.offsetTop;
-        }
+        }}
         
         marker.setMap(map);
         if (currentBoundaryCircle) currentBoundaryCircle.setMap(null);
-        currentBoundaryCircle = new naver.maps.Circle({
+        currentBoundaryCircle = new naver.maps.Circle({{
             map: map, center: marker.getPosition(), radius: 5, fillColor: "#00bfff", fillOpacity: 0.15, strokeColor: "#ff0000", strokeOpacity: 0.6, strokeWeight: 1.5
-        });
+        }});
 
         // 🎯 [UX 교정] 번쩍임 완치 및 그 자리에서 초정밀 지적 시야(18레벨)로 부드러운 전방 하강 비행
         var targetPos = marker.getPosition(); 
@@ -1033,48 +1033,48 @@
                     
         var prop = properties[index];
 
-        if (prop.category === "공장") {
+        if (prop.category === "공장") {{
             document.getElementById("stats-title").innerText = "🏢 [" + prop.town + "] 건축물대장 분석";
             var bList = [];
-            try { bList = JSON.parse(prop.Building_List_JSON); } catch(e) { bList = []; }
+            try {{ bList = JSON.parse(prop.Building_List_JSON); }} catch(e) {{ bList = []; }}
             
             var seen = new Set();
-            bList = bList.filter(function(item) {
+            bList = bList.filter(function(item) {{
                 if (!item || !item.dong) return false;
                 var dName = item.dong.trim();
                 return seen.has(dName) ? false : seen.add(dName);
-            });
+            }});
 
             var tableHtml = '';
             var noticeText = "건축물대장 동별 명세표";
             
-            if (bList && bList.length > 0) {
+            if (bList && bList.length > 0) {{
                 var specs = [
-                    { key: 'dong', label: '동명' },
-                    { key: 'area_py', label: '연면적(평)' },
-                    { key: 'ground_floors', label: '지상층수' },
-                    { key: 'bcl_rt', label: '건폐율' },
-                    { key: 'vlr_rt', label: '용적율' },
-                    { key: 'parking', label: '옥외주차' },         
-                    { key: 'earthquake', label: '내진설계' },      
-                    { key: 'approved', label: '사용승인일' }
+                    {{ key: 'dong', label: '동명' }},
+                    {{ key: 'area_py', label: '연면적(평)' }},
+                    {{ key: 'ground_floors', label: '지상층수' }},
+                    {{ key: 'bcl_rt', label: '건폐율' }},
+                    {{ key: 'vlr_rt', label: '용적율' }},
+                    {{ key: 'parking', label: '옥외주차' }},         
+                    {{ key: 'earthquake', label: '내진설계' }},      
+                    {{ key: 'approved', label: '사용승인일' }}
                 ];
                 
                 tableHtml = '<div style="width: 100%; overflow-x: auto; white-space: nowrap; margin-top: 5px; border: 1px solid #dee2e6; border-radius: 4px;">';
                 tableHtml += '<table class="trade-table" style="width: 100%; border-collapse: collapse; background:#fff;">';
                 
-                specs.forEach(function(sp) {
+                specs.forEach(function(sp) {{
                     tableHtml += '<tr><td style="background: #f8f9fa; font-weight: bold; color: #333; border: 1px solid #dee2e6; width: 90px; min-width: 90px; padding: 6px 4px; position: sticky; left: 0; z-index: 5;">' + sp.label + '</td>';
-                    bList.forEach(function(dong) {
+                    bList.forEach(function(dong) {{
                         var val = (dong[sp.key] !== undefined) ? dong[sp.key] : '-';
                         tableHtml += '<td style="padding: 6px 4px; border: 1px solid #dee2e6; min-width: 80px;">' + val + '</td>';
-                    });
+                    }});
                     tableHtml += '</tr>';
-                });
+                }});
                 tableHtml += '</table></div>';
-            } else {
+            }} else {{
                 tableHtml = '<div style="text-align:center; color:#555; padding:20px 10px; background:#f8f9fa; border:1px solid #e9ecef; border-radius:4px; margin-top:10px; font-size:11px;">🏢 <b>안내</b><br>연동된 건축물대장 장부가 존재하지 않습니다.</div>';
-            }
+            }}
             
             document.getElementById("stats-content").innerHTML = [
                 '<div style="background: rgba(0,0,0,0.03); padding:6px 10px; border-radius:4px; margin-bottom:6px; font-size:12px; line-height:1.4; text-align:left;">', 
@@ -1085,9 +1085,9 @@
                    tableHtml, 
                 '</div>'
             ].join('');
-            if (panel) { panel.classList.remove("expanded"); panel.classList.add("active"); }
+            if (panel) {{ panel.classList.remove("expanded"); panel.classList.add("active"); }}
             return;
-        }
+        }}
     
         var yParts = prop.yongdo.split("/");
         var mYongdo = (yParts && yParts[0] ? yParts[0].trim() : "").replace("지역", "") + "지역"; 
@@ -1097,48 +1097,48 @@
         var noticeText = '최근 5개년 토지 [매매] 실거래가 (평, 평당가)'; 
         var townBook = null;
 
-        if (prop.category === "토지") {
+        if (prop.category === "토지") {{
             noticeText = '최근 5개년 토지 [매매] 실거래가 (평, 평당가)';
             townBook = (realTradeStats[prop.town] && realTradeStats[prop.town][mYongdo]) ? realTradeStats[prop.town][mYongdo][mJimok] : null;
-        } 
-        else if (prop.category === "주택") {
+        }} 
+        else if (prop.category === "주택") {{
             var mDetail = prop.detail_type ? prop.detail_type.trim() : "";
             var isSingleHouse = (mDetail.indexOf("단독") !== -1 || mDetail.indexOf("다가구") !== -1);
             
-            if (isSingleHouse) {
+            if (isSingleHouse) {{
                 var houseYongdo = "단독다가구";
                 var houseJimok = (mDetail.indexOf("다가구") !== -1) ? "다가구" : "단독";
                 noticeText = '최근 5개년 ' + ((mDetail.indexOf("다가구") !== -1) ? "다가구주택" : "단독주택") + ' [매매] 실거래가 (대지평, 평당가)';
-                if (realTradeStats[prop.town] && realTradeStats[prop.town][houseYongdo]) {
+                if (realTradeStats[prop.town] && realTradeStats[prop.town][houseYongdo]) {{
                     townBook = realTradeStats[prop.town][houseYongdo][houseJimok];
-                }
-            } else {
+                }}
+            }} else {{
                 townBook = null;
-            }
-        }
+            }}
+        }}
 
-        if (townBook) {
+        if (townBook) {{
             tableHtml += '<table class="trade-table"><tr><th style="width:14% !important; white-space:nowrap;">년도</th><th>리</th><th>건수</th><th>면적</th><th>최저</th><th>평균</th><th>최고</th></tr>';
-            var sortedYears = Object.keys(townBook).sort(function(a, b){ return b - a; });
+            var sortedYears = Object.keys(townBook).sort(function(a, b){{ return b - a; }});
 
-            sortedYears.forEach(function(yr) {
+            sortedYears.forEach(function(yr) {{
                 var isFirst = true;
-                townBook[yr].forEach(function(row) {
+                townBook[yr].forEach(function(row) {{
                     var yrTxt = isFirst ? yr : ""; 
                     var yrSty = isFirst ? 'style="font-weight:bold; color:#2b5c8f; white-space:nowrap; border-bottom:none;"' : 'style="border-top:none; border-bottom:none;"';
                     isFirst = false;
                     tableHtml += '<tr><td ' + yrSty + '>' + yrTxt + '</td><td style="font-weight:bold; color:#ff6e40; max-width:90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="'+row.ri+'">'+row.ri+'</td><td>'+row.count+'</td><td>'+row.volume.toLocaleString()+'</td><td>'+row.min.toLocaleString()+'</td><td style="font-weight:bold; color:#2b5c8f;">'+row.avg.toLocaleString()+'</td><td style="font-weight:bold; color:#e65100;">'+row.max.toLocaleString()+'</td></tr>';
-                });
-            });
+                }});
+            }});
             tableHtml += '</table>';
-        } else {
-            if (prop.category === "토지" || (prop.category === "주택" && (prop.detail_type.indexOf("단독") !== -1 || prop.detail_type.indexOf("다가구") !== -1))) {
+        }} else {{
+            if (prop.category === "토지" || (prop.category === "주택" && (prop.detail_type.indexOf("단독") !== -1 || prop.detail_type.indexOf("다가구") !== -1))) {{
                 tableHtml += '<p style="color:#999; text-align:center; margin-top:20px; font-size:11px;">해당 지역은 최근 [매매] 실거래 정보가 대조되지 않습니다.</p>';
-            } else {
+            }} else {{
                 var productTypeName = (prop.category === "주택") ? "연립/다세대" : "공장/창고";
                 tableHtml += '<div style="text-align:center; color:#555; padding:20px 10px; background:#f8f9fa; border:1px solid #e9ecef; border-radius:4px; margin-top:10px; font-size:11px; line-height:1.4;">🏡 <b>안내</b><br>' + productTypeName + ' 상품은 개별 특성이 강하여 본 지도에서 실거래가 요약을 제공하지 않습니다.</div>';
-            }
-        }
+            }}
+        }}
 
         document.getElementById("stats-title").innerText = "📊 " + prop.town + " 실거래 분석";
         var clickNotice = "";        
@@ -1155,19 +1155,19 @@
             '</div>'
         ].join('');
         
-        if (window.innerWidth <= 768) {
+        if (window.innerWidth <= 768) {{
             var styleEl = document.createElement("style");
             styleEl.innerHTML = "#right-stats-panel.expanded .mobile-notice" + styleOpen + styleBody + styleClose;
             document.head.appendChild(styleEl);
-        }
+        }}
 
-        if (panel) {
+        if (panel) {{
             panel.classList.remove("expanded");
             panel.classList.add("active");
-        }
+        }}
     }
 
-# =========================================================================
+// =========================================================================
 # [블록 12 최종완결판] 무한스크롤 엔진 연동형 백지화 완치 및 즉시 시동 구역
 # =========================================================================
     document.addEventListener("DOMContentLoaded", function() {{
