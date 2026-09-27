@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260927_1035</title>
+    <title>창공공인중개사사무소 - v.260927_1041</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -859,7 +859,10 @@
         filteredIndices = [];
         loadedItemCount = 0;
         lastZoomLevel = currentZoom; // 현재 줌 레벨을 실시간 동기화하여 엇박자 락 파괴
-        
+
+        // 🎯 [완치 핵심]: 과거 줌 레벨의 무거운 캐시 잔상을 0초 만에 완전히 파괴하여 메모리를 청소합니다!
+        if (markerClustering) { markerClustering.setMap(null); markerClustering = null; }
+                        
         if (listContainer) {
             listContainer.innerHTML = ""; 
             listContainer.scrollTop = 0;  // 스크롤바 위치를 리스트 최상단으로 강제 초기화!
@@ -938,7 +941,7 @@
         if (!markerClustering) {
             markerClustering = new MarkerClustering({
                 minClusterSize: 2, 
-                maxZoom: 16, // 💡 기획서 일치: 줌 15(축척 300m)까지만 클러스터 노출(Y)
+                maxZoom: 16, // 💡 기획서 일치: 줌 16(축척 300m)까지만 클러스터 노출(Y)
                 map: map, 
                 markers: vis, 
                 gridSize: 200, 
