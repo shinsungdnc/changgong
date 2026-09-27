@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260927_1554</title>
+    <title>창공공인중개사사무소 - v.260927_1603</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -711,6 +711,13 @@
         if(panel) panel.style.display = "none";
         
         if (town === "전체") {
+            // 읍면동이 전체가 되면 오른쪽 '리' 드롭다운 박스 눈금도 무조건 칼같이 원위치 시키고 숨깁니다!
+            var rSel = document.getElementById("ri-selector");
+            if (rSel) {
+                rSel.value = "전체";
+                rSel.style.display = "none";
+            }
+
             var initialLatLng = new naver.maps.LatLng(36.55, 127.25); 
             map.setZoom(12); 
             map.panTo(initialLatLng);
