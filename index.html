@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260927_0935</title>
+    <title>창공공인중개사사무소 - v.260927_0956</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -768,7 +768,7 @@
         var mapCenter = map.getCenter();
 
         // 📐 [차단막 2단계] 엑셀 명세 표 반영: 축척 500m(줌 13 이하) 광역 시야 판단 기준선 최종 안착
-        var isGwangyeokScale = (currentZoom <= 13); 
+        var isGwangyeokScale = (currentZoom <= 15); 
         var isDetailScale = (currentZoom >= 16); // 축척 100미터 이하 판단 기준선
 
         // 🚀 [기획 고도화 완치 엔진]: 개별 매물이 아닌 읍면동별 대표 고정 중심 좌표 명세표와 화면 정중앙 크로스 포인트 직접 대조
