@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260928_0948</title>
+    <title>창공공인중개사사무소 - v.260928_1324</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -1007,7 +1007,7 @@
             
             // 🎯 [이원화 락] 자동 비행 신호를 켜서 잠시 후 발동할 마우스 자동 센서의 개입을 차단합니다.
             isSelectBoxFlying = true;
-            
+            lastCenterTown = "전체";
             // // [기획 엄수] 해제한 매물 위치에서 1픽셀도 이동하지 않고 주변 비교를 위해 부드럽게 줌아웃(16레벨)
             var currentPos = marker.getPosition();
             map.morph(currentPos, 17);  // 16: 축척 100미터, 17: 
@@ -1026,7 +1026,7 @@
                 listContainer.scrollTop = targetItem.offsetTop - listContainer.offsetTop;
             }, 10);
         }
-                
+
         marker.setMap(map);
         if (currentBoundaryCircle) currentBoundaryCircle.setMap(null);
         isSelectBoxFlying = false;
