@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260929_0732</title>
+    <title>창공공인중개사사무소 - v.260929_0751</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -199,9 +199,9 @@
                         <button class="tab-btn active-factory" id="btn-factory" onclick="toggleCategory('공장')">공장/창고</button>
                         <button class="tab-btn active-house" id="btn-house" onclick="toggleCategory('주택')">주택</button>
                     </div>
-					<!-- 🎛️ [최종 보정] 종류 글자 정중앙 정렬 및 지적 버튼 연두 테마 가독성 확보 버전 -->
+					<!-- 🎛️ [최종 보정] 선택 글자 정중앙 정렬 및 지적 버튼 연두 테마 가독성 확보 버전 -->
 					<div style="display: flex; gap: 4px; width: 100%; box-sizing: border-box; pointer-events: auto; margin-top: 6px; align-items: center; height: 32px;">  
-						<button type="button" id="filter-toggle-btn" onclick="toggleDetailSelectorPanel()" class="deal-btn" style="flex: 1; background: #ffffff !important; color: #222 !important; border: 1px solid #ced4da !important; font-size: 11px !important; height: 100%; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; white-space: nowrap;">종류</button>
+						<button type="button" id="filter-toggle-btn" onclick="toggleDetailSelectorPanel()" class="deal-btn" style="flex: 1; background: #ffffff !important; color: #222 !important; border: 1px solid #ced4da !important; font-size: 11px !important; height: 100%; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; white-space: nowrap;">선택</button>
 						<button type="button" id="btn-cadastral" onclick="toggleCadastral()" class="deal-btn" style="flex: 1; background: #DCF65C !important; color: #111111 !important; border: 1px solid #9CBD0E !important; font-size: 11px !important; height: 100%; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; white-space: nowrap;">지적</button>   
 						<button type="button" id="btn-maemae" onclick="toggleDealType('매매')" class="deal-btn active-maemae" style="flex: 1; font-size: 11px !important; height: 100%; box-sizing: border-box; padding: 5px 0; white-space: nowrap;">매매</button>
 						<button type="button" id="btn-jeonse" onclick="toggleDealType('전세')" class="deal-btn active-jeonse" style="flex: 1; font-size: 11px !important; height: 100%; box-sizing: border-box; padding: 5px 0; white-space: nowrap;">전세</button>
@@ -545,7 +545,7 @@
     }
 
     // 🚀 [무한 스크롤 제어 전역 변수 선언]
-    var filteredIndices = []; // 현재 필터 조건(지역, 종류 등)을 통과한 매물들의 번호 보관함
+    var filteredIndices = []; // 현재 필터 조건(지역, 선택 등)을 통과한 매물들의 번호 보관함
     var loadedItemCount = 0;  // 현재 좌측 리스트 화면에 실제로 그려진 카드의 개수
     var itemsPerLoad = 40;    // 스크롤이 바닥에 닿을 때마다 추가로 그려낼 카드 단위
 
