@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260929_2140</title>
+    <title>창공공인중개사사무소 - v.260929_2142</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -683,13 +683,9 @@
         // 🎯 [렉/딜레이 완전 박멸 복귀 엔진]
         if (town === "전체") {
             var initialLatLng = new naver.maps.LatLng(36.55, 127.25); 
-            map.setZoom(12); // 초기 로딩과 일치하는 3km 범위
-            map.panTo(initialLatLng);
+            map.morph(initialLatLng, 12); 
+            applyFilters();
             
-            // 🚀 브라우저가 멈칫하는 현상을 완전히 없애기 위해, 화면 리스트 요소를 렌더링 큐에 태워 초고속으로 패스시킵니다.
-            requestAnimationFrame(function() {
-                applyFilters();
-            });
         } else {
             // 특정 읍면동 선택 시: 기존 완성형 15레벨 무빙 엔진
             applyFilters();
@@ -710,9 +706,7 @@
                 var avgLat = sumLat / matchCount;
                 var avgLng = sumLng / matchCount;
                 var moveLatLng = new naver.maps.LatLng(avgLat, avgLng);
-                
-                map.setZoom(13);
-                map.panTo(moveLatLng);
+                map.morph(moveLatLng, 16);
             }
         }
     }
@@ -806,8 +800,8 @@
         
         // 📐 [변수 지정] 신도심(동)이면 줌 16까지 타이트하게 묶고, 읍면지역이면 줌 12까지만 묶도록 라이브러리 한계선 변수 개설
         var isUrbanMode = currentTown.endsWith("동");
-        var dynamicMaxZoom = (currentTown === "전체") ? 15 : (isUrbanMode ? 16 : 12); // 💡 변수 지정 완료!
-        var optimalGridSize = isUrbanMode ? 100 : 200;
+        var dynamicMaxZoom = (currentTown === "전체") ? 15 : (isUrbanMode ? 16 : 13); // 💡 변수 지정 완료!
+        var optimalGridSize = 200;
 
         if (!markerClustering) {
             markerClustering = new MarkerClustering({
