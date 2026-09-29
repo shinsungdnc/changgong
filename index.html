@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260930_0832</title>
+    <title>창공공인중개사사무소 - v.260930_0843</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -808,10 +808,16 @@
     function updateClustering(vis) {
         var currentZoom = map.getZoom();
         
+        // 🎛️ [기획자 안안 반영] 현재 선택된 지역 상태를 스캔하여 클러스터 해제선(maxZoom) 분리
+        var dynamicMaxZoom = 14; // 기본 읍면지역은 줌 14(500m)까지만 묶임
+        if (currentTown.endsWith("동")) {
+            dynamicMaxZoom = 16; // 동지역은 촘촘하므로 줌 16(100m)까지 단단히 묶임
+        }
+        
         if (!markerClustering) {
             markerClustering = new MarkerClustering({
                 minClusterSize: 2, 
-                maxZoom: 16, // 💡 기획서 일치: 줌 16(축척 300m)까지만 클러스터 노출(Y)
+                maxZoom: dynamicMaxZoom, // 💡 기획서 일치: 줌 16(축척 300m)까지만 클러스터 노출(Y)
                 map: map, 
                 markers: vis, 
                 gridSize: 200, // 💡 클러스터러 알맹이들이 더 크게 묶이도록 그리드 범위 소폭 확장
