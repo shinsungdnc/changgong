@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260929_2124</title>
+    <title>창공공인중개사사무소 - v.260929_2126</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -731,102 +731,109 @@
         }
     }
 
-    function applyFilters() {{
+    function applyFilters() {
         if (currentBoundaryCircle) currentBoundaryCircle.setMap(null);
         var vis = [];
+        
         var currentZoom = map.getZoom();
 
-        markers.forEach(function(marker, i) {{
+        markers.forEach(function(marker, i) {
             var p = properties[i];
             
-            // 1. 카테고리 필터 정밀 동기화
-            var mCat = (currentCategories.indexOf(p.category) !== -1);
+            // 1. 카테고리 필터
+            var mCat = (currentCategories.indexOf(marker.get("category")) !== -1);
             
             // 2. 상세 종류 필터
-            var mDet = (currentCategories.length === 0 || currentDetail.indexOf(p.detail_type) !== -1);
+            var mDet = (currentCategories.length === 0 || currentDetail.indexOf(marker.get("detail_type")) !== -1);
             
             // 3. 읍면동 지역 필터
-            var mTown = (currentTown === "전체" || p.town === currentTown);
-            var mRi = (currentRi === "전체" || p.name.indexOf(currentRi) !== -1);
+            var mTown = (currentTown === "전체" || marker.get("town") === currentTown);
+            
+            var mRi = true;
+            if (currentTown !== "전체" && currentRi !== "전체") {
+                mRi = (p.name.indexOf(currentRi) !== -1);
+            }
 
             // 4. 거래 방식 필터 (SQL 순정 '구분' 변수와 1:1 완벽 매칭, 단기임대 예외 처리)
             var mDeal = false;
-            currentDealTypes.forEach(function(type) {{
-                var targetType = (type === "단기") ? "단기임대" : type;
-                if (p.deal_gubun === targetType) {{ mDeal = true; }}
-            }});
+            currentDealTypes.forEach(function(type) {
+                var targetType = type;
+                if (type === "단기") targetType = "단기임대"; // 💡 UI 단기 ➔ DB 단기임대 매칭
+                
+                if (p.deal_gubun === targetType) { mDeal = true; }
+            });
 
             var item = document.getElementById("item-" + i);
 
             // 필터 합격 매물 처리
-            if (mCat && mDet && mTown && mRi && mDeal) {{
+            if (mCat && mDet && mTown && mRi && mDeal) {
                 if (item) item.style.display = "block";
                 vis.push(marker); // 클러스터러 후보군 등록
 
-                // 📐 [이원화 축척 개방 기획] 
-                // 신도심('동')은 빽빽하므로 줌 16(축척 300m) 이상에서만 마커 오픈!
-                // 외곽('읍/면')은 한산하므로 줌 13(축척 500m~1km 넓은 시야)부터 마커 바로 오픈!
+                // 📐 [이원화 축척 제어 기획 적용]
+                // 현재 매물이 '동(urban)' 지역이면 줌 17단계 이상 확대해야 마커 표출
+                // '읍/면(rural)' 지역이면 줌 15단계 이상만 되어도 마커 표출
                 var isDetailScale = (p.town_type === "urban") ? (currentZoom >= 16) : (currentZoom >= 13);
 
-                if (isDetailScale) {{
+                if (isDetailScale) {
                     marker.setMap(map);
-                }} else {{
+                } else {
                     marker.setMap(null); // 기준 축척보다 멀어지면 마커를 숨기고 클러스터에 양보
-                }}
-            }} else {{
-                if (item) {{
+                }
+            } else {
+                if (item) {
                     item.style.display = "none";
                     item.classList.remove("active");
-                }}
+                }
                 var dEl = document.getElementById("detail-" + i);
                 if(dEl) dEl.style.display = "none";
                 marker.setMap(null); 
-            }}
-        }});
+            }
+        });
         
         updateTownSelectorOptions();
         updateClustering(vis); 
-    }}
+    }
 
-    function updateClustering(vis) {{
+    function updateClustering(vis) {
         var currentZoom = map.getZoom();
         
-        // 📐 [변수 지정 및 무한루프 방지 안전 락장치]
+        // 📐 [변수 지정] 신도심(동)이면 줌 16까지 타이트하게 묶고, 읍면지역이면 줌 12까지만 묶도록 라이브러리 한계선 변수 개설
         var isUrbanMode = currentTown.endsWith("동");
-        var dynamicMaxZoom = (currentTown === "전체") ? 15 : (isUrbanMode ? 16 : 12); 
+        var dynamicMaxZoom = (currentTown === "전체") ? 15 : (isUrbanMode ? 16 : 13); // 💡 변수 지정 완료!
         var optimalGridSize = isUrbanMode ? 100 : 200;
 
-        if (!markerClustering) {{
-            markerClustering = new MarkerClustering({{
+        if (!markerClustering) {
+            markerClustering = new MarkerClustering({
                 minClusterSize: 2,
-                maxZoom: dynamicMaxZoom, // 하드코딩 17 족쇄 해제
+                maxZoom: dynamicMaxZoom, // 💡 [1069번 행] 하드코딩 17을 지우고 방금 지정한 변수를 주입!
                 map: map, 
                 markers: vis, 
                 gridSize: optimalGridSize, 
                 disableClickZoom: false, 
                 icons: [
-                    {{ content: '<div class="cluster-badge" style="cursor:pointer; width:44px; height:44px; line-height:44px; font-size:12px; color:#111111; text-align:center; font-weight:bold; background:rgba(74, 211, 255, 0.95); border:1px solid #fff; border-radius:50%; box-shadow:0 3px 10px rgba(0,0,0,0.35);"></div>', anchor: new naver.maps.Point(22, 22) }},
-                    {{ content: '<div class="cluster-badge" style="cursor:pointer; width:52px; height:52px; line-height:52px; font-size:13px; color:#111111; text-align:center; font-weight:bold; background:rgba(74, 211, 255, 0.95); border:1px solid #fff; border-radius:50%; box-shadow:0 4px 12px rgba(0,0,0,0.4);"></div>', anchor: new naver.maps.Point(26, 26) }}
+                    { content: '<div class="cluster-badge" style="cursor:pointer; width:44px; height:44px; line-height:44px; font-size:12px; color:#111111; text-align:center; font-weight:bold; background:rgba(74, 211, 255, 0.95); border:1px solid #fff; border-radius:50%; box-shadow:0 3px 10px rgba(0,0,0,0.35);"></div>', anchor: new naver.maps.Point(22, 22) },
+                    { content: '<div class="cluster-badge" style="cursor:pointer; width:52px; height:52px; line-height:52px; font-size:13px; color:#111111; text-align:center; font-weight:bold; background:rgba(74, 211, 255, 0.95); border:1px solid #fff; border-radius:50%; box-shadow:0 4px 12px rgba(0,0,0,0.4);"></div>', anchor: new naver.maps.Point(26, 26) }
                 ],
-                indexGenerator: function(count) {{ return count < 15 ? 0 : 1; }}, 
-                stylingFunction: function(clusterMarker, count) {{
+                indexGenerator: function(count) { return count < 15 ? 0 : 1; }, 
+                stylingFunction: function(clusterMarker, count) {
                     var el = clusterMarker.getElement();
-                    if (el) {{ var bd = el.querySelector(".cluster-badge"); if (bd) bd.innerText = count; }}
-                }}
-            }});
-        }} else {{
+                    if (el) { var bd = el.querySelector(".cluster-badge"); if (bd) bd.innerText = count; }
+                }
+            });
+        } else {
             markerClustering.setMap(null);
             markerClustering.setMarkers(vis);
-            // 💡 생성된 객체의 내부 한계선 실시간 리프레시 동기화
+            // 💡 [여기에 추가] 기존에 만들어진 객체에도 동적 한계선(동:15, 읍면:11)을 똑같이 먹여줍니다.
             markerClustering.htmlMarkerClustering.options.maxZoom = dynamicMaxZoom;
-        }}
 
-        // 📐 설정된 모드 축척 범위 안에서만 지도 위에 패널 장착 (연쇄 폭발 무한루프 완벽 차단)
-        if (currentZoom <= dynamicMaxZoom) {{
-            markerClustering.htmlMarkerClustering.options.gridSize = optimalGridSize;
-            markerClustering.setMap(map);
-        }}
-    }}
+            // 설정된 모드 축척 범위 안에서만 지도 위에 패널 장착
+            if (currentZoom <= dynamicMaxZoom) {
+                markerClustering.htmlMarkerClustering.options.gridSize = optimalGridSize;
+                markerClustering.setMap(map);
+            }
+        }
+    }
 
     function selectProperty(index, marker) {
         var sidebar = document.getElementById("sidebar");
