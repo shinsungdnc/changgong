@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260930_0724</title>
+    <title>창공공인중개사사무소 - v.260930_0758</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -263,11 +263,11 @@
                 var avgLng = sumLng / matchCount;
                 var moveLatLng = new naver.maps.LatLng(avgLat, avgLng);
                 
-                map.setZoom(17); // 개별 건물/땅 모양 꽉 차는 17레벨 줌인
+                map.setZoom(16); // 개별 건물/땅 모양 꽉 차는 16레벨 줌인 - 축척 100
                 map.setCenter(moveLatLng);
             }
         } 
-        // 🎯 [버그 완전 수복] '리 전체'를 선택했을 때 이전에 머물던 리에서 벗어나 읍면동 전체 시야(15레벨)로 안전 복귀!
+        // 🎯 [버그 완전 수복] '리 전체'를 선택했을 때 이전에 머물던 리에서 벗어나 읍면동 전체 시야(14레벨)로 안전 복귀!
         else {
             var sumLat = 0;
             var sumLng = 0;
@@ -286,7 +286,7 @@
                 var avgLng = sumLng / matchCount;
                 var moveLatLng = new naver.maps.LatLng(avgLat, avgLng);
                 
-                map.setZoom(15); // 🗺️ 읍면동 전체가 이쁘게 들어오는 15레벨로 화면을 다시 넓혀줍니다.
+                map.setZoom(14); // 🗺️ 읍면동 전체가 이쁘게 들어오는 14레벨로 화면을 다시 넓혀줍니다.
                 map.setCenter(moveLatLng);
             }
         }
@@ -691,7 +691,7 @@
                 applyFilters();
             });
         } else {
-            // 특정 읍면동 선택 시: 기존 완성형 15레벨 무빙 엔진
+            // 특정 읍면동 선택 시: 기존 완성형 14레벨 무빙 엔진
             applyFilters();
             
             var sumLat = 0;
@@ -711,7 +711,7 @@
                 var avgLng = sumLng / matchCount;
                 var moveLatLng = new naver.maps.LatLng(avgLat, avgLng);
                 
-                map.setZoom(13);
+                map.setZoom(14);
                 map.panTo(moveLatLng);
             }
         }
