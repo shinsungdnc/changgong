@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260930_1129</title>
+    <title>창공공인중개사사무소 - v.260930_1154</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -366,7 +366,6 @@
     
     // 지적편집도 기본 탑재 및 가동
     cadastralLayer = new naver.maps.CadastralLayer();
-    cadastralLayer.setMap(map);
 
     var myLocationMarker = null;
     var watchPositionId = null;
@@ -988,9 +987,23 @@
     }
 
     // 💡 [순서 수복 방어벽] 네이버 지도 객체(map)가 생성된 후 실행될 DOMContentLoaded 감시 구역
+    // 💡 [기획자 대원칙] 지도 선행 로딩형 4단계 수직 하강 파이프라인 마감 블록
     document.addEventListener("DOMContentLoaded", function() {
         if (typeof naver !== 'undefined' && map) {
             
+            // 🌐 [1공정 ──▶ 2공정 바통 터치]: 하이브리드 위성지도가 100% 로딩 완료된 그 한 순간을 포착
+            naver.maps.Event.addListener(map, "init", function() {
+                
+                // ① 2공정: 이미지 다운로드가 끝나 숨통이 트인 브라우저에게 비로소 지적도 드로잉 지시
+                cadastralLayer = new naver.maps.CadastralLayer();
+                cadastralLayer.setMap(map); 
+
+                // ② 3공정 & 4공정: 지적선까지 완전히 배치된 것을 확인하고 목록 장부와 클러스터를 순차 가동
+                if (typeof initMap === 'function') {
+                    initMap(); 
+                }
+            });
+
             // 📐 마우스 휠 변동 시 타깃 붉은 원의 반지름 크기를 축척에 맞게 동적 교정하는 리스너
             naver.maps.Event.addListener(map, "zoom_changed", function() {
                 var currentZoom = map.getZoom();
@@ -1003,19 +1016,17 @@
                         else if (currentZoom === 16) dynamicRadius = 20;
                         currentBoundaryCircle.setRadius(dynamicRadius);
                     } else {
-                        // 줌 레벨이 15(300m) 이하 광역 시야로 나가면 가독성을 위해 붉은 원을 자동 소멸
                         currentBoundaryCircle.setMap(null);
                     }
                 }
             });
-        }
 
-        // 지도가 100% 준비를 마친 0.3초 뒤에 초기 장부 생성 및 하강 필터 라인을 가동시킵니다.
-        setTimeout(function() {
-            if (typeof initMap === 'function') {
-                initMap();
-            }
-        }, 300);
+            // 🗺️ [시야 순환선]: 마우스 드래그 및 휠 이동이 끝나 지도가 완전히 정지(idle)된 순간만 감시
+            naver.maps.Event.addListener(map, "idle", function() {
+                // 첫 로딩 안정화 이후, 사용자가 지도를 움직여 멈출 때만 2블록 목록 연동기를 가동시킵니다.
+                applyFilters();
+            });
+        }
     });
 </script>
 </body>
