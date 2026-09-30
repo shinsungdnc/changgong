@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260930_1549</title>
+    <title>창공공인중개사사무소 - v.260930_1629</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -792,7 +792,7 @@
     function updateClustering(vis) {
         var currentZoom = map.getZoom();
         
-        // 1단계 (최상단 스캔): 내부 땜질 배제, 기획 명세에 맞춘 finalMaxZoom 변수 정의!
+        // 1단계 (최상단 스캔): 기획 명세에 맞춘 finalMaxZoom 변수 장벽 정의
         var finalMaxZoom = 14; // 기본 읍면지역(rural)은 줌 14(500m) 장벽 작동
         if (currentTown && currentTown.endsWith("동")) {
             finalMaxZoom = 16; // 콕 집어 동지역(urban)을 선택했을 때만 줌 16(100m) 장벽 가동
@@ -804,29 +804,10 @@
             markerClustering = null; 
         }
 
-        // 화면 내 가용 마커가 없으면 클러스터러를 생성하지 않고 종료
+        // 화면 내 가용 마커가 없으면 연산을 종료
         if (vis.length === 0) return;
 
-        // 3단계 (신규 빌드): 1단계에서 확정된 finalMaxZoom 변수 락을 장착해 처음부터 완전 새로 생성
-        markerClustering = new MarkerClustering({
-            minClusterSize: 2, 
-            maxZoom: finalMaxZoom, // ◀ 결정된 듀얼 임계값 즉시 주입
-            map: map, 
-            markers: [], // 초기화 시 빈 배열을 주고 setMarkers로 정밀 바인딩
-            gridSize: 120, 
-            disableClickZoom: false, 
-            icons: [
-                { content: '<div class="cluster-badge" style="cursor:pointer; width:44px; height:44px; line-height:44px; font-size:12px; color:#111111; text-align:center; font-weight:bold; background:rgba(74, 211, 255, 0.95); border:1px solid #fff; border-radius:50%; box-shadow:0 3px 10px rgba(0,0,0,0.35);"></div>', anchor: new naver.maps.Point(22, 22) },
-                { content: '<div class="cluster-badge" style="cursor:pointer; width:52px; height:52px; line-height:52px; font-size:13px; color:#111111; text-align:center; font-weight:bold; background:rgba(74, 211, 255, 0.95); border:1px solid #fff; border-radius:50%; box-shadow:0 4px 12px rgba(0,0,0,0.4);"></div>', anchor: new naver.maps.Point(26, 26) }
-            ],
-            indexGenerator: function(count) { return count < 15 ? 0 : 1; }, 
-            stylingFunction: function(clusterMarker, count) {
-                var el = clusterMarker.getElement();
-                if (el) { var bd = el.querySelector(".cluster-badge"); if (bd) bd.innerText = count; }
-            }
-        });
-
-        // 4단계 (하단 일방통행): 상단 변수(finalMaxZoom)와 칼같이 아귀를 맞춘 마커 묶기 필터 수행
+        // 3단계 (중간 스위칭): 상단 변수(finalMaxZoom)와 칼같이 아귀를 맞춘 마커 묶기 필터 선행 수행
         var dynamicVis = vis.filter(function(marker) {
             var idx = marker.get("p_index");
             var p = properties[idx];
@@ -837,9 +818,28 @@
                 return currentZoom <= finalMaxZoom; // 읍면지역 매물 묶기 조건 (상단 변수 14 이하일 때만 보관)
             }
         });
-        
-        // 🎯 [기획 사양 완결 수복]: 최종 정제된 dynamicVis 목록을 클러스터러 엔진 본체에 정밀 적재
-        markerClustering.setMarkers(dynamicVis);
+
+        // 🎯 묶어줄 대상(dynamicVis)이 존재할 때만 클러스터러를 지도 위에 바인딩합니다.
+        if (dynamicVis.length > 0) {
+            // 4단계 (신규 빌드): 인스턴스 생성과 동시에 dynamicVis 목록을 '원천 다이렉트 주입'하여 타이밍 락 해결!
+            markerClustering = new MarkerClustering({
+                minClusterSize: 2, 
+                maxZoom: finalMaxZoom, // ◀ 결정된 듀얼 임계값 즉시 주입
+                map: map, 
+                markers: dynamicVis,   // ◀ 빈 배열이 아닌 정제된 목록을 생성자 마스터 패널에 바로 적재
+                gridSize: 120, 
+                disableClickZoom: false, 
+                icons: [
+                    { content: '<div class="cluster-badge" style="cursor:pointer; width:44px; height:44px; line-height:44px; font-size:12px; color:#111111; text-align:center; font-weight:bold; background:rgba(74, 211, 255, 0.95); border:1px solid #fff; border-radius:50%; box-shadow:0 3px 10px rgba(0,0,0,0.35);"></div>', anchor: new naver.maps.Point(22, 22) },
+                    { content: '<div class="cluster-badge" style="cursor:pointer; width:52px; height:52px; line-height:52px; font-size:13px; color:#111111; text-align:center; font-weight:bold; background:rgba(74, 211, 255, 0.95); border:1px solid #fff; border-radius:50%; box-shadow:0 4px 12px rgba(0,0,0,0.4);"></div>', anchor: new naver.maps.Point(26, 26) }
+                ],
+                indexGenerator: function(count) { return count < 15 ? 0 : 1; }, 
+                stylingFunction: function(clusterMarker, count) {
+                    var el = clusterMarker.getElement();
+                    if (el) { var bd = el.querySelector(".cluster-badge"); if (bd) bd.innerText = count; }
+                }
+            });
+        }
     }
 
     // 🎛️ 좌측 리스트 카드 및 지도 마커 클릭 시 우측 브리핑 패널 연동 함수
