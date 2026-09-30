@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260930_1635</title>
+    <title>창공공인중개사사무소 - v.260930_1815</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -780,8 +780,8 @@
     function updateClustering(vis) {
         var currentZoom = map.getZoom();
         
-        // 1단계: 동지역 선택 여부에 상관없이, 개별 매물의 town_type에 맞춰 영리하게 클러스터링하기 위해 맥스 장벽을 16으로 통합 기동
-        var finalMaxZoom = 16; 
+        // 현재 선택된 지역이 '동'이거나, 맵의 중심부에 동지역 매물이 많을 때만 장벽을 16으로 열고, 평소(읍면)에는 14로 닫아 연산 속도를 대폭 끌어올립니다.
+        var finalMaxZoom = (currentTown && currentTown.endsWith("동")) ? 16 : 14;
         
         if (markerClustering !== null) {
             markerClustering.setMap(null);
@@ -993,8 +993,12 @@
                 window.initMapPipeline();
             }
 
-            // 📐 마우스 휠 변동 시 타깃 붉은 원의 반지름 크기를 축척에 맞게 동적 교정하는 리스너
-            naver.maps.Event.addListener(map, "zoom_changed", function() {
+            // 🌟 [명품 시야 연동 및 렉 제거]: 화면 제어가 완전히 멈춘 '정지(idle)' 순간만 포획
+            naver.maps.Event.addListener(map, "idle", function() {
+                // 1단계: 지도가 이동이나 휠 스크롤을 완전히 마치고 멈췄을 때만 필터를 수직 가동 (연산 밀림 원천 차단)
+                applyFilters();
+
+                // 2단계: 필터 연산이 안전하게 끝난 직후, 현재 줌 축척에 맞춰 타깃 중심원의 반지름을 부드럽게 교정
                 var currentZoom = map.getZoom();
                 if (currentBoundaryCircle && currentBoundaryCircle.getMap()) {
                     if (currentZoom >= 16) {
@@ -1010,10 +1014,10 @@
                 }
             });
 
-            // 🌟 [명품 시야 연동]: 마우스 드래그 및 휠 이동이 끝나 지도가 '완전히 정지(idle)'된 순간만 포획
-            naver.maps.Event.addListener(map, "idle", function() {
-                // 지도가 이동을 마치고 멈출 때만 2블록 목록 연동기(applyFilters)를 수직 가동시킵니다.
-                applyFilters();
+            // 📐 [성능 최적화 스위치]: 기존 zoom_changed 내부의 무거운 연산들을 완전 철거!
+            // 휠을 돌리는 중간에는 브라우저가 지도 그래픽 렌더링에만 집중하도록 연산을 양보합니다.
+            naver.maps.Event.addListener(map, "zoom_changed", function() {
+                // 이 구역은 의도적으로 비워두어 휠 스크롤 시 발생하는 연산 병목렉을 전면 파괴합니다.
             });
         }
     });
