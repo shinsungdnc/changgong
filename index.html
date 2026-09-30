@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260930_1815</title>
+    <title>창공공인중개사사무소 - v.260930_1827</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -778,38 +778,41 @@
     }
 
     function updateClustering(vis) {
-        var currentZoom = map.getZoom();
-        
-        // 현재 선택된 지역이 '동'이거나, 맵의 중심부에 동지역 매물이 많을 때만 장벽을 16으로 열고, 평소(읍면)에는 14로 닫아 연산 속도를 대폭 끌어올립니다.
-        var finalMaxZoom = (currentTown && currentTown.endsWith("동")) ? 16 : 14;
-        
+        // 1단계: 휠 무빙 시 기존에 남아있던 구형 클러스터러 본체를 메모리에서 완전히 리셋 (유령 장벽 파괴)
         if (markerClustering !== null) {
             markerClustering.setMap(null);
             markerClustering = null; 
         }
 
-        if (vis.length === 0) return;
+        // 화면 내에 가용 마커가 없으면 연산을 종료합니다.
+        if (!vis || vis.length === 0) return;
 
-        // 2단계: 각 매물의 고유 성격(urban/rural)에 맞춰 줌 레벨별로 클러스터에 살아남을 대상을 완벽하게 발라냄
+        // 2단계: 현재 지도의 줌 레벨 포획
+        var currentZoom = map.getZoom();
+
+        // 3단계: 기획자 대원칙 - 각 매물의 고유 성격(urban/rural)과 줌 레벨에 맞춰 클러스터로 묶어줄 대상을 정밀 필터링
         var dynamicVis = vis.filter(function(marker) {
             var idx = marker.get("p_index");
             var p = properties[idx];
             
             if (p.town_type === "urban") {
-                return currentZoom <= 16; // 동지역 매물: 줌 16 이하일 때만 클러스터 배지로 강력 결합보관
+                // 동지역 매물: 줌 16 이하(100m~광역 시야)일 때만 클러스터 배지로 강력 결합
+                return currentZoom <= 16; 
             } else {
-                return currentZoom <= 14; // 읍면지역 매물: 줌 14 이하일 때만 클러스터 배지로 보관
+                // 읍면지역 매물: 줌 14 이하(500m~광역 시야)일 때만 클러스터 배지로 강력 결합
+                return currentZoom <= 14; 
             }
         });
 
+        // 4단계: 묶어줄 대상이 1개라도 실재할 때만 신규 클러스터러 엔진을 최우선 빌드합니다.
         if (dynamicVis.length > 0) {
-            // 3단계: 기획자님 지시사항 반영 - gridSize를 200으로 넓혀 뭉텅이 가독성 확보!
+            // 기획자님 지시사항 반영: gridSize를 200으로 전격 확장하여 뭉텅이 가독성 확보!
             markerClustering = new MarkerClustering({
                 minClusterSize: 2, 
-                maxZoom: finalMaxZoom, 
+                maxZoom: 16, // 동지역 묶기 마지노선인 줌 16까지 엔진 작동 범위를 허용
                 map: map, 
-                markers: dynamicVis,   
-                gridSize: 200, // ◀ 120에서 200으로 전격 확장 (유령 클러스터 파괴 및 시원한 가운팅 레이아웃 수복)
+                markers: dynamicVis, // 🎯 필터링이 완료된 마커 목록을 생성과 동시에 원천 다이렉트 주입
+                gridSize: 200,       // ◀ 200으로 넓혀 주변 매물들이 큼직하게 묶이도록 배치
                 disableClickZoom: false, 
                 icons: [
                     { content: '<div class="cluster-badge" style="cursor:pointer; width:44px; height:44px; line-height:44px; font-size:12px; color:#111111; text-align:center; font-weight:bold; background:rgba(74, 211, 255, 0.95); border:1px solid #fff; border-radius:50%; box-shadow:0 3px 10px rgba(0,0,0,0.35);"></div>', anchor: new naver.maps.Point(22, 22) },
