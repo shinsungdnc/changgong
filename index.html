@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260930_2113</title>
+    <title>창공공인중개사사무소 - v.260930_2120</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -862,7 +862,7 @@
         });
 
         // 부드러운 카메라 무빙 기술인 morph를 활용하여 최고 줌 레벨 18로 흡입 포커싱
-        var targetPos = marker.getPosition(); map.morph(targetPos, 18);            
+        var targetPos = marker.getPosition(); map.panTo(targetPos);
         var prop = properties[index];
 
         // 🏢 [분기 1] 선택된 매물이 '공장/창고' 카테고리일 때 -> 건축물대장 피벗 강제 주입
