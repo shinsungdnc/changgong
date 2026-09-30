@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260930_2205</title>
+    <title>창공공인중개사사무소 - v.260930_2209</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -303,7 +303,7 @@
                 
                 // 🎯 [성공안 칼각 연동]: 끝자리가 '동'이면 줌 18(20m), '읍/면'이면 줌 15(300m) 즉시 락!
                 // 지역을 선택하자마자 클러스터 상태를 건너뛰고 개별 매물 풍선들이 화면에 사르륵 즉시 노출됩니다.
-                var targetZoom = town.endsWith('동') ? 18 : 15;
+                var targetZoom = town.endsWith('동') ? 17 : 15;
                 
                 map.setZoom(targetZoom); 
                 map.panTo(moveLatLng);
