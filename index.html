@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260930_1633</title>
+    <title>창공공인중개사사무소 - v.260930_1635</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -712,23 +712,19 @@
         applyFilters();
     }
 
-    // 🎛️ [차세대 2블록] 자바스크립트 엔진 Crash 방지를 위한 전역 변수 마스터 선언 및 초기화
     var markerClustering = null; 
     var currentBoundaryCircle = null;
 
-    // 상단 상태 스캔 기반 수직 하강형 데이터 정밀 필터러
     function applyFilters() {
         if (currentBoundaryCircle) currentBoundaryCircle.setMap(null);
-        var vis = []; // 🎯 화면 영역(Bounds) 내부에 살아남은 정제된 마커만 담을 가방
+        var vis = []; 
         
-        // 1단계 (최상단 스캔): 현재 지도의 물리적 상태(줌 레벨 및 사각형 영역) 일제 포획
         var currentZoom = map.getZoom();
         var currentBounds = map.getBounds();
 
         markers.forEach(function(marker, i) {
             var p = properties[i];
             
-            // 2단계 (조건 필터링): 카테고리 대분류, 상세 소분류, 지역 매칭 체크
             var mCat = (currentCategories.indexOf(marker.get("category")) !== -1);
             var mDet = (currentCategories.length === 0 || currentDetail.indexOf(marker.get("detail_type")) !== -1);
             var mTown = (currentTown === "전체" || marker.get("town") === currentTown);
@@ -737,7 +733,6 @@
                 mRi = (p.name.indexOf(currentRi) !== -1);
             }
 
-            // 3단계 (거래방식 필터링): 활성화된 4대 거래 스위치 상태 대조
             var mDeal = false;
             currentDealTypes.forEach(function(type) {
                 if (p.price.indexOf(type) !== -1) { mDeal = true; }
@@ -745,36 +740,31 @@
 
             var item = document.getElementById("item-" + i);
 
-            // 4단계 (최하단 수직 결합 및 화면 Bounds 필터링 보정)
             if (mCat && mDet && mTown && mRi && mDeal) {
-                item.style.display = "block";
+                if (item) item.style.display = "block";
                 
                 var markerLatLng = marker.getPosition();
-                
-                // [기획 원칙 반영]: 유령 연산 차단을 위해 오직 "현재 화면 영역 내부"에 있을 때만 후보군(vis) 적재
                 if (currentBounds && currentBounds.hasLatLng(markerLatLng)) {
                     vis.push(marker);
                 }
 
-                // 🎛️ [기획자 대원칙] 매물 개별 town_type 스캔을 통한 마커 노출선 이원화
+                // 🎛️ [기획 사양 칼각 적용]: 마커 노출 축척 임계값 정밀 동기화
                 var isDetailScale = false;
                 if (p.town_type === "urban") {
-                    // 동지역 매물: 축척 50m (줌 17) 이상일 때만 개별 마커 노출
+                    // 동지역 매물: 줌 17(50m) 이상일 때만 개별 마커 노출 (16 이하일 땐 절대 노출 금지)
                     isDetailScale = (currentZoom >= 17);
                 } else {
-                    // 읍면지역 매물: 축척 300m (줌 15) 이상일 때 개별 마커 노출
+                    // 읍면지역 매물: 줌 15(300m) 이상일 때만 개별 마커 노출 (14 이하일 땐 절대 노출 금지)
                     isDetailScale = (currentZoom >= 15);
                 }
 
-                // 결정된 이원화 기준선과 화면 영역 조건 최종 융합
+                // 클러스터 장벽 내부 작동 조건과 화면 영역 조건 최종 융합
                 if (isDetailScale && currentBounds && currentBounds.hasLatLng(markerLatLng)) {
                     marker.setMap(map);
                 } else {
-                    // 축척 미만이거나 화면 밖인 매물은 개별 풍선 숨김
-                    marker.setMap(null);
+                    marker.setMap(null); // 클러스터 묶음 구간이거나 화면 밖이면 개별 풍선 완전 차단!
                 }
             } else {
-                // 필터 탈락 매물은 리스트 및 지도에서 완전 격리 은닉
                 if (item) item.style.display = "none";
                 var dEl = document.getElementById("detail-" + i);
                 if(dEl) dEl.style.display = "none";
@@ -783,51 +773,43 @@
             }
         });
         
-        // 지역 셀렉터 숫자를 최신 상태로 갱신하고 클러스터러 공장(4블록)으로 물길 토스
         updateTownSelectorOptions();
         updateClustering(vis); 
     }
 
-    // 🎛️ [차세대 4블록] 유령 장벽 파괴 및 변수 제어형 신규 클러스터러 기동 엔진
     function updateClustering(vis) {
         var currentZoom = map.getZoom();
         
-        // 1단계 (최상단 스캔): 기획 명세에 맞춘 finalMaxZoom 변수 장벽 정의
-        var finalMaxZoom = 14; // 기본 읍면지역(rural)은 줌 14(500m) 장벽 작동
-        if (currentTown && currentTown.endsWith("동")) {
-            finalMaxZoom = 16; // 콕 집어 동지역(urban)을 선택했을 때만 줌 16(100m) 장벽 가동
-        }
+        // 1단계: 동지역 선택 여부에 상관없이, 개별 매물의 town_type에 맞춰 영리하게 클러스터링하기 위해 맥스 장벽을 16으로 통합 기동
+        var finalMaxZoom = 16; 
         
-        // 2단계 (유령 장벽 파괴): 휠 무빙 시 기존 구형 장벽 인스턴스를 메모리에서 완전히 파괴 (Reset)
         if (markerClustering !== null) {
             markerClustering.setMap(null);
             markerClustering = null; 
         }
 
-        // 화면 내 가용 마커가 없으면 연산을 종료
         if (vis.length === 0) return;
 
-        // 3단계 (중간 스위칭): 상단 변수(finalMaxZoom)와 칼같이 아귀를 맞춘 마커 묶기 필터 선행 수행
+        // 2단계: 각 매물의 고유 성격(urban/rural)에 맞춰 줌 레벨별로 클러스터에 살아남을 대상을 완벽하게 발라냄
         var dynamicVis = vis.filter(function(marker) {
             var idx = marker.get("p_index");
             var p = properties[idx];
             
             if (p.town_type === "urban") {
-                return currentZoom <= 16; // 동지역 매물 묶기 조건 (16 이하일 때만 클러스터 배지로 축소 보관)
+                return currentZoom <= 16; // 동지역 매물: 줌 16 이하일 때만 클러스터 배지로 강력 결합보관
             } else {
-                return currentZoom <= finalMaxZoom; // 읍면지역 매물 묶기 조건 (상단 변수 14 이하일 때만 보관)
+                return currentZoom <= 14; // 읍면지역 매물: 줌 14 이하일 때만 클러스터 배지로 보관
             }
         });
 
-        // 🎯 묶어줄 대상(dynamicVis)이 존재할 때만 클러스터러를 지도 위에 바인딩합니다.
         if (dynamicVis.length > 0) {
-            // 4단계 (신규 빌드): 인스턴스 생성과 동시에 dynamicVis 목록을 '원천 다이렉트 주입'하여 타이밍 락 해결!
+            // 3단계: 기획자님 지시사항 반영 - gridSize를 200으로 넓혀 뭉텅이 가독성 확보!
             markerClustering = new MarkerClustering({
                 minClusterSize: 2, 
-                maxZoom: finalMaxZoom, // ◀ 결정된 듀얼 임계값 즉시 주입
+                maxZoom: finalMaxZoom, 
                 map: map, 
-                markers: dynamicVis,   // ◀ 빈 배열이 아닌 정제된 목록을 생성자 마스터 패널에 바로 적재
-                gridSize: 200, 
+                markers: dynamicVis,   
+                gridSize: 200, // ◀ 120에서 200으로 전격 확장 (유령 클러스터 파괴 및 시원한 가운팅 레이아웃 수복)
                 disableClickZoom: false, 
                 icons: [
                     { content: '<div class="cluster-badge" style="cursor:pointer; width:44px; height:44px; line-height:44px; font-size:12px; color:#111111; text-align:center; font-weight:bold; background:rgba(74, 211, 255, 0.95); border:1px solid #fff; border-radius:50%; box-shadow:0 3px 10px rgba(0,0,0,0.35);"></div>', anchor: new naver.maps.Point(22, 22) },
