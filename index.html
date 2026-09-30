@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260930_0905</title>
+    <title>창공공인중개사사무소 - v.260930_0913</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -808,11 +808,16 @@
     function updateClustering(vis) {
         var currentZoom = map.getZoom();
         
+        // 🎛️ [기획자 지침 100% 반영] 최상단에서 if문으로 maxZoom 변수 설정을 명확히 끝내고 시작!
+        var finalMaxZoom = 14; // 기본 읍면지역은 줌 14(500m)
+        if (currentTown.endsWith("동")) {
+            finalMaxZoom = 16; // 동지역이나 초기화면은 줌 16(100m)
+        }
+        
         if (!markerClustering) {
             markerClustering = new MarkerClustering({
                 minClusterSize: 2, 
-                // 🎛️ [기획자 대원칙 100% 반영] 낱개 매물의 town_type에 맞춰 클러스터러 작동 한계선을 완전히 분리
-                maxZoom: 15, 
+                maxZoom: finalMaxZoom, // ◀ 최상단 if문으로 결정된 변수값 즉시 주입
                 map: map, 
                 markers: vis, 
                 gridSize: 200, 
@@ -830,16 +835,15 @@
         } else {
             markerClustering.setMap(null);
             
-            // 🎛️ [기획자 대원칙 핵심] 현재 줌 레벨에 따라 클러스터러가 움켜쥘 마커 목록(vis)을 듀얼 트랙으로 필터링
+            // 🎛️ 하단 필터 역시 최상단에서 완벽히 정의된 finalMaxZoom 변수 하나만 공유하여 일방통행 연산
             var dynamicVis = vis.filter(function(marker) {
                 var idx = marker.get("p_index");
                 var p = properties[idx];
+                
                 if (p.town_type === "urban") {
-                    // 동지역 매물: 줌 16 이하일 때만 클러스터러가 움켜쥐고 다님 (줌 17이 되면 클러스터 해제)
-                    return currentZoom <= 17;
+                    return currentZoom <= 16; // 동지역 매물 묶기 조건 (16 이하)
                 } else {
-                    // 읍면지역 매물: 줌 14 이하일 때만 클러스터러가 움켜쥐고 다님 (줌 15가 되면 클러스터 해제)
-                    return currentZoom <= 15;
+                    return currentZoom <= finalMaxZoom; // 읍면지역 매물 묶기 조건 (상단 변수 14 이하)
                 }
             });
             
