@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260930_2120</title>
+    <title>창공공인중개사사무소 - v.260930_2132</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -836,12 +836,14 @@
 
         if (sidebar.classList.contains("hidden")) sidebar.classList.remove("hidden");
         
-        // 이미 선택된 활성화 카드를 다시 누르면 청소(해제) 및 축척 원복
+        // 🎯 [수정 포인트 1]: 이미 선택된 카드를 다시 누를 때(선택 해제) 지도의 축척을 뒤흔들던 줌아웃 코드를 전면 철거!
+        // 이제 매물 선택을 해제해도 사용자가 보던 현재 줌 레벨과 시야가 1cm도 흐트러지지 않고 완벽하게 고정 유지됩니다.
         if (targetItem && targetItem.classList.contains("active")) {
-            targetItem.classList.remove("active"); if (targetDetail) targetDetail.style.display = "none";
+            targetItem.classList.remove("active"); 
+            if (targetDetail) targetDetail.style.display = "none";
             if (currentBoundaryCircle) { currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }
             if (panel) { panel.classList.remove("active"); panel.classList.remove("expanded"); }
-            map.setZoom(18); return;
+            return; // ◀ 줌 이동 명령 없이 즉시 안전하게 함수 탈출
         }
 
         // 기존에 선택되어 있던 카드들의 흔적을 일제 청소
@@ -856,13 +858,24 @@
         marker.setMap(map);
         if (currentBoundaryCircle) currentBoundaryCircle.setMap(null);
         
-        // 🎯 매물 앞마당에 정밀 반경 5m 붉은색 타깃 중심원 동적 렌더링
+        // 🎯 매물 앞마당에 정밀 반경 타깃 중심원 동적 렌더링
         currentBoundaryCircle = new naver.maps.Circle({
-            map: map, center: marker.getPosition(), radius: 5, fillColor: "#00bfff", fillOpacity: 0.15, strokeColor: "#ff0000", strokeOpacity: 0.6, strokeWeight: 1.5
+            map: map, center: marker.getPosition(), radius: 10, fillColor: "#00bfff", fillOpacity: 0.18, strokeColor: "#ff0000", strokeOpacity: 0.7, strokeWeight: 2.0
         });
 
-        // 부드러운 카메라 무빙 기술인 morph를 활용하여 최고 줌 레벨 18로 흡입 포커싱
-        var targetPos = marker.getPosition(); map.panTo(targetPos);
+        // 🎯 [수정 포인트 2]: 기획자님의 명품 하이브리드 시야 락(Lock) 엔진 장착
+        var targetPos = marker.getPosition(); 
+        var currentZoom = map.getZoom();
+
+        if (currentZoom < 16) {
+            // ① 초기 로딩(줌12/3000m)이나 광역 시야(줌14/500m 등)일 때는 매물 구분을 위해 마커 노출 기준선인 '줌 16(100m)'으로 스마트 흡입 줌인!
+            map.morph(targetPos, 16);
+        } else {
+            // ② 이미 줌 16 이상(100m, 50m, 20m) 정밀 축척 상태일 때는 줌 레벨을 흔들지 않고, 현재 축척을 '그대로 유지(Lock)'한 채 중심 좌표만 스르륵 이동(panTo)!
+            // 이 조치 덕분에 광역에서는 확실히 찾기 편하고, 정밀 축척에서는 주변 매물과 완벽한 1대1 비교 분석이 가능해집니다.
+            map.panTo(targetPos);
+        }
+
         var prop = properties[index];
 
         // 🏢 [분기 1] 선택된 매물이 '공장/창고' 카테고리일 때 -> 건축물대장 피벗 강제 주입
@@ -949,7 +962,6 @@
             });
             tableHtml += '</table>';
         } else {
-            // 예외 샌드박스: 데이터가 대조되지 않는 구역 가독성 가이드 배너 주입
             if (prop.category === "토지" || (prop.category === "주택" && (prop.detail_type.indexOf("단독") !== -1 || prop.detail_type.indexOf("다가구") !== -1))) {
                 tableHtml += '<p style="color:#999; text-align:center; margin-top:20px; font-size:11px;">해당 지역은 최근 [매매] 실거래 정보가 대조되지 않습니다.</p>';
             } else {
