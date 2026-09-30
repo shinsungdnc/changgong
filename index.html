@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260930_2043</title>
+    <title>창공공인중개사사무소 - v.260930_2048</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -1020,7 +1020,9 @@
             // 📐 [성능 최적화 스위치]: 기존 zoom_changed 내부의 무거운 연산들을 완전 철거!
             // 휠을 돌리는 중간에는 브라우저가 지도 그래픽 렌더링에만 집중하도록 연산을 양보합니다.
             naver.maps.Event.addListener(map, "zoom_changed", function() {
-                // 이 구역은 의도적으로 비워두어 휠 스크롤 시 발생하는 연산 병목렉을 전면 파괴합니다.
+                setTimeout(function() {
+                    applyFilters();
+                }, 50);
             });
         }
     });
