@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260930_1154</title>
+    <title>창공공인중개사사무소 - v.260930_1216</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -356,37 +356,60 @@
     var map;
     var cadastralLayer;
 
-    // 💡 [최속 기동] 초기 백지화 및 딜레이 현상을 원천 박멸하기 위해 
-    // 브라우저 리소스 로드를 기다리지 않고 지도를 가장 먼저 무조건 즉시 생성합니다.
+    // 🎛️ [기획자 대원칙] 버스가 출발하기 전 티켓 끊기: init 감시 장치 최선행 배치
+    // 네이버 지도 객체가 완전히 생성되는(기동하는) 그찰나의 신호를 단 0.001초도 놓치지 않고 포획합니다.
+    window.initMapPipeline = function() {
+        // ① 2공정: 하이브리드 위성 로딩 숨통이 트인 순간, 자동으로 지적도 드로잉 실행
+        cadastralLayer = new naver.maps.CadastralLayer();
+        cadastralLayer.setMap(map); 
+
+        // ② 3공정 & 4공정: 지적선 안착 확인 즉시 좌측 매물 장부 충전 및 이원화 클러스터 일제 가동
+        if (typeof initMap === 'function') {
+            initMap(); 
+        }
+    };
+    
+    // 네이버 지도 API에 전방 예약 등록
+    naver.maps.onJSContentLoaded = function() {
+        if(map) { window.initMapPipeline(); }
+    };
+    
+    // 만약 content가 즉시 로드될 경우를 대비한 2중 이중 안전 잠금 리스너
+    if (typeof naver !== 'undefined' && naver.maps && naver.maps.Event) {
+        naver.maps.Event.addListener(map, 'script_loaded', window.initMapPipeline);
+    }
+
+    // 🗺️ [지도 물리 기동] 이제 안전하게 하이브리드 지도를 캔버스 위에 띄웁니다.
     map = new naver.maps.Map("map", {
-        center: new naver.maps.LatLng(36.562037422035836, 127.32105090278309),
+        center: new naver.maps.LatLng({center_lat}, {center_lng}),
         zoom: 12, // 최초 로딩 3,000m 축척 세팅
         mapTypeId: naver.maps.MapTypeId.HYBRID,
-    });
+    }});
     
     // 지적편집도 기본 탑재 및 가동
     cadastralLayer = new naver.maps.CadastralLayer();
+    // cadastralLayer.setMap(map);
 
     var myLocationMarker = null;
     var watchPositionId = null;
 
     // 🧭 실시간 GPS 내 위치 추적 및 스마트 폰 동적 뷰포트 제어 엔진
-    function toggleMyLocation() {
+    function toggleMyLocation() {{
         var btn = document.getElementById("mylocation-btn");
-        if (watchPositionId !== null) {
+        if (watchPositionId !== null) {{
             navigator.geolocation.clearWatch(watchPositionId);
             watchPositionId = null;
             btn.classList.remove("tracking");
-            if (myLocationMarker) { myLocationMarker.setMap(null); myLocationMarker = null; }
+            if (myLocationMarker) {{ myLocationMarker.setMap(null); myLocationMarker = null; }}
             alert("내 위치 추적이 종료되었습니다.");
             return;
-        }
-        if (!navigator.geolocation) {
+        }}
+        if (!navigator.geolocation) {{
             alert("이 브라우저/기기는 위치 정보를 지원하지 않습니다.");
             return;
-        }
+        }}
         btn.classList.add("tracking");
-        watchPositionId = navigator.geolocation.watchPosition(function(position) {
+        watchPositionId = navigator.geolocation.watchPosition(function(position) {{
             var lat = position.coords.latitude;
             var lng = position.coords.longitude;
             var myLatLng = new naver.maps.LatLng(lat, lng);
@@ -396,47 +419,47 @@
                 '  <div style="position: absolute; width: 14px; height: 14px; background: #00bfff; border: 3px solid #ffffff; border-radius: 50%; box-shadow: 0 0 5px rgba(0,0,0,0.5); z-index: 2; top:0; left:0;"></div>',
                 '  <div style="position: absolute; width: 20px; height: 20px; background: rgba(0, 191, 255, 0.4); border-radius: 50%; animation: pulse 2s infinite; z-index: 1; top:0; left:0;"></div>',
                 '</div>',
-                '<style>@keyframes pulse { 0% { transform: scale(0.8); opacity: 0.8; } 100% { transform: scale(2.4); opacity: 0; } }</style>'
+                '<style>@keyframes pulse {{ 0% {{ transform: scale(0.8); opacity: 0.8; }} 100% {{ transform: scale(2.4); opacity: 0; }} }}</style>'
             ].join('');
 
-            if (!myLocationMarker) {
-                myLocationMarker = new naver.maps.Marker({
+            if (!myLocationMarker) {{
+                myLocationMarker = new naver.maps.Marker({{
                     position: myLatLng,
                     map: map,
-                    icon: { content: myLocationHtml, anchor: new naver.maps.Point(10, 10) }
-                });
+                    icon: {{ content: myLocationHtml, anchor: new naver.maps.Point(10, 10) }}
+                }});
                 map.setZoom(16); // 🎯 내 위치 포커싱 시 지적선 구분이 또렷한 100m 정밀 축척 자동 전환
-            } else {
+            }} else {{
                 myLocationMarker.setPosition(myLatLng);
-            }
+            }}
             map.panTo(myLatLng); 
-        }, function(error) {
+        }}, function(error) {{
             alert("위치 정보를 가져오는데 실패했습니다. GPS 권한을 확인해주세요.");
             btn.classList.remove("tracking");
             watchPositionId = null;
-        }, { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 });
-    }
+        }}, {{ enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }});
+    }}
 
     // 지적편집도 레이어 온오프 제어 및 연두색 테마 가독성 보존 스위치
-    function toggleCadastral() {
+    function toggleCadastral() {{
         var btn = document.getElementById("btn-cadastral");
         
-        if (cadastralLayer.getMap()) {
+        if (cadastralLayer.getMap()) {{
             cadastralLayer.setMap(null); // 지적도 OFF
-            if (btn) {
+            if (btn) {{
                 btn.style.setProperty("background", "transparent", "important"); 
                 btn.style.setProperty("color", "#666666", "important"); 
                 btn.style.setProperty("border", "1px solid transparent", "important");
-            }
-        } else {
+            }}
+        }} else {{
             cadastralLayer.setMap(map); // 지적도 ON
-            if (btn) {
+            if (btn) {{
                 btn.style.setProperty("background", "#DCF65C", "important"); 
                 btn.style.setProperty("color", "#111111", "important"); 
                 btn.style.setProperty("border", "1px solid #99bd0e", "important");
-            }
-        }
-    }
+            }}
+        }}
+    }}
 
     // 🔠 선택된 대분류에 대응하여 세부 소분류 필터 목록을 동적 갱신하는 함수
     function updateDetailSelectorOptions() {
@@ -991,18 +1014,6 @@
     document.addEventListener("DOMContentLoaded", function() {
         if (typeof naver !== 'undefined' && map) {
             
-            // 🌐 [1공정 ──▶ 2공정 바통 터치]: 하이브리드 위성지도가 100% 로딩 완료된 그 한 순간을 포착
-            naver.maps.Event.addListener(map, "init", function() {
-                
-                // ① 2공정: 이미지 다운로드가 끝나 숨통이 트인 브라우저에게 비로소 지적도 드로잉 지시
-                cadastralLayer = new naver.maps.CadastralLayer();
-                cadastralLayer.setMap(map); 
-
-                // ② 3공정 & 4공정: 지적선까지 완전히 배치된 것을 확인하고 목록 장부와 클러스터를 순차 가동
-                if (typeof initMap === 'function') {
-                    initMap(); 
-                }
-            });
 
             // 📐 마우스 휠 변동 시 타깃 붉은 원의 반지름 크기를 축척에 맞게 동적 교정하는 리스너
             naver.maps.Event.addListener(map, "zoom_changed", function() {
