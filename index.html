@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260930_0858</title>
+    <title>창공공인중개사사무소 - v.260930_0905</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -812,7 +812,7 @@
             markerClustering = new MarkerClustering({
                 minClusterSize: 2, 
                 // 🎛️ [기획자 대원칙 100% 반영] 낱개 매물의 town_type에 맞춰 클러스터러 작동 한계선을 완전히 분리
-                maxZoom: 17, 
+                maxZoom: 15, 
                 map: map, 
                 markers: vis, 
                 gridSize: 200, 
@@ -839,7 +839,7 @@
                     return currentZoom <= 17;
                 } else {
                     // 읍면지역 매물: 줌 14 이하일 때만 클러스터러가 움켜쥐고 다님 (줌 15가 되면 클러스터 해제)
-                    return currentZoom <= 13;
+                    return currentZoom <= 15;
                 }
             });
             
