@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.260930_0913</title>
+    <title>창공공인중개사사무소 - v.260930_0916</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -809,9 +809,9 @@
         var currentZoom = map.getZoom();
         
         // 🎛️ [기획자 지침 100% 반영] 최상단에서 if문으로 maxZoom 변수 설정을 명확히 끝내고 시작!
-        var finalMaxZoom = 14; // 기본 읍면지역은 줌 14(500m)
+        var finalMaxZoom = 15; // 기본 읍면지역은 줌 14(500m)
         if (currentTown.endsWith("동")) {
-            finalMaxZoom = 16; // 동지역이나 초기화면은 줌 16(100m)
+            finalMaxZoom = 17; // 동지역이나 초기화면은 줌 16(100m)
         }
         
         if (!markerClustering) {
