@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.261002_0830</title>
+    <title>창공공인중개사사무소 - v.261002_0842</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -1013,36 +1013,49 @@
 
             // 🌟 [명품 시야 연동]: 지도의 드래그 무빙이 완전히 멈춘 '정지(idle)' 순간 포획
             naver.maps.Event.addListener(map, "idle", function() {
+                
+                // 1단계 (최상단): 현재 지도의 정중앙 위경도 좌표 및 현재 줌 레벨 스캔
                 var centerLatLng = map.getCenter();
+                var currentZoom = map.getZoom();
                 var currentBounds = map.getBounds();
+                
+                var cLat = centerLatLng.lat();
+                var cLng = centerLatLng.lng();
                 
                 var closestTown = "전체";
                 var minDistance = Infinity;
                 
-                // 1. 현재 화면 내 마커들 중 지도의 정중앙점과 가장 가까운 읍면동(town) 명칭 포획
-                markers.forEach(function(marker) {
-                    if (marker.getMap() && currentBounds && currentBounds.hasLatLng(marker.getPosition())) {
-                        var mPos = marker.getPosition();
-                        var latDiff = mPos.lat() - centerLatLng.lat();
-                        var lngDiff = mPos.lng() - centerLatLng.lng();
-                        var dist = (latDiff * latDiff) + (lngDiff * lngDiff);
-                        
-                        if (dist < minDistance) { minDistance = dist; closestTown = marker.get("town"); }
+                // 🎯 [기획 조건 분기]: 줌 14레벨(축척 500m) 이상인 정밀 시야 상태에서만 중심점 동네 역산 가동
+                if (currentZoom >= 14) {
+                    if (typeof properties !== 'undefined' && Array.isArray(properties)) {
+                        properties.forEach(function(p) {
+                            if (p && p.lat && p.lng && p.town) {
+                                var latDiff = p.lat - cLat;
+                                var lngDiff = p.lng - cLng;
+                                var dist = (latDiff * latDiff) + (lngDiff * lngDiff);
+                                
+                                if (dist < minDistance) {
+                                    minDistance = dist;
+                                    closestTown = p.town; // 지도 정중앙과 가장 가까운 실제 동네 명칭 포획
+                                }
+                            }
+                        });
                     }
-                });
+                }
                 
-                // 2. 일방통행 대원칙에 따른 순정 필터 일제 가동
+                // 2단계 (중간): 일방통행 대원칙에 따라 현재 필터를 일제히 새로고침 (순정 함수 호출)
                 applyFilters();
                 
-                // 3. 지번주소 오름차순 목록 중 포획된 중심점 동네 매물의 첫 카드로 스크롤 안착
+                // 3단계 (최하단): 줌 14레벨 이상이고 목록 장부를 수동 조작 중이 아닐 때만 칼각 스크롤 주차
                 var listContainer = document.getElementById("property-list");
-                if (listContainer) {
+                if (listContainer && currentZoom >= 14) {
                     var firstMatchCard = null;
                     var items = listContainer.querySelectorAll(".property-item");
                     
                     for (var i = 0; i < items.length; i++) {
                         if (items[i].style.display !== "none") {
                             var h4Text = items[i].querySelector("h4") ? items[i].querySelector("h4").innerText : "";
+                            // 포획된 중심점 동네 명칭과 리스트 카드의 행정구역 텍스트를 칼각 대조
                             if (closestTown !== "전체" && h4Text.indexOf(closestTown) !== -1) {
                                 firstMatchCard = items[i];
                                 break;
@@ -1050,13 +1063,14 @@
                         }
                     }
                     
+                    // 만약 특정 동네 카드가 유실되었다면 노출 중인 첫 카드로 안전 백업
                     if (!firstMatchCard) {
                         for (var j = 0; j < items.length; j++) {
                             if (items[j].style.display !== "none") { firstMatchCard = items[j]; break; }
                         }
                     }
                     
-                    // 사용자가 직접 조작 중이거나 활성화된 카드가 없을 때만 정렬 무빙
+                    // 사용자가 마우스 휠을 굴리고 있거나 상세페이지를 열어둔 게 아니라면 장부 스크롤 자동 무빙
                     if (firstMatchCard && !document.querySelector(".property-item.active")) {
                         listContainer.scrollTop = firstMatchCard.offsetTop - listContainer.offsetTop;
                     }
