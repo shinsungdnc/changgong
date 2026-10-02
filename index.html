@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.261002_2227</title>
+    <title>창공공인중개사사무소 - v.261002_2230</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -807,11 +807,17 @@
         // 🔄 줌 13단계 이상 정밀 시야 진입 시 스위칭 구역 (바통 터치 라인)
         // ① 임무를 완수한 광역용 고정 배지들을 지도 위에서 깨끗하게 은닉 숨김 처리합니다.
         staticTownMarkers.forEach(function(sm) {{ sm.setMap(null); }});
-        
-        // ② 닫혀 있던 목록창이 첫 개시되는 순간, 소장님의 순정 목록창 초기 생성 엔진을 강제 호출하여 카드를 채워 넣습니다.
+        staticTownMarkers = [];
+
+        // 🚀 [무한루프 원천 차단 스위치]: 중복 연산 늪을 삭제하고, 소장님의 순정 필터막을 부드럽게 통과시킵니다.
         if (listContainer && listContainer.innerHTML === "") {{
-            initMap();
-            return; 
+            // 기존 2,566개 마커들의 숨김 장벽을 걷어내고 현재 줌/화면 구역에 맞춤 표출 준비
+            markers.forEach(function(marker) {{
+                var markerLatLng = marker.getPosition();
+                if (currentBounds && currentBounds.hasLatLng(markerLatLng)) {{
+                    marker.setMap(map);
+                }}
+            }});
         }}
 
         // 💡 [순정 보존]: 이 아래로 이어지는 소장님의 순정 markers.forEach 루프 데이터 연산은 100% 원본 그대로 흘러갑니다.
