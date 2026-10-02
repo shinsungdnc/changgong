@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.261003_0808</title>
+    <title>창공공인중개사사무소 - v.261003_0828</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -32,7 +32,19 @@
         #excel-download-btn:hover { background: #00bfff !important; transform: scale(1.02); }
 
         /* 📋 사이드바 장부 및 필터 섹션 */
-        #sidebar { width: 100%; height: calc(100vh - 100px); max-height: 600px; background: rgba(248, 249, 250, 0.95) !important; border: 1px solid #dee2e6; border-radius: 6px; display: flex; flex-direction: column; margin-top: 10px; pointer-events: auto; transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s; box-shadow: 0 4px 15px rgba(0,0,0,0.15); transform-origin: top center; }
+        #sidebar {{ 
+            width: 100%; 
+            background: rgba(248, 249, 250, 0.95) !important; 
+            border: 1px solid #dee2e6; 
+            border-radius: 6px; 
+            display: flex; 
+            flex-direction: column; 
+            margin-top: 10px; 
+            pointer-events: auto; 
+            transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15); 
+            transform-origin: top center; 
+        }}
         #sidebar.hidden { transform: scaleY(0); opacity: 0; pointer-events: none; }
         #sidebar-header { padding: 12px; background: #4ad3ff !important; border-radius: 5px 5px 0 0; backdrop-filter: blur(4px); }
         
@@ -57,26 +69,37 @@
         .town-select { width: 100%; padding: 8px; font-size: 12px; border: 1px solid #ced4da; border-radius: 4px; font-weight: bold; background: rgba(255,255,255,0.95); color: #004b6e; }
         #detail-selector { display: none; gap: 6px; padding: 10px 4px 5px 4px; overflow-x: auto; white-space: nowrap; max-width: 100%; box-sizing: border-box; -webkit-overflow-scrolling: touch; }
         
-        /* 🛍️ 매물 목록 카드 기본 및 호버 테마 */
+        /* 🛍️ [구조 개조] 하단 매물 목록 창 - 부모 품에서 분리되어 약간의 간격을 두고 붕 떠 있는 독립 상자 */
         #property-list {{ 
-            flex: 1; 
+            width: 100%;
+            height: calc(100vh - 305px); 
+            max-height: 420px; 
+            background: rgba(248, 249, 250, 0.95) !important; 
+            border: 1px solid #dee2e6;
+            border-radius: 6px; /* ◀ 기획 반영: 매물 목록 창 테두리도 예쁘게 라운드 처리 */
+            margin-top: 12px;   /* ◀ 기획 반영: 필터 패널 아래쪽에 약간의 간격을 띄움 */
+            display: flex;
+            flex-direction: column;
             overflow-y: auto; 
             padding: 10px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
             -webkit-overflow-scrolling: touch; 
-            background: rgba(248, 249, 250, 0.1); 
-            max-height: 600px; 
-            opacity: 1; 
-            transition: max-height 0.3s ease-in-out, opacity 0.25s ease-in-out, padding 0.3s ease-in-out; 
+            box-sizing: border-box;
+            opacity: 1;
+            transition: max-height 0.3s ease-in-out, opacity 0.25s ease-in-out, margin-top 0.3s ease-in-out, padding 0.3s ease-in-out;
         }}
         
-        /* 🚀 줌 12, 13단계 작동 시 푸른색 박스 하단 차단 빗장 규칙 */
+        /* 🚀 [기획 핵심 수복] 오직 줌 12, 13레벨에서만 하단 독립 목록 창을 완전히 닫아버리는 철통 빗장 */
         .zoom-hide-list #property-list {{ 
             max-height: 0 !important; 
             opacity: 0 !important; 
             padding: 0 !important; 
+            margin-top: 0 !important;
             overflow: hidden !important; 
+            border: none !important;
+            box-shadow: none !important;
+            pointer-events: none !important;
         }}
-
         .property-item { padding: 14px; margin-bottom: 10px; border: 2px solid transparent; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); cursor: pointer; transition: all 0.2s; }
         .property-item.item-land { background: #F1F8E9 !important; }
         .property-item.item-factory { background: #F9F3FA !important; }
@@ -172,10 +195,10 @@
                     </div>
                 </div>
             </div>
+        </div> <!-- 🎯 [방 분리 마감 빗장] 부모인 #sidebar(필터 전용 상자)를 여기서 깔끔하게 먼저 독립 마감해 줍니다! -->
             
-            <!-- 🛍️ 매물 카드가 가상 도화지 공법으로 렌더링될 타깃 장부 리스트 -->
-            <div id="property-list"></div>
-        </div>
+        <!-- 🛍️ [구조 탈출] 부모 밖으로 분리되어 약간의 마진 간격을 두고 독자적으로 붕 떠 있는 매물 목록 창 -->
+        <div id="property-list"></div>
     </div>
     
     <!-- 📊 우측 실거래 요약 및 건축물대장 브리핑 명세 패널 -->
@@ -794,32 +817,19 @@
             }
         });
 
-        // 🎯 [소장님 기획 원칙 반영] 오직 줌 12, 13 레벨에서만 작동하는 전용 시각 제어 엔진
+        // 🚀 [기획 마스터 사양] 오직 줌 12, 13레벨에서만 독립 분리된 하단 목록 창을 완전히 잠가버리는 스위치
         var mainBody = document.body;
-        var sidebarBox = document.getElementById("sidebar");
-        
+        var currentZoom = map.getZoom();
         if (currentZoom <= 13) {
-            // ① 줌 12, 13일 때는 최상단에 빗장 배지 클래스를 부여합니다.
             if (mainBody && !mainBody.classList.contains("zoom-hide-list")) {
                 mainBody.classList.add("zoom-hide-list");
             }
-            // ② [렉 원천 차단]: 부모 상자인 사이드바의 높이를 푸른색 구역(약 165px)까지만 타이트하게 락킹합니다!
-            if (sidebarBox) {
-                sidebarBox.style.setProperty("height", "165px", "important");
-                sidebarBox.style.setProperty("max-height", "165px", "important");
-            }
         } else {
-            // ③ 줌 14 이상이 되는 순간, 빗장 배지를 깨끗하게 걷어냅니다.
             if (mainBody && mainBody.classList.contains("zoom-hide-list")) {
                 mainBody.classList.remove("zoom-hide-list");
             }
-            // ④ [순정 복구]: 줌 14 이상에서는 소장님의 원래 순정 높이 규격으로 완벽하게 되돌려 놓습니다.
-            if (sidebarBox) {
-                sidebarBox.style.setProperty("height", "calc(100vh - 100px)", "important");
-                sidebarBox.style.setProperty("max-height", "600px", "important");
-            }
         }
-        
+                
         updateTownSelectorOptions();
         updateClustering(vis); 
     }
