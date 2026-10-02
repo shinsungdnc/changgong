@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.261002_2044</title>
+    <title>창공공인중개사사무소 - v.261002_2153</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -32,8 +32,9 @@
         #excel-download-btn:hover { background: #00bfff !important; transform: scale(1.02); }
 
         /* 📋 사이드바 장부 및 필터 섹션 */
-        #sidebar { width: 100%; height: calc(100vh - 100px); max-height: 600px; background: rgba(248, 249, 250, 0.95) !important; border: 1px solid #dee2e6; border-radius: 6px; display: flex; flex-direction: column; margin-top: 10px; pointer-events: auto; transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s; box-shadow: 0 4px 15px rgba(0,0,0,0.15); transform-origin: top center; }
-        #sidebar.hidden { transform: scaleY(0); opacity: 0; pointer-events: none; }
+        #sidebar { width: 100%; height: 0; transform: scaleY(0); opacity: 0; max-height: 600px; background: rgba(248, 249, 250, 0.95) !important; border: 1px solid #dee2e6; border-radius: 6px; display: flex; flex-direction: column; margin-top: 10px; pointer-events: auto; transition: transform 0.23s cubic-bezier(0.4, 0, 0.2, 1), height 0.23s, opacity 0.2s; box-shadow: 0 4px 15px rgba(0,0,0,0.15); transform-origin: top center; pointer-events: none; }
+        #sidebar.hidden { transform: scaleY(0) !important; height: 0 !important; opacity: 0 !important; pointer-events: none !important; }
+        #sidebar.active-sidebar { height: calc(100vh - 100px) !important; transform: scaleY(1) !important; opacity: 1 !important; pointer-events: auto !important; }
         #sidebar-header { padding: 12px; background: #4ad3ff !important; border-radius: 5px 5px 0 0; backdrop-filter: blur(4px); }
         
         .filter-section { display: flex; flex-direction: column; gap: 8px; }
@@ -718,13 +719,102 @@
 
     var markerClustering = null; 
     var currentBoundaryCircle = null;
+    var staticTownMarkers = []; // 🚀 광역 줌 12 전용 고정 배지 마커 독립 저장 바구니 신설
 
     function applyFilters() {
-        var vis = []; 
-        
         var currentZoom = map.getZoom();
         var currentBounds = map.getBounds();
+        var sidebar = document.getElementById("sidebar");
 
+        // 🚀 [줌 12단계 원핀포인트 격리 벨브 가동]: 첫 로딩 및 지역 전체 선택 시점 타격
+        if (currentZoom <= 12) {
+            // ① 좌측 목록창을 위로 바짝 말려 올립니다 (디자인 연산 부하 0초 압축)
+            if (sidebar) sidebar.classList.remove("active-sidebar");
+            
+            // ② 기존 순정 개별 마커 풍선들과 네이버 클러스터러 엔진 전원을 통째로 내립니다.
+            markers.forEach(function(m) { m.setMap(null); });
+            if (markerClustering) { markerClustering.setMap(null); markerClustering = null; }
+            
+            // ③ 지도 위에 이미 찍혀있던 구형 고정 배지가 있다면 깨끗하게 청소
+            staticTownMarkers.forEach(function(sm) { sm.setMap(null); });
+            staticTownMarkers = [];
+
+            // 🎯 소장님의 명품 실시간 카운트 장부 강제 동기화 (townCounts 생성)
+            updateTownSelectorOptions(); 
+            
+            // ④ [하드코딩 0% 영구 제어]: 백엔드에서 수집되어 넘어온 데이터에서 읍면동 좌표를 실시간으로 자동 역산합니다.
+            if (typeof townCounts !== 'undefined' && typeof properties !== 'undefined') {
+                var townCoordsMaster = {};
+                var townWeights = {};
+
+                // 2,566개(혹은 향후 수만 개) 매물의 순정 위경도 좌표를 동네별로 누적 합산하여 실시간 정중앙 가중치 중심점을 자동 역산해 냅니다.
+                properties.forEach(function(p) {
+                    if (p.town) {
+                        var mCat = (currentCategories.indexOf(p.category) !== -1);
+                        var mDeal = false;
+                        currentDealTypes.forEach(function(type) { if (p.price.indexOf(type) !== -1) { mDeal = true; } });
+
+                        // 현재 활성화된 필터 조건(대분류/거래유형)에 맞는 진짜 살아있는 매물의 좌표만 추적
+                        if (mCat && mDeal) {
+                            if (!townCoordsMaster[p.town]) {
+                                townCoordsMaster[p.town] = { sumLat: 0, sumLng: 0, count: 0 };
+                            }
+                            townCoordsMaster[p.town].sumLat += p.lat;
+                            townCoordsMaster[p.town].sumLng += p.lng;
+                            townCoordsMaster[p.town].count += 1;
+                        }
+                    }
+                });
+
+                // 확보된 동적 타깃 지도 위에 15개(혹은 향후 확장될 수십 개) 고정 배지 마커를 쾅쾅 박아줍니다.
+                townList.forEach(function(tName) {
+                    var count = townCounts[tName] || 0;
+                    var tData = townCoordsMaster[tName];
+                    
+                    // 해당 동네에 오늘 가용 매물이 실재하고, 가중치 좌표 연산이 끝났을 때만 생성
+                    if (count > 0 && tData && tData.count > 0) {
+                        var avgLat = tData.sumLat / tData.count;
+                        var avgLng = tData.sumLng / tData.count;
+                        var bLatLng = new naver.maps.LatLng(avgLat, avgLng);
+                        
+                        // 🎨 네이버 클러스터러 계산 렉이 전혀 없는 100% 프리텐다드 서체 기반 고정 집계 배지 디자인
+                        var sBadgeHtml = [
+                            '<div class="static-cluster" style="cursor:pointer; width:46px; height:44px; line-height:44px; font-size:12px; color:#111111; text-align:center; font-weight:bold; background:rgba(74, 211, 255, 0.95); border:2px solid #ffffff; border-radius:50%; box-shadow:0 3px 12px rgba(0,0,0,0.3); font-family:'Pretendard', sans-serif !important;">',
+                            '  ' + count,
+                            '</div>'
+                        ].join('');
+
+                        var sMarker = new naver.maps.Marker({
+                            position: bLatLng,
+                            map: map,
+                            icon: { content: sBadgeHtml, anchor: new naver.maps.Point(23, 22) }
+                        });
+
+                        // 🎯 광역 고정 배지 클릭 시 소장님의 순정 시야 락(Lock) 및 축척 엔진으로 다이렉트 무빙 워프!
+                        naver.maps.Event.addListener(sMarker, "click", function() {
+                            var townSelectBox = document.getElementById("town-selector");
+                            if (townSelectBox) {
+                                townSelectBox.value = tName;
+                                changeTown(tName); // 소장님이 만들어 두신 3블록 시야 엔진 그대로 상속 연동
+                            }
+                        });
+
+                        staticTownMarkers.push(sMarker);
+                    }
+                });
+            }
+            return; // ◀ [가장 중요]: 줌 12일 때는 하위 만 개 매물 목록 연산 폭탄 구역으로 내려가지 못하게 벨브 원천 차단!
+        }
+
+        // 🔄 줌 13단계 이상 정밀 시야 진입 시 스위칭 구역 (바통 터치 라인)
+        // ① 임무를 완수한 광역용 고정 배지들을 지도 위에서 깨끗하게 은닉 숨김 처리합니다.
+        staticTownMarkers.forEach(function(sm) { sm.setMap(null); });
+        
+        // ② 닫혀 있던 목록창 활성 클래스를 주입하여 위에서 아래로 스크린처럼 사르륵 슬라이드 오픈시킵니다!
+        if (sidebar && !sidebar.classList.contains("hidden")) sidebar.classList.add("active-sidebar");
+
+        // 💡 [순정 보존]: 이 아래로 이어지는 소장님의 순정 markers.forEach 루프 데이터 연산은 100% 원본 그대로 흘러갑니다.
+        var vis = []; 
         markers.forEach(function(marker, i) {
             var p = properties[i];
             
@@ -1006,12 +1096,10 @@
     document.addEventListener("DOMContentLoaded", function() {
         if (typeof naver !== 'undefined' && map) {
             
-            // 🚀 [순차 하강 수복] 블랙스크린을 완전히 걷어내고 지도가 첫 화면 타일을 다 그린 순간 딱 한 번만 하강 트리거!
-            naver.maps.Event.once(map, "tilesloaded", function() {
-                if (typeof window.initMapPipeline === 'function') {
-                    window.initMapPipeline();
-                }
-            });
+            // 🚀 [순정 복구완료]: 지연 렉 유발 요소를 걷어내고, 즉각 파이프라인 엔진을 가동시킵니다.
+            if (typeof window.initMapPipeline === 'function') {
+                window.initMapPipeline();
+            }
 
             // 🌟 [명품 시야 연동]: 지도의 드래그 무빙이 완전히 멈춘 '정지(idle)' 순간 포획
             naver.maps.Event.addListener(map, "idle", function() {
