@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.261002_0842</title>
+    <title>창공공인중개사사무소 - v.261002_2029</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -1006,10 +1006,12 @@
     document.addEventListener("DOMContentLoaded", function() {
         if (typeof naver !== 'undefined' && map) {
             
-            // 🗺️ 지도가 도화지 위에 완벽하게 로딩을 끝낸 안전한 시점에 파이프라인 가동!
-            if (typeof window.initMapPipeline === 'function') {
-                window.initMapPipeline();
-            }
+            // 🚀 [순차 하강 수복] 블랙스크린을 완전히 걷어내고 지도가 첫 화면 타일을 다 그린 순간 딱 한 번만 하강 트리거!
+            naver.maps.Event.once(map, "tilesloaded", function() {
+                if (typeof window.initMapPipeline === 'function') {
+                    window.initMapPipeline();
+                }
+            });
 
             // 🌟 [명품 시야 연동]: 지도의 드래그 무빙이 완전히 멈춘 '정지(idle)' 순간 포획
             naver.maps.Event.addListener(map, "idle", function() {
