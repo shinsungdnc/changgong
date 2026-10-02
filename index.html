@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.261002_2153</title>
+    <title>창공공인중개사사무소 - v.261002_2158</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -719,9 +719,13 @@
 
     var markerClustering = null; 
     var currentBoundaryCircle = null;
-    var staticTownMarkers = []; // 🚀 광역 줌 12 전용 고정 배지 마커 독립 저장 바구니 신설
 
     function applyFilters() {
+        // 🚀 [안전장치]: 광역 고정 배지 마커방이 터지지 않도록 전역/함수 스코프를 일체화하여 가둡니다.
+        if (typeof window.staticTownMarkers === 'undefined') {
+            window.staticTownMarkers = [];
+        }
+        
         var currentZoom = map.getZoom();
         var currentBounds = map.getBounds();
         var sidebar = document.getElementById("sidebar");
@@ -731,23 +735,22 @@
             // ① 좌측 목록창을 위로 바짝 말려 올립니다 (디자인 연산 부하 0초 압축)
             if (sidebar) sidebar.classList.remove("active-sidebar");
             
-            // ② 기존 순정 개별 마커 풍선들과 네이버 클러스터러 엔진 전원을 통째로 내립니다.
-            markers.forEach(function(m) { m.setMap(null); });
+            // ② [오타 완치]: 방의 이름과 타깃 변수를 marker로 일치시켜 구문 에러를 원천 삭제했습니다!
+            markers.forEach(function(marker) { marker.setMap(null); });
             if (markerClustering) { markerClustering.setMap(null); markerClustering = null; }
             
             // ③ 지도 위에 이미 찍혀있던 구형 고정 배지가 있다면 깨끗하게 청소
-            staticTownMarkers.forEach(function(sm) { sm.setMap(null); });
-            staticTownMarkers = [];
+            window.staticTownMarkers.forEach(function(sm) { sm.setMap(null); });
+            window.staticTownMarkers = [];
 
             // 🎯 소장님의 명품 실시간 카운트 장부 강제 동기화 (townCounts 생성)
             updateTownSelectorOptions(); 
             
-            // ④ [하드코딩 0% 영구 제어]: 백엔드에서 수집되어 넘어온 데이터에서 읍면동 좌표를 실시간으로 자동 역산합니다.
+            // ④ [하드코딩 0% 영구 제어]: 백엔드 데이터에서 읍면동 좌표를 실시간으로 자동 역산합니다.
             if (typeof townCounts !== 'undefined' && typeof properties !== 'undefined') {
                 var townCoordsMaster = {};
-                var townWeights = {};
 
-                // 2,566개(혹은 향후 수만 개) 매물의 순정 위경도 좌표를 동네별로 누적 합산하여 실시간 정중앙 가중치 중심점을 자동 역산해 냅니다.
+                // 수만 개 매물의 순정 위경도 좌표를 동네별로 누적 합산하여 실시간 정중앙 가중치 중심점을 자동 역산해 냅니다.
                 properties.forEach(function(p) {
                     if (p.town) {
                         var mCat = (currentCategories.indexOf(p.category) !== -1);
@@ -766,7 +769,7 @@
                     }
                 });
 
-                // 확보된 동적 타깃 지도 위에 15개(혹은 향후 확장될 수십 개) 고정 배지 마커를 쾅쾅 박아줍니다.
+                // 확보된 동적 타깃 지도 위에 확장될 수십 개 고정 배지 마커를 쾅쾅 박아줍니다.
                 townList.forEach(function(tName) {
                     var count = townCounts[tName] || 0;
                     var tData = townCoordsMaster[tName];
@@ -799,7 +802,7 @@
                             }
                         });
 
-                        staticTownMarkers.push(sMarker);
+                        window.staticTownMarkers.push(sMarker);
                     }
                 });
             }
@@ -808,7 +811,7 @@
 
         // 🔄 줌 13단계 이상 정밀 시야 진입 시 스위칭 구역 (바통 터치 라인)
         // ① 임무를 완수한 광역용 고정 배지들을 지도 위에서 깨끗하게 은닉 숨김 처리합니다.
-        staticTownMarkers.forEach(function(sm) { sm.setMap(null); });
+        window.staticTownMarkers.forEach(function(sm) { sm.setMap(null); });
         
         // ② 닫혀 있던 목록창 활성 클래스를 주입하여 위에서 아래로 스크린처럼 사르륵 슬라이드 오픈시킵니다!
         if (sidebar && !sidebar.classList.contains("hidden")) sidebar.classList.add("active-sidebar");
