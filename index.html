@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.261003_0801</title>
+    <title>창공공인중개사사무소 - v.261003_0808</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -794,18 +794,32 @@
             }
         });
 
-        // 🚀 [기획 사양 추가] 줌 12, 13단계 하부 매물 목록창 실시간 차단 제어 스위치
+        // 🎯 [소장님 기획 원칙 반영] 오직 줌 12, 13 레벨에서만 작동하는 전용 시각 제어 엔진
         var mainBody = document.body;
+        var sidebarBox = document.getElementById("sidebar");
+        
         if (currentZoom <= 13) {
+            // ① 줌 12, 13일 때는 최상단에 빗장 배지 클래스를 부여합니다.
             if (mainBody && !mainBody.classList.contains("zoom-hide-list")) {
                 mainBody.classList.add("zoom-hide-list");
             }
+            // ② [렉 원천 차단]: 부모 상자인 사이드바의 높이를 푸른색 구역(약 165px)까지만 타이트하게 락킹합니다!
+            if (sidebarBox) {
+                sidebarBox.style.setProperty("height", "165px", "important");
+                sidebarBox.style.setProperty("max-height", "165px", "important");
+            }
         } else {
+            // ③ 줌 14 이상이 되는 순간, 빗장 배지를 깨끗하게 걷어냅니다.
             if (mainBody && mainBody.classList.contains("zoom-hide-list")) {
                 mainBody.classList.remove("zoom-hide-list");
             }
+            // ④ [순정 복구]: 줌 14 이상에서는 소장님의 원래 순정 높이 규격으로 완벽하게 되돌려 놓습니다.
+            if (sidebarBox) {
+                sidebarBox.style.setProperty("height", "calc(100vh - 100px)", "important");
+                sidebarBox.style.setProperty("max-height", "600px", "important");
+            }
         }
-                     
+        
         updateTownSelectorOptions();
         updateClustering(vis); 
     }
