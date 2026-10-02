@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.261002_2230</title>
+    <title>창공공인중개사사무소 - v.261002_2237</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -717,112 +717,16 @@
         applyFilters();
     }
 
-    var markerClustering = null; 
+        var markerClustering = null; 
     var currentBoundaryCircle = null;
 
-    var staticTownMarkers = []; // 🚀 광역 줌 12 전용 고정 배지 마커 독립 저장 바구니 신설
-
     function applyFilters() {{
+        var vis = []; 
+        
         var currentZoom = map.getZoom();
         var currentBounds = map.getBounds();
-        var listContainer = document.getElementById("property-list");
 
-        // 🚀 [기획 사양 칼각 적중]: 초기 줌 12레벨 및 지역 전체 선택 상태만 원핀포인트 격리
-        if (currentZoom <= 12) {{
-            // ① 좌측 목록창의 낡은 카드들을 단 0초 만에 깨끗하게 비워 숨깁니다 (디자인 레이아웃 연산 부하 0% 압축)
-            if (listContainer) listContainer.innerHTML = "";
-            
-            // ② 순정 개별 마커 풍선들과 네이버 클러스터러 엔진 전원을 통째로 임시 차단 내립니다.
-            markers.forEach(function(marker) {{ marker.setMap(null); }});
-            if (markerClustering) {{ markerClustering.setMap(null); markerClustering = null; }}
-            
-            // ③ 지도 위에 이미 찍혀있던 구형 고정 배지가 있다면 중복 드로잉 방지용 청소
-            staticTownMarkers.forEach(function(sm) {{ sm.setMap(null); }});
-            staticTownMarkers = [];
-
-            // 🎯 소장님의 치트키 변수 동기화: 이미 완벽하게 실시간 계산 완료된 townCounts 장부를 다이렉트 역산!
-            updateTownSelectorOptions(); 
-            
-            if (typeof townCounts !== 'undefined' && typeof properties !== 'undefined') {{
-                var townCoordsMaster = {{}};
-
-                // 가용 매물 장부의 위경도 좌표를 동네별로 누적 합산하여 실시간 정중앙 가중치 중심점 좌표를 자동 역산해 냅니다.
-                properties.forEach(function(p) {{
-                    if (p.town) {{
-                        var mCat = (currentCategories.indexOf(p.category) !== -1);
-                        var mDeal = false;
-                        currentDealTypes.forEach(function(type) {{ if (p.price.indexOf(type) !== -1) {{ mDeal = true; }} }});
-
-                        // 현재 켜져 있는 상단 필터 조건(토지/공장/주택 및 매매/임대)에 매칭되는 살아있는 매물 좌표만 추적
-                        if (mCat && mDeal) {{
-                            if (!townCoordsMaster[p.town]) {{
-                                townCoordsMaster[p.town] = {{ sumLat: 0, sumLng: 0, count: 0 }};
-                            }
-                            townCoordsMaster[p.town].sumLat += p.lat;
-                            townCoordsMaster[p.town].sumLng += p.lng;
-                            townCoordsMaster[p.town].count += 1;
-                        }}
-                    }
-                }});
-
-                // 하드코딩 0%: 타 지역 확장 시에도 자동 대응되는 동적 고정 배지 마커 쾅쾅 박기
-                townList.forEach(function(tName) {{
-                    var count = townCounts[tName] || 0;
-                    var tData = townCoordsMaster[tName];
-                    
-                    if (count > 0 && tData && tData.count > 0) {{
-                        var avgLat = tData.sumLat / tData.count;
-                        var avgLng = tData.sumLng / tData.count;
-                        var bLatLng = new naver.maps.LatLng(avgLat, avgLng);
-                        
-                        // 🎨 네이버 클러스터러 계산 렉이 전혀 없는 100% 순정 프리텐다드 텍스트 배지 마커 디자인
-                        var sBadgeHtml = [
-                            '<div class="static-cluster" style="cursor:pointer; width:46px; height:44px; line-height:44px; font-size:12px; color:#111111; text-align:center; font-weight:bold; background:rgba(74, 211, 255, 0.95); border:2px solid #ffffff; border-radius:50%; box-shadow:0 3px 12px rgba(0,0,0,0.3); font-family:'Pretendard', sans-serif !important;">',
-                            '  ' + count,
-                            '</div>'
-                        ].join('');
-
-                        var sMarker = new naver.maps.Marker({{
-                            position: bLatLng,
-                            map: map,
-                            icon: {{ content: sBadgeHtml, anchor: new naver.maps.Point(23, 22) }}
-                        }});
-
-                        // 🎯 광역 고정 배지 클릭 시, 해당 동네 정밀 축척 사양(줌15 또는 17)으로 다이렉트 무빙 워프!
-                        naver.maps.Event.addListener(sMarker, "click", function() {{
-                            var townSelectBox = document.getElementById("town-selector");
-                            if (townSelectBox) {{
-                                townSelectBox.value = tName;
-                                changeTown(tName); // 소장님의 순정 3블록 시야 엔진 그대로 상속 연동
-                            }}
-                        }});
-
-                        staticTownMarkers.push(sMarker);
-                    }
-                }});
-            }
-            return; // ◀ [가장 중요]: 줌 12일 때는 하위 2,566개 매물 목록 연산 폭탄 구역으로 내려가지 못하게 벨브 원천 차단!
-        }
-
-        // 🔄 줌 13단계 이상 정밀 시야 진입 시 스위칭 구역 (바통 터치 라인)
-        // ① 임무를 완수한 광역용 고정 배지들을 지도 위에서 깨끗하게 은닉 숨김 처리합니다.
-        staticTownMarkers.forEach(function(sm) {{ sm.setMap(null); }});
-        staticTownMarkers = [];
-
-        // 🚀 [무한루프 원천 차단 스위치]: 중복 연산 늪을 삭제하고, 소장님의 순정 필터막을 부드럽게 통과시킵니다.
-        if (listContainer && listContainer.innerHTML === "") {{
-            // 기존 2,566개 마커들의 숨김 장벽을 걷어내고 현재 줌/화면 구역에 맞춤 표출 준비
-            markers.forEach(function(marker) {{
-                var markerLatLng = marker.getPosition();
-                if (currentBounds && currentBounds.hasLatLng(markerLatLng)) {{
-                    marker.setMap(map);
-                }}
-            }});
-        }}
-
-        // 💡 [순정 보존]: 이 아래로 이어지는 소장님의 순정 markers.forEach 루프 데이터 연산은 100% 원본 그대로 흘러갑니다.
-        var vis = [];
-        markers.forEach(function(marker, i) {
+        markers.forEach(function(marker, i) {{
             var p = properties[i];
             
             var mCat = (currentCategories.indexOf(marker.get("category")) !== -1);
