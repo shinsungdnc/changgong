@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.261004_1705</title>
+    <title>창공공인중개사사무소 - v.261004_1714</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -724,52 +724,55 @@
     var currentBoundaryCircle = null;
 
     function applyFilters() {
+    var markerClustering = null; 
+    var currentBoundaryCircle = null;
+
+    function applyFilters() {
         var vis = []; 
-        
         var currentZoom = map.getZoom();
         var currentBounds = map.getBounds();
+        
+        // 💡 1단계에서 새로 분리해 둔 매물 목록 패널 상자를 정밀 타깃팅합니다.
+        var listPanel = document.getElementById("property-list-panel");
+
+        // 🛑 [대원칙] 줌 12, 13 광역 시야일 때: 목록 패널만 차단하여 연산 과부하 박멸
+        if (currentZoom < 14) {
+            if (listPanel) listPanel.style.display = "none"; // ◀ 매물 목록창 오프
+            
+            // 기존 개별 마커 및 클러스터러를 화면에서 완전히 리셋 처리
+            markers.forEach(function(m) { m.setMap(null); });
+            if (markerClustering) { markerClustering.setMap(null); markerClustering = null; }
+            if (currentBoundaryCircle) { currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }
+            
+            updateTownSelectorOptions();
+            return; // ◀ 줌 12, 13일 땐 여기서 연산 강제 종료 (하단의 무거운 개별 카드 루프 연산 차단)
+        }
+
+        // 🟢 [정밀 시야] 줌 14 이상 진입 시: 목록 패널을 즉각 다시 오픈
+        if (listPanel) listPanel.style.display = "flex";
 
         markers.forEach(function(marker, i) {
             var p = properties[i];
-            
             var mCat = (currentCategories.indexOf(marker.get("category")) !== -1);
             var mDet = (currentCategories.length === 0 || currentDetail.indexOf(marker.get("detail_type")) !== -1);
             var mTown = (currentTown === "전체" || marker.get("town") === currentTown);
-            var mRi = true;
-            if (currentTown !== "전체" && currentRi !== "전체") {
-                mRi = (p.name.indexOf(currentRi) !== -1);
-            }
-
+            var mRi = (currentTown === "전체" || currentRi === "전체" || p.name.indexOf(currentRi) !== -1);
             var mDeal = false;
-            currentDealTypes.forEach(function(type) {
-                if (p.price.indexOf(type) !== -1) { mDeal = true; }
-            });
+            currentDealTypes.forEach(function(type) { if (p.price.indexOf(type) !== -1) { mDeal = true; } });
 
             var item = document.getElementById("item-" + i);
 
             if (mCat && mDet && mTown && mRi && mDeal) {
                 if (item) item.style.display = "block";
-                
                 var markerLatLng = marker.getPosition();
-                if (currentBounds && currentBounds.hasLatLng(markerLatLng)) {
-                    vis.push(marker);
-                }
+                
+                var isDetailScale = p.town_type === "urban" ? (currentZoom >= 17) : (currentZoom >= 14);
 
-                // 🎛️ [기획 사양 칼각 적용]: 마커 노출 축척 임계값 정밀 동기화
-                var isDetailScale = false;
-                if (p.town_type === "urban") {
-                    // 동지역 매물: 줌 17(50m) 이상일 때만 개별 마커 노출 (16 이하일 땐 절대 노출 금지)
-                    isDetailScale = (currentZoom >= 17);
-                } else {
-                    // 읍면지역 매물: 줌 14(300m) 이상일 때만 개별 마커 노출 (14 이하일 땐 절대 노출 금지)
-                    isDetailScale = (currentZoom >= 15);
-                }
-
-                // 클러스터 장벽 내부 작동 조건과 화면 영역 조건 최종 융합
                 if (isDetailScale && currentBounds && currentBounds.hasLatLng(markerLatLng)) {
                     marker.setMap(map);
+                    vis.push(marker);
                 } else {
-                    marker.setMap(null); // 클러스터 묶음 구간이거나 화면 밖이면 개별 풍선 완전 차단!
+                    marker.setMap(null);
                 }
             } else {
                 if (item) item.style.display = "none";
@@ -783,6 +786,7 @@
         updateTownSelectorOptions();
         updateClustering(vis); 
     }
+
 
     function updateClustering(vis) {
         // 1단계: 휠 무빙 시 기존에 남아있던 구형 클러스터러 본체를 메모리에서 완전히 리셋 (유령 장벽 파괴)
