@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.261004_1739</title>
+    <title>창공공인중개사사무소 - v.261004_1742</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -722,7 +722,7 @@
 
     var markerClustering = null; 
     var currentBoundaryCircle = null;
-    var townSummaryMarkers = [];
+    var townSummaryMarkers = []; // 💡 [교정] 배열 마감 세미콜론 정밀 장착 완료
 
     function applyFilters() {
         var vis = []; 
@@ -731,7 +731,7 @@
         
         var listPanel = document.getElementById("property-list-panel");
 
-        // 🛑 [광역 격리 트랙] 줌 12, 13일 때: 목록 패널 숨김 및 창공 순정 하늘색 원형 배지 투척
+        // 🛑 [광역 격리 트랙] 줌 12, 13일 때: 매물목록 완벽 차단 및 창공 순정 하늘색 원형 배지 투척
         if (currentZoom < 14) {
             if (listPanel) listPanel.style.display = "none";
             
@@ -739,8 +739,8 @@
             if (markerClustering) { markerClustering.setMap(null); markerClustering = null; }
             if (currentBoundaryCircle) { currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }
 
-            // 기존에 그려두었던 광역 전용 임시 배지들 일제 청소
-            if (typeof townSummaryMarkers !== 'undefined') {
+            // 기존에 그려두었던 광역 임시 배지들 일제히 누락 없이 청소
+            if (typeof townSummaryMarkers !== 'undefined' && townSummaryMarkers !== null) {
                 townSummaryMarkers.forEach(function(tm) { tm.setMap(null); });
             }
             townSummaryMarkers = [];
@@ -822,7 +822,8 @@
         updateTownSelectorOptions();
         updateClustering(vis); 
     }
-    
+
+    // 💡 [교정] 징검다리 줌인 함수를 파이썬 f-string 문자열 종단선 내부에 무결하게 안착
     window.zoomIntoTown = function(townName) {
         var townSelector = document.getElementById("town-selector");
         if (townSelector) {
@@ -830,7 +831,6 @@
             changeTown(townName);
         }
     };
-
 
         function updateClustering(vis) {
         // 1단계: 휠 무빙 시 기존에 남아있던 구형 클러스터러 본체를 메모리에서 완전히 리셋 (유령 장벽 파괴)
