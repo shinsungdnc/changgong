@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.261004_0856</title>
+    <title>창공공인중개사사무소 - v.261004_1700</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -114,49 +114,53 @@
     <!-- 🗺️ 네이버 하이브리드 지도가 실제 렌더링되는 가상 캔버스 방 -->
     <div id="map"></div>
 
-    <!-- 🎛️ 좌측 마스터 컨트롤 패널 구조 시작 -->
+    <!-- 🎛️ 좌측 마스터 컨트롤 패널 구조 시작 (이원화 독립 박스 배치 구조) -->
     <div id="control-panel-wrapper">
+        <!-- [최상단 타이틀 버튼] 패널 전체 온/오프 토글 기능 완벽 보존 -->
         <div id="top-header-row">
             <div id="brand-master-btn" onclick="toggleSidebar()">창공공인중개사사무소</div>
         </div>
         
-        <div id="sidebar">
-            <div id="sidebar-header">
-                <div class="filter-section">
-                    <!-- 상단 매물 종류 토글 3분할 탭 -->
-                    <div class="filter-tabs">
-                        <button class="tab-btn active-land" id="btn-land" onclick="toggleCategory('토지')">토지</button>
-                        <button class="tab-btn active-factory" id="btn-factory" onclick="toggleCategory('공장')">공장/창고</button>
-                        <button class="tab-btn active-house" id="btn-house" onclick="toggleCategory('주택')">주택</button>
-                    </div>
+        <!-- 📦 1번 상자 (필터 패널 - 상시 노출로 필터 연산 무결성 100% 보존) -->
+        <div id="sidebar-header" style="padding: 12px; background: #4ad3ff !important; border-radius: 6px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); margin-top: 10px; pointer-events: auto;">
+            <div class="filter-section">
+                <!-- 상단 매물 종류 토글 3분할 탭 -->
+                <div class="filter-tabs">
+                    <button class="tab-btn active-land" id="btn-land" onclick="toggleCategory('토지')">토지</button>
+                    <button class="tab-btn active-factory" id="btn-factory" onclick="toggleCategory('공장')">공장/창고</button>
+                    <button class="tab-btn active-house" id="btn-house" onclick="toggleCategory('주택')">주택</button>
+                </div>
 
-                    <!-- 📐 [최종 수복] 선택/지적 정중앙 정렬 및 4대 거래방식 스위치 융합 인라인 툴바 -->
-                    <div style="display: flex; gap: 4px; width: 100%; box-sizing: border-box; pointer-events: auto; margin-top: 6px; align-items: center; height: 32px;">  
-                        <button type="button" id="filter-toggle-btn" onclick="toggleDetailSelectorPanel()" class="deal-btn" style="flex: 1; background: #ffffff !important; color: #222 !important; border: 1px solid #ced4da !important; font-size: 11px !important; height: 100%; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; white-space: nowrap;">선택</button>
-                        <button type="button" id="btn-cadastral" onclick="toggleCadastral()" class="deal-btn" style="flex: 1; background: #DCF65C !important; color: #111111 !important; border: 1px solid #9CBD0E !important; font-size: 11px !important; height: 100%; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; white-space: nowrap;">지적</button>   
-                        <button type="button" id="btn-maemae" onclick="toggleDealType('매매')" class="deal-btn active-maemae" style="flex: 1; font-size: 11px !important; height: 100%; box-sizing: border-box; padding: 5px 0; white-space: nowrap;">매매</button>
-                        <button type="button" id="btn-jeonse" onclick="toggleDealType('전세')" class="deal-btn active-jeonse" style="flex: 1; font-size: 11px !important; height: 100%; box-sizing: border-box; padding: 5px 0; white-space: nowrap;">전세</button>
-                        <button type="button" id="btn-wolse" onclick="toggleDealType('월세')" class="deal-btn active-wolse" style="flex: 1; font-size: 11px !important; height: 100%; box-sizing: border-box; padding: 5px 0; white-space: nowrap;">월세</button>
-                        <button type="button" id="btn-dangi" onclick="toggleDealType('단기')" class="deal-btn active-dangi" style="flex: 1; font-size: 11px !important; height: 100%; box-sizing: border-box; padding: 5px 0; white-space: nowrap;">단기</button>
-                    </div>
+                <!-- 선택/지적 및 4대 거래방식 스위치 인라인 툴바 -->
+                <div style="display: flex; gap: 4px; width: 100%; box-sizing: border-box; pointer-events: auto; margin-top: 6px; align-items: center; height: 32px;">  
+                    <button type="button" id="filter-toggle-btn" onclick="toggleDetailSelectorPanel()" class="deal-btn" style="flex: 1; background: #ffffff !important; color: #222 !important; border: 1px solid #ced4da !important; font-size: 11px !important; height: 100%; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; white-space: nowrap;">선택</button>
+                    <button type="button" id="btn-cadastral" onclick="toggleCadastral()" class="deal-btn" style="flex: 1; background: #DCF65C !important; color: #111111 !important; border: 1px solid #9CBD0E !important; font-size: 11px !important; height: 100%; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; white-space: nowrap;">지적</button>   
+                    <button type="button" id="btn-maemae" onclick="toggleDealType('매매')" class="deal-btn active-maemae" style="flex: 1; font-size: 11px !important; height: 100%; box-sizing: border-box; padding: 5px 0; white-space: nowrap;">매매</button>
+                    <button type="button" id="btn-jeonse" onclick="toggleDealType('전세')" class="deal-btn active-jeonse" style="flex: 1; font-size: 11px !important; height: 100%; box-sizing: border-box; padding: 5px 0; white-space: nowrap;">전세</button>
+                    <button type="button" id="btn-wolse" onclick="toggleDealType('월세')" class="deal-btn active-wolse" style="flex: 1; font-size: 11px !important; height: 100%; box-sizing: border-box; padding: 5px 0; white-space: nowrap;">월세</button>
+                    <button type="button" id="btn-dangi" onclick="toggleDealType('단기')" class="deal-btn active-dangi" style="flex: 1; font-size: 11px !important; height: 100%; box-sizing: border-box; padding: 5px 0; white-space: nowrap;">단기</button>
+                </div>
 
-                    <!-- 상세 매물 소분류 체크박스가 동적 팝업되는 컨테이너 -->
-                    <div id="detail-selector"></div>
+                <!-- 상세 매물 소분류 체크박스 팝업 컨테이너 -->
+                <div id="detail-selector"></div>
 
-                    <!-- 📍 계층형 행정구역 (읍면동 / 리) 듀얼 셀렉터 셋 -->
-                    <div style="display: flex; gap: 6px; width: 100%; box-sizing: border-box; margin-top: 4px;">
-                        <select class="town-select" id="town-selector" onchange="changeTown(this.value)" style="flex: 1; width: 100%;">
-                            <option value="전체">📍 지역 선택 (전체)</option>
-                        </select>
-                        <select class="town-select" id="ri-selector" onchange="changeRi(this.value)" style="flex: 1; width: 100%; display: none;">
-                            <option value="전체">📍 리 선택 (전체)</option>
-                        </select>
-                    </div>
+                <!-- 계층형 행정구역 듀얼 셀렉터 -->
+                <div style="display: flex; gap: 6px; width: 100%; box-sizing: border-box; margin-top: 4px;">
+                    <select class="town-select" id="town-selector" onchange="changeTown(this.value)" style="flex: 1; width: 100%;">
+                        <option value="전체">📍 지역 선택 (전체)</option>
+                    </select>
+                    <select class="town-select" id="ri-selector" onchange="changeRi(this.value)" style="flex: 1; width: 100%; display: none;">
+                        <option value="전체">📍 리 선택 (전체)</option>
+                    </select>
                 </div>
             </div>
-            
-            <!-- 🛍️ 매물 카드가 가상 도화지 공법으로 렌더링될 타깃 장부 리스트 -->
-            <div id="property-list"></div>
+        </div>
+        
+        <!-- 📦 2번 상자 (매물 목록 패널 - 독립형 카드 레이아웃으로 완벽 독립) -->
+        <!-- 📐 상단 필터 패널과 완벽히 일치하는 동일 라운드(6px)와 미세한 여백(margin-top: 10px) 장착 -->
+        <div id="property-list-panel" style="width: 100%; height: calc(100vh - 215px); max-height: 480px; background: rgba(248, 249, 250, 0.95) !important; border: 1px solid #dee2e6; border-radius: 6px; display: flex; flex-direction: column; margin-top: 10px; pointer-events: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.15);">
+            <!-- 순수 매물 카드 리스트 장부 방 -->
+            <div id="property-list" style="flex: 1; overflow-y: auto; padding: 10px;"></div>
         </div>
     </div>
     
