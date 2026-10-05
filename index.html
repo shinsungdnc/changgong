@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.261005_0850</title>
+    <title>창공공인중개사사무소 - v.261005_0904</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -160,7 +160,7 @@
             
             <!-- 📦 2번 상자 (매물 목록 패널 - 독립형 카드 레이아웃으로 완벽 독립) -->
             <!-- 📐 상단 필터 패널과 완벽히 일치하는 동일 라운드(6px)와 미세한 여백(margin-top: 10px) 장착 -->
-            <div id="property-list-panel" style="width: 100%; height: calc(100vh - 215px); max-height: 480px; background: rgba(248, 249, 250, 0.95) !important; border: 1px solid #dee2e6; border-radius: 6px; display: flex; flex-direction: column; margin-top: 5px; pointer-events: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.15);">
+            <div id="property-list-panel" style="width: 340px; height: calc(100vh - 215px); max-height: 480px; background: rgba(248, 249, 250, 0.95) !important; border: 1px solid #dee2e6; border-radius: 6px; display: flex; flex-direction: column; margin-top: 5px; pointer-events: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.15);">
                 <!-- 순수 매물 카드 리스트 장부 방 -->
                 <div id="property-list" style="flex: 1; overflow-y: auto; padding: 10px;"></div>
             </div>
@@ -751,7 +751,7 @@
             return; 
         }
 
-        // 🟢 [정밀 시야] 줌 14 이상 진입 시: 목록 패널 활성화 및 매물 정밀 매핑
+        // 🟢 [정밀 시야] 줌 14 이상 진입 시: 목록 패널 활성화 및 중심점 매물 실시간 핀포인트 생성
         if (listPanel) listPanel.style.display = "flex";
 
         if (typeof townSummaryMarkers !== 'undefined' && townSummaryMarkers !== null) {
@@ -759,37 +759,58 @@
             townSummaryMarkers = [];
         }
 
+        // 🚀 데이터 다이어트 핵심: 줌 14레벨 무빙 시 기존 목록 엘리먼트를 완전히 물리적으로 비우고 시작
+        if (listContainer) listContainer.innerHTML = "";
+        var listFragment = document.createDocumentFragment();
+
         markers.forEach(function(marker, i) {
             var p = properties[i];
             var mCat = (currentCategories.indexOf(marker.get("category")) !== -1);
-            var mDet = (currentCategories.length === 0 || currentDetail.indexOf(marker.get("detail_type")) !== -1);
-            var mTown = (currentTown === "전체" || marker.get("town") === currentTown);
+            var mDet = (currentCategories.length === 0 || currentDetail.indexOf(p.detail_type) !== -1);
+            
+            // 🎯 사장님 기획 사양 칼각 수복: 상단 지역 선택이 '전체'일 때는 현재 화면 중심점 동네(closestTown) 매물만 핀포인트 필터링
+            var mTown = (currentTown === "전체" ? (closestTown === "전체" || marker.get("town") === closestTown) : marker.get("town") === currentTown);
             var mRi = (currentTown === "전체" || currentRi === "전체" || p.name.indexOf(currentRi) !== -1);
             var mDeal = false;
             currentDealTypes.forEach(function(type) { if (p.price.indexOf(type) !== -1) { mDeal = true; } });
 
-            var item = document.getElementById("item-" + i);
+            var isDetailScale = p.town_type === "urban" ? (currentZoom >= 17) : (currentZoom >= 14);
+            var markerLatLng = marker.getPosition();
 
             if (mCat && mDet && mTown && mRi && mDeal) {
-                if (item) item.style.display = "block";
-                var markerLatLng = marker.getPosition();
-                
-                var isDetailScale = p.town_type === "urban" ? (currentZoom >= 17) : (currentZoom >= 14);
-
+                // 🎯 조건에 부합하는 매물만 지도 마커 표출 및 좌측 목록 DOM 실시간 즉석 생성
                 if (isDetailScale && currentBounds && currentBounds.hasLatLng(markerLatLng)) {
                     marker.setMap(map);
                     vis.push(marker);
+
+                    // 🏢 오직 필요한 동네 매물 카드만 HTML을 메모리 상에서 실시간 빌드
+                    var itemDiv = document.createElement("div");
+                    itemDiv.className = "property-item " + (p.category === "토지" ? "item-land" : p.category === "주택" ? "item-house" : "item-factory");
+                    itemDiv.id = "item-" + i;
+                    
+                    var badgeBg = p.price.indexOf("전세") !== -1 ? "#1B5E20" : p.price.indexOf("월세") !== -1 ? "#ff6e40" : p.price.indexOf("단기") !== -1 ? "#4A148C" : "#2b5c8f";
+                    var badgeText = p.price.indexOf("전세") !== -1 ? "전세" : p.price.indexOf("월세") !== -1 ? "월세" : p.price.indexOf("단기") !== -1 ? "단기" : "매매";
+                    
+                    itemDiv.innerHTML = [
+                        '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">',
+                        '  <h4 style="margin: 0; font-size: 13px; font-weight: bold; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: calc(100% - 65px);">[' + p.detail_type + '] ' + p.name + '</h4>', 
+                        '  <span style="display: inline-block; padding: 4px 10px; font-size: 13px; font-weight: bold; color: #fff; background: ' + badgeBg + '; border-radius: 4px; line-height: 1.0;">' + badgeText + '</span>',
+                        '</div>',
+                        '<div style="font-size: 11px; color: #495057;"><b>면적:</b> ' + p.area + ' / <b>가격:</b> <span style="font-size:14px; font-weight:bold; color:' + badgeBg + ';">' + p.price.replace(badgeText, "").trim() + '</span></div>'
+                    ].join('');
+
+                    itemDiv.onclick = function() { selectProperty(i, marker); };
+                    listFragment.appendChild(itemDiv);
                 } else {
                     marker.setMap(null);
                 }
             } else {
-                if (item) item.style.display = "none";
-                var dEl = document.getElementById("detail-" + i);
-                if(dEl) dEl.style.display = "none";
-                if (item) item.classList.remove("active");
                 marker.setMap(null); 
             }
         });
+        
+        // 딱 필요한 만큼만 완성된 카드를 리스트 패널에 단 1번만 결합 (속도 극대화)
+        if (listContainer) listContainer.appendChild(listFragment);
         
         updateTownSelectorOptions();
         updateClustering(vis); 
