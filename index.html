@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.261005_1453</title>
+    <title>창공공인중개사사무소 - v.261005_1503</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -701,10 +701,12 @@
         var listPanel = document.getElementById("property-list-panel");
         var listContainer = document.getElementById("property-list");
 
-        // 🛑 [광역 격리 트랙] 줌 12, 13일 때: 매물목록 완벽 차단 및 원형 줄바꿈 배지 매핑
+        // 🛑 [공정 8단계 내부 14레벨 미만 트랙 - 분리형 카드 완전 소멸 스위치]
         if (currentZoom < 14) {
-            if (listPanel) listPanel.style.display = "none";
-            if (listContainer) listContainer.innerHTML = ""; // 렌더링 성능 최적화 (메모리 리셋)
+            // 부모인 #sidebar 전체를 건드리지 않고, 오직 아래쪽 [2번 매물 목록 상자 카드]만 지구상에서 완전히 삭제!
+            var targetListPanel = document.getElementById("property-list-panel");
+            if (targetListPanel) targetListPanel.style.display = "none";
+            if (listContainer) listContainer.innerHTML = ""; 
             
             markers.forEach(function(m) { m.setMap(null); });
             if (markerClustering) { markerClustering.setMap(null); markerClustering = null; }
@@ -754,8 +756,9 @@
             return; 
         }
 
-        // 🟢 [정밀 시야] 줌 14 이상 진입 시: 목록 패널 활성화 및 매물 정밀 매핑
-        if (listPanel) listPanel.style.display = "flex";
+        // 🟢 [정밀 시야] 줌 14 이상 진입 시: 숨겨놨던 [2번 매물 목록 상자 카드]만 스르륵 슬라이딩 개방!
+        var targetListPanel = document.getElementById("property-list-panel");
+        if (targetListPanel) targetListPanel.style.display = "flex";
 
         if (typeof townSummaryMarkers !== 'undefined' && townSummaryMarkers !== null) {
             townSummaryMarkers.forEach(function(tm) { tm.setMap(null); });
