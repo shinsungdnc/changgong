@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.261005_1340</title>
+    <title>창공공인중개사사무소 - v.261005_1352</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -376,7 +376,7 @@
     // 🚀 지도가 도화지를 가장 먼저 선행 로딩하여 레이아웃을 독점 기동합니다.
     map = new naver.maps.Map("map", {
         center: new naver.maps.LatLng(36.562145173166364, 127.31701479570661),
-        zoom: 14,
+        zoom: 12,
         mapTypeId: naver.maps.MapTypeId.HYBRID,
     });
 
@@ -587,7 +587,14 @@
     function initMap() {
         var listContainer = document.getElementById("property-list");
         listContainer.innerHTML = ""; markers = [];
+
         updateDetailSelectorOptions(); updateTownSelectorOptions();
+
+        // 🎯 [기획 대원칙 주입]: "지도가 줌 14레벨 미만(12, 13)의 광역 시야라면 목록 만들지 말고 즉시 셧다운!"
+        if (map.getZoom() < 14) {
+            applyFilters(); // 읍면동 카운팅 배지만 가볍게 그리고 즉시 함수 종료!
+            return; 
+        }
 
         // 🚀 속도 누수를 차단하기 위한 가상 도화지(Fragment) 기동
         var listFragment = document.createDocumentFragment();
