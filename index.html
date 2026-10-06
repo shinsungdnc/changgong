@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.261006_1459</title>
+    <title>창공공인중개사사무소 - v.261006_1513</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -626,13 +626,17 @@
     var currentBoundaryCircle = null;
     var townSummaryMarkers = []; 
 
-    function applyFilters() {
+    // 🎯 [2단계 수술 ①]: 8단계의 순서를 흔들지 않고, 외부 11단계 리스너에서 던져줄 중심점 데이터를 수령하는 통로 개방
+    function applyFilters(forcedTown) {
         var vis = []; 
         var currentZoom = map.getZoom();
         var currentBounds = map.getBounds();
         
         var listPanel = document.getElementById("property-list-panel");
         var listContainer = document.getElementById("property-list");
+        
+        // 징검다리를 통해 넘어온 최신 중심점 동네 명칭 확보 (없으면 전체가 디폴트)
+        var closestTown = forcedTown || "전체";
 
         // 🛑 [광역 격리 트랙] 줌 12, 13일 때: 매물목록 완벽 차단 및 원형 줄바꿈 배지 매핑
         if (currentZoom < 14) {
@@ -669,8 +673,6 @@
 
                 if (cNum > 0) {
                     var townLatLng = new naver.maps.LatLng(sumLat / cNum, sumLng / cNum);
-                    
-                    // 🎯 [2단계 수술 ①]: 따옴표 충돌을 우회하기 위해 html 속성 대신 자바스크립트 Marker 객체 자체에 직접 함수를 바인딩하는 무결성 공법 적용
                     var badgeHtml = '<div class="cluster-badge" style="cursor:pointer; width:52px; height:34px; padding-top:18px; font-size:12px; color:#111111; text-align:center; font-weight:bold; background:rgba(74, 211, 255, 0.95); border:1px solid #fff; border-radius:50%; box-shadow:0 4px 12px rgba(0,0,0,0.4); line-height:1.2;">' + townName + '<br>' + count + '</div>';
                     
                     var tMarker = new naver.maps.Marker({
@@ -679,7 +681,6 @@
                         icon: { content: badgeHtml, anchor: new naver.maps.Point(26, 26) }
                     });
                     
-                    // 따옴표 파열을 원천 차단하는 네이버 이벤트 리스너 직결 방식 수복
                     (function(tName) {
                         naver.maps.Event.addListener(tMarker, "click", function() {
                             window.zoomIntoTown(tName);
@@ -714,12 +715,12 @@
                     vis.push(marker); 
                 }
 
-                // 🎛️ [2단계 수술 ②]: 3번 기획 수복을 위해 읍면지역의 노출 마지노선을 줌 14레벨(네이버 API 기준 줌 14 스케일)로 칼각 조정!
+                // 소장님의 기획 원안 백엔드 듀얼 배지 기준 축척 임계값 칼각 동기화
                 var isDetailScale = false;
                 if (p.town_type === "urban") {
-                    isDetailScale = (currentZoom >= 17); // 동지역: 줌 17 이상만 개별 마커 노출 (4번 기획 사수)
+                    isDetailScale = (currentZoom >= 17); // 동지역: 줌 17 이상만 개별 마커 노출
                 } else {
-                    isDetailScale = (currentZoom >= 14); // 🌲 읍면지역: 소장님 기획대로 줌 14레벨이 되는 순간 무조건 풍선 마커 노출! (3번 기획 수복)
+                    isDetailScale = (currentZoom >= 15); // 🌲 읍면지역: 줌 15레벨 무조건 마커 노출 시작
                 }
 
                 if (isDetailScale && currentBounds && currentBounds.hasLatLng(markerLatLng)) {
@@ -739,17 +740,17 @@
             cadastralLayer.setMap(map); 
         }
 
-        // 중심점 동네 카드 실시간 빌드 및 슬라이딩 트리거
+        // 🛍️ [하단 실시간 카드 생성 엔진 구역] - 순서와 아키텍처 그대로 보존
         if (listContainer) { listContainer.innerHTML = ""; }
 
-        if (typeof closestTown !== "undefined" && closestTown && closestTown !== "전체") {
+        if (closestTown !== "전체") {
             var activeCount = 0;
             var listFragment = document.createDocumentFragment(); 
 
             properties.forEach(function(prop, index) {
                 var mCat = (currentCategories.indexOf(prop.category) !== -1);
                 var mDet = (currentCategories.length === 0 || currentDetail.indexOf(prop.detail_type) !== -1);
-                var mTown = (prop.town === closestTown); 
+                var mTown = (prop.town === closestTown); // 🎯 11단계에서 정밀 배달된 최신 중심동네 매물만 완벽 포획!
                 var mDeal = false;
                 currentDealTypes.forEach(function(type) { if (prop.price.indexOf(type) !== -1) { mDeal = true; } });
 
@@ -759,6 +760,7 @@
                     itemDiv.className = "property-item " + (prop.category === "토지" ? "item-land" : prop.category === "공장" ? "item-factory" : "item-house");
                     itemDiv.id = "item-" + index;
                     
+                    // 원본 카드 레이아웃 스켈레톤 무결성 결합
                     itemDiv.innerHTML = [
                         '<h4>[' + prop.town + '] ' + prop.name + '</h4>',
                         '<div style="font-size:12px; color:#E65100; font-weight:bold;">' + prop.price + ' (' + prop.dan_text + ')</div>',
@@ -773,6 +775,7 @@
             if (listContainer && activeCount > 0) {
                 listContainer.appendChild(listFragment);
                 
+                // 줌 14 이상 중심점 매물 안착 즉시 아래로 슬라이딩 다운 가동!
                 if (currentZoom >= 14 && listPanel) { 
                     listPanel.classList.add("is-active"); 
                 } else {
@@ -784,8 +787,9 @@
         } else {
             if (listPanel) { listPanel.classList.remove("is-active"); }
         }
-    }
+    } // 📐 applyFilters() 마감 중괄호 무결성 봉인 완착
 
+    // 🎯 [2단계 수술 ②]: 8단계 완전 바깥 구역으로 인양하여 브라우저 전역 객체에 완착 (클러스터 클릭 무반응 즉시 치료)
     window.zoomIntoTown = function(townName) {
         var townSelector = document.getElementById("town-selector");
         if (townSelector) {
@@ -1049,8 +1053,8 @@
                     }
                 }
                 
-                // 2단계 (중간): 일방통행 대원칙에 따라 현재 필터를 일제히 새로고침 (순정 함수 호출)
-                applyFilters();
+                // 🎯 [2단계 수술 ③]: 11단계에서 연산 완료된 최신 중심점 동네 명칭(closestTown)을 8단계 필터 구역으로 등 뒤에 태워서 다이렉트 전송!
+                applyFilters(closestTown);
                 
                 // 3단계 (최하단): 줌 14레벨 이상이고 목록 장부를 수동 조작 중이 아닐 때만 칼각 스크롤 주차
                 var listContainer = document.getElementById("property-list");
