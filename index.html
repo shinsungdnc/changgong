@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.261006_1513</title>
+    <title>창공공인중개사사무소 - v.261006_1535</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -626,7 +626,7 @@
     var currentBoundaryCircle = null;
     var townSummaryMarkers = []; 
 
-    // 🎯 [2단계 수술 ①]: 8단계의 순서를 흔들지 않고, 외부 11단계 리스너에서 던져줄 중심점 데이터를 수령하는 통로 개방
+    // 🎯 [1단계 보정]: 8단계의 순서를 흔들지 않고, 외부 11단계에서 연산된 최신 중심점 동네 명칭을 직결 수령하는 통로 개방
     function applyFilters(forcedTown) {
         var vis = []; 
         var currentZoom = map.getZoom();
@@ -635,10 +635,10 @@
         var listPanel = document.getElementById("property-list-panel");
         var listContainer = document.getElementById("property-list");
         
-        // 징검다리를 통해 넘어온 최신 중심점 동네 명칭 확보 (없으면 전체가 디폴트)
+        // 11단계에서 토스해준 현재 화면의 실시간 중심점 동네 명칭 안착 (디폴트는 전체)
         var closestTown = forcedTown || "전체";
 
-        // 🛑 [광역 격리 트랙] 줌 12, 13일 때: 매물목록 완벽 차단 및 원형 줄바꿈 배지 매핑
+        // 🛑 [광역 격리 트랙] 줌 12, 13일 때: 매물목록 완벽 숨김 및 상시 유지 드롭다운 기반 광역 배지 매핑
         if (currentZoom < 14) {
             if (listPanel) { listPanel.classList.remove("is-active"); }
             if (listContainer) { listContainer.innerHTML = ""; } 
@@ -681,20 +681,24 @@
                         icon: { content: badgeHtml, anchor: new naver.maps.Point(26, 26) }
                     });
                     
-                    (function(tName) {
+                    // 따옴표 파열 및 드롭다운 UI 강제 고정 버그를 완치하는 전역 클러스터 직결 워프 장치
+                    (function(tName, tLatLng) {
                         naver.maps.Event.addListener(tMarker, "click", function() {
-                            window.zoomIntoTown(tName);
+                            var targetZoom = tName.endsWith('동') ? 17 : 15;
+                            map.setZoom(targetZoom);
+                            map.panTo(tLatLng);
+                            // 드롭다운 필터의 상시 노출을 방해하지 않고 순수 시야 데이터만 하강 주입
+                            setTimeout(function() { applyFilters(tName); }, 120);
                         });
-                    })(townName);
+                    })(townName, townLatLng);
 
                     townSummaryMarkers.push(tMarker);
                 }
             }
-            updateTownSelectorOptions();
             return; 
         }
 
-        // 🟢 [정밀 시야] 줌 14 이상 진입 시: 매물 정밀 매핑 및 임계값 스캔
+        // 🟢 [정밀 시야] 줌 14 이상 진입 시: 주변 매물 비교를 위해 마커 상시 오픈 트랙 가동
         if (typeof townSummaryMarkers !== 'undefined' && townSummaryMarkers !== null) {
             townSummaryMarkers.forEach(function(tm) { tm.setMap(null); });
             townSummaryMarkers = [];
@@ -704,6 +708,8 @@
             var p = properties[i];
             var mCat = (currentCategories.indexOf(marker.get("category")) !== -1);
             var mDet = (currentCategories.length === 0 || currentDetail.indexOf(marker.get("detail_type")) !== -1);
+            
+            // 🎯 [3단계 최종 보정 ③]: 상단 드롭다운 지역 필터(currentTown)가 수동 '전체' 상태일 때는 주변의 타 지역 마커들이 지도 위에서 절대로 지워지지 않도록 마커 개방 원칙 사수!
             var mTown = (currentTown === "전체" || marker.get("town") === currentTown);
             var mRi = (currentTown === "전체" || currentRi === "전체" || p.name.indexOf(currentRi) !== -1);
             var mDeal = false;
@@ -712,15 +718,14 @@
             if (mCat && mDet && mTown && mRi && mDeal) {
                 var markerLatLng = marker.getPosition();
                 if (currentBounds && currentBounds.hasLatLng(markerLatLng)) {
-                    vis.push(marker); 
+                    vis.push(marker); // 화면 바구니 수집
                 }
 
-                // 소장님의 기획 원안 백엔드 듀얼 배지 기준 축척 임계값 칼각 동기화
                 var isDetailScale = false;
                 if (p.town_type === "urban") {
-                    isDetailScale = (currentZoom >= 17); // 동지역: 줌 17 이상만 개별 마커 노출
+                    isDetailScale = (currentZoom >= 17); // 동지역: 줌 17 이상만 개별 풍선 노출
                 } else {
-                    isDetailScale = (currentZoom >= 15); // 🌲 읍면지역: 줌 15레벨 무조건 마커 노출 시작
+                    isDetailScale = (currentZoom >= 15); // 🌲 읍면지역: 줌 15레벨 무조건 개별 마커 대폭발 노출 시작 (3번 기획 수복)
                 }
 
                 if (isDetailScale && currentBounds && currentBounds.hasLatLng(markerLatLng)) {
@@ -733,7 +738,6 @@
             }
         });
         
-        updateTownSelectorOptions();
         updateClustering(vis); 
 
         if (typeof cadastralLayer !== "undefined" && cadastralLayer) { 
