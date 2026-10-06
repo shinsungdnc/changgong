@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.261006_1414</title>
+    <title>창공공인중개사사무소 - v.261006_1424</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -618,10 +618,9 @@
         var listContainer = document.getElementById("property-list");
 
         // 🛑 [광역 격리 트랙] 줌 12, 13일 때: 매물목록 완벽 차단 및 원형 줄바꿈 배지 매핑
-		if (currentZoom < 14) {
-			// 🌟 핵심 기획: 2번 목록 상자에서 활성화 배지를 빼버려, 상단 필터부 안쪽으로 사르륵 말려 올라가 숨겨지게 만듭니다.
-			if (listPanel) { listPanel.classList.remove("is-active"); }
-			if (listContainer) { listContainer.innerHTML = ""; } // 메모리 초기화 리셋은 안전하게 유지
+        if (currentZoom < 14) {
+            if (listPanel) { listPanel.classList.remove("is-active"); }
+            if (listContainer) { listContainer.innerHTML = ""; } 
             
             markers.forEach(function(m) { m.setMap(null); });
             if (markerClustering) { markerClustering.setMap(null); markerClustering = null; }
@@ -632,7 +631,6 @@
             }
             townSummaryMarkers = [];
 
-            // 실시간 상단 필터 조건에 부합하는 읍면동별 순수 카운팅 연산
             var townCounts = {};
             properties.forEach(function(p) {
                 var mCat = (currentCategories.indexOf(p.category) !== -1);
@@ -643,7 +641,6 @@
                 }
             });
 
-            // 각 읍면동 중심 좌표 계산 후 줄바꿈 텍스트 주입 (중괄호 제거로 문법 간섭 차단)
             for (var townName in townCounts) {
                 var count = townCounts[townName];
                 if (count === 0) continue;
@@ -655,8 +652,6 @@
 
                 if (cNum > 0) {
                     var townLatLng = new naver.maps.LatLng(sumLat / cNum, sumLng / cNum);
-                    
-                    // 🎯 대괄호, 매물 단어 전면 제거 및 순수 줄바꿈 정렬 수복
                     var badgeHtml = '<div class="cluster-badge" onclick="zoomIntoTown(\"' + townName + '\")" style="cursor:pointer; width:52px; height:34px; padding-top:18px; font-size:12px; color:#111111; text-align:center; font-weight:bold; background:rgba(74, 211, 255, 0.95); border:1px solid #fff; border-radius:50%; box-shadow:0 4px 12px rgba(0,0,0,0.4); line-height:1.2;">' + townName + '<br>' + count + '</div>';
                     
                     var tMarker = new naver.maps.Marker({
@@ -671,9 +666,7 @@
             return; 
         }
 
-        // 🟢 [정밀 시야] 줌 14 이상 진입 시: 목록 패널 활성화 및 매물 정밀 매핑
-        if (listPanel) { listPanel.classList.add("is-active"); }
-
+        // 🟢 [정밀 시야] 줌 14 이상 진입 시: 매물 정밀 매핑 및 임계값 스캔
         if (typeof townSummaryMarkers !== 'undefined' && townSummaryMarkers !== null) {
             townSummaryMarkers.forEach(function(tm) { tm.setMap(null); });
             townSummaryMarkers = [];
@@ -688,29 +681,28 @@
             var mDeal = false;
             currentDealTypes.forEach(function(type) { if (p.price.indexOf(type) !== -1) { mDeal = true; } });
 
-			// 🎯 [1단계 수술 ①]: 듀얼 배지 기준 축척 임계값과 화면 영역 검사를 결합하여 마커 락킹
-			if (mCat && mDet && mTown && mRi && mDeal) {
-				var markerLatLng = marker.getPosition();
-				if (currentBounds && currentBounds.hasLatLng(markerLatLng)) {
-					vis.push(marker); // 화면 내 가용 매물만 클러스터러 바구니 수집
-				}
+            // 🎯 [1단계 수술 ① 복원]: 듀얼 배지 기준 축척 임계값과 영역 검사 결합
+            if (mCat && mDet && mTown && mRi && mDeal) {
+                var markerLatLng = marker.getPosition();
+                if (currentBounds && currentBounds.hasLatLng(markerLatLng)) {
+                    vis.push(marker); 
+                }
 
-				// 🎛️ 백엔드 듀얼 배지 기반 노출 임계값 연동
-				var isDetailScale = false;
-				if (p.town_type === "urban") {
-					isDetailScale = (currentZoom >= 17); // 동지역: 줌 17 이상만 노출
-				} else {
-					isDetailScale = (currentZoom >= 15); // 읍면지역: 줌 14레벨(API 줌 15 스케일) 이상 노출
-				}
+                var isDetailScale = false;
+                if (p.town_type === "urban") {
+                    isDetailScale = (currentZoom >= 17); // 동지역: 줌 17 이상만 개별 마커 노출
+                } else {
+                    isDetailScale = (currentZoom >= 15); // 읍면지역: 줌 14레벨(API 15) 이상 노출
+                }
 
-				if (isDetailScale && currentBounds && currentBounds.hasLatLng(markerLatLng)) {
-					marker.setMap(map);
-				} else {
-					marker.setMap(null); // 클러스터 구간이거나 화면 밖이면 개별 마커 원천 차단
-				}
-			} else {
-				marker.setMap(null); 
-			}
+                if (isDetailScale && currentBounds && currentBounds.hasLatLng(markerLatLng)) {
+                    marker.setMap(map);
+                } else {
+                    marker.setMap(null); 
+                }
+            } else {
+                marker.setMap(null); 
+            }
         });
         
         updateTownSelectorOptions();
@@ -719,59 +711,54 @@
         if (typeof cadastralLayer !== "undefined" && cadastralLayer) { 
             cadastralLayer.setMap(map); 
         }
-    }
 
-    // 🌟 [최종 완결 심장부] 지도의 움직임에 따라 해당 읍면동 매물 전체를 실시간으로 그리고 슬라이딩을 트리거합니다.
-    
-    // ① 기존 목록창 도화지를 깨끗하게 비우고 렌더링 성능을 최적화합니다.
-    var targetContainer = document.getElementById("property-list");
-    if (targetContainer) { targetContainer.innerHTML = ""; }
+        // 🎯 [실시간 목록 역산 제어]: 기존 도화지를 비우고 중심점 동네 카드만 타깃팅 생성
+        if (listContainer) { listContainer.innerHTML = ""; }
 
+        if (typeof closestTown !== "undefined" && closestTown && closestTown !== "전체") {
+            var activeCount = 0;
+            var listFragment = document.createDocumentFragment(); 
 
-    // ② 소장님이 완벽하게 빌드해 두신 중심점 동네 역산 공식(closestTown)을 통해 현재 타깃 지역을 포획합니다.
-    // (만약 지도가 멈춘 중심점이 '고운동'이라면 closestTown 변수에 '고운동'이 담기게 됩니다.)
-    if (typeof closestTown !== "undefined" && closestTown && closestTown !== "전체") {
-        var activeCount = 0;
-        var listFragment = document.createDocumentFragment(); // 가상 임시 도화지 가동
+            properties.forEach(function(prop, index) {
+                var mCat = (currentCategories.indexOf(prop.category) !== -1);
+                var mDet = (currentCategories.length === 0 || currentDetail.indexOf(prop.detail_type) !== -1);
+                var mTown = (prop.town === closestTown); 
+                var mDeal = false;
+                currentDealTypes.forEach(function(type) { if (prop.price.indexOf(type) !== -1) { mDeal = true; } });
 
-        // ③ 메모리(RAM)에 대기 중이던 3,000개 데이터 중 오직 '현재 중심점 동네'이고 '상단 필터 조건'에 맞는 매물만 쏙쏙 채집합니다.
-        properties.forEach(function(prop, index) {
-            var mCat = (currentCategories.indexOf(prop.category) !== -1);
-            var mDet = (currentCategories.length === 0 || currentDetail.indexOf(prop.detail_type) !== -1);
-            var mTown = (prop.town === closestTown); // ◀ 핵심: 오직 현재 중심점 동네 매물만 타깃팅
-            var mDeal = false;
-            currentDealTypes.forEach(function(type) { if (prop.price.indexOf(type) !== -1) { mDeal = true; } });
+                if (mCat && mDet && mTown && mDeal) {
+                    activeCount++;
+                    var itemDiv = document.createElement("div");
+                    itemDiv.className = "property-item " + (prop.category === "토지" ? "item-land" : prop.category === "공장" ? "item-factory" : "item-house");
+                    itemDiv.id = "item-" + index;
+                    
+                    itemDiv.innerHTML = [
+                        '<h4>[' + prop.town + '] ' + prop.name + '</h4>',
+                        '<div style="font-size:12px; color:#E65100; font-weight:bold;">' + prop.price + ' (' + prop.dan_text + ')</div>',
+                        '<div style="font-size:11px; color:#666;">' + prop.area + '</div>'
+                    ].join('');
+                    
+                    itemDiv.onclick = function() { selectProperty(index, markers[index]); };
+                    listFragment.appendChild(itemDiv);
+                }
+            });
 
-            if (mCat && mDet && mTown && mDeal) {
-                activeCount++;
-
-                // ④ [실시간 가동] 아까 1단계에서 걷어냈던 무거운 카드 전용 텍스트 부품들이 오직 이 10~20개 매물에 대해서만 실행됩니다!
-                // 거래유형 배지 판별, convertToEok 억 단위 환산 함수, 하이퍼링크 버튼 조립 로직이 여기서 번개 같은 속도로 가동됩니다.
-                var itemDiv = document.createElement("div");
-                itemDiv.className = "property-item" + (index === currentPropertyIndex ? " active" : "");
-                itemDiv.id = "item-" + index;
+            if (listContainer && activeCount > 0) {
+                listContainer.appendChild(listFragment);
                 
-                // (앞서 1단계에서 분리했던 거대한 카드 레이아웃 본체 HTML 조립 구역이 이 자리에 안착합니다.)
-                // itemDiv.innerHTML = [ ... 3,000개 텍스트 노가다가 아닌 딱 걸러진 매물 카드 텍스트만 조립 ... ].join('');
-                
-                itemDiv.onclick = function() { selectProperty(index, markers[index]); };
-                listFragment.appendChild(itemDiv);
-            }
-        });
-
-        if (targetContainer && activeCount > 0) {
-            targetContainer.appendChild(listFragment);
-            
-            // 🎯 [1단계 수술 ②]: 정밀 시야(줌 14 이상) 조건문 락을 걸어 초기 로딩(줌 12) 시 절대 열리지 않도록 차단
-            if (currentZoom >= 14 && listPanel) { 
-                listPanel.classList.add("is-active"); // 줌 14 이상 중심점에 도달했을 때만 스르륵 슬라이딩 다운!
+                // 🎯 [1단계 수술 ② 복원]: 정밀 시야(줌 14 이상) 조건문 락 가동
+                if (currentZoom >= 14 && listPanel) { 
+                    listPanel.classList.add("is-active"); 
+                } else {
+                    if (listPanel) listPanel.classList.remove("is-active"); 
+                }
             } else {
-                if (listPanel) listPanel.classList.remove("is-active"); // 초기 로딩(줌 12) 시에는 강제 숨김 상태 사수!
+                if (listPanel) { listPanel.classList.remove("is-active"); }
             }
         } else {
             if (listPanel) { listPanel.classList.remove("is-active"); }
         }
-    
+    } // 📐 applyFilters() 함수 본체 완전 밀봉 완착!
 
     window.zoomIntoTown = function(townName) {
         var townSelector = document.getElementById("town-selector");
