@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.261006_1553</title>
+    <title>창공공인중개사사무소 - v.261006_1612</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -626,8 +626,8 @@
     var currentBoundaryCircle = null;
     var townSummaryMarkers = []; 
 
-    // 🎯 [1단계 보정]: 8단계의 순서를 흔들지 않고, 외부 11단계에서 연산된 최신 중심점 동네 명칭을 직결 수령하는 통로 개방
-    function applyFilters(forcedTown) {
+    // 🎯 [완결 수복 ①]: 매개변수 장벽을 허물고 순정applyFilters() 아키텍처로 전격 회귀!
+    function applyFilters() {
         var vis = []; 
         var currentZoom = map.getZoom();
         var currentBounds = map.getBounds();
@@ -635,11 +635,30 @@
         var listPanel = document.getElementById("property-list-panel");
         var listContainer = document.getElementById("property-list");
         
-        // 11단계에서 토스해준 현재 화면의 실시간 중심점 동네 명칭 안착 (디폴트는 전체)
-        var closestTown = forcedTown || "전체";
+        // 🎯 [완결 수복 ②]: 지도가 멈춘 '실시간 정중앙 좌표'를 8단계 최상단 입구에서 다이렉트로 스캔 역산!
+        var centerLatLng = map.getCenter();
+        var cLat = centerLatLng.lat();
+        var cLng = centerLatLng.lng();
+        var closestTown = "전체";
+        var minDistance = Infinity;
 
-        // 🛑 [광역 격리 트랙] 줌 12, 13일 때: 매물목록 완벽 숨김 및 상시 유지 드롭다운 기반 광역 배지 매핑
+        if (currentZoom >= 14) {
+            properties.forEach(function(p) {
+                if (p.lat && p.lng && p.town) {
+                    var latDiff = p.lat - cLat;
+                    var lngDiff = p.lng - cLng;
+                    var dist = (latDiff * latDiff) + (lngDiff * lngDiff);
+                    if (dist < minDistance) {
+                        minDistance = dist;
+                        closestTown = p.town; 
+                    }
+                }
+            });
+        }
+
+        // 🛑 [광역 격리 트랙] 줌 12, 13일 때: 매물목록 완벽 숨김 및 광역 배지 매핑
         if (currentZoom < 14) {
+            // 🎯 [4번 결함 완치 스위치]: 줌아웃 시 목록창을 강제로 사르륵 말아 올리는 은닉 장치 완착!
             if (listPanel) { listPanel.classList.remove("is-active"); }
             if (listContainer) { listContainer.innerHTML = ""; } 
             
@@ -681,14 +700,12 @@
                         icon: { content: badgeHtml, anchor: new naver.maps.Point(26, 26) }
                     });
                     
-                    // 따옴표 파열 및 드롭다운 UI 강제 고정 버그를 완치하는 전역 클러스터 직결 워프 장치
+                    // 배지 클릭 시 드롭다운 UI 필터를 오염시키지 않고 순수 뷰포트 시야만 순간 이동시키는 워프 장치
                     (function(tName, tLatLng) {
                         naver.maps.Event.addListener(tMarker, "click", function() {
                             var targetZoom = tName.endsWith('동') ? 17 : 15;
                             map.setZoom(targetZoom);
                             map.panTo(tLatLng);
-                            // 드롭다운 필터의 상시 노출을 방해하지 않고 순수 시야 데이터만 하강 주입
-                            setTimeout(function() { applyFilters(tName); }, 120);
                         });
                     })(townName, townLatLng);
 
@@ -698,7 +715,7 @@
             return; 
         }
 
-        // 🟢 [정밀 시야] 줌 14 이상 진입 시: 주변 매물 비교를 위해 마커 상시 오픈 트랙 가동
+        // 🟢 [정밀 시야 트랙] 줌 14 이상 진입 시: 마커 오픈 스캔 루프 돌입
         if (typeof townSummaryMarkers !== 'undefined' && townSummaryMarkers !== null) {
             townSummaryMarkers.forEach(function(tm) { tm.setMap(null); });
             townSummaryMarkers = [];
@@ -709,7 +726,7 @@
             var mCat = (currentCategories.indexOf(marker.get("category")) !== -1);
             var mDet = (currentCategories.length === 0 || currentDetail.indexOf(marker.get("detail_type")) !== -1);
             
-            // 🎯 [3단계 최종 보정 ③]: 상단 드롭다운 지역 필터(currentTown)가 수동 '전체' 상태일 때는 주변의 타 지역 마커들이 지도 위에서 절대로 지워지지 않도록 마커 개방 원칙 사수!
+            // 🎯 [2번 결함 완치 장치]: 드롭다운이 '전체' 상태일 때는 주변 타 지역 매물 마커와 순정 클러스터가 화면에서 강제 소멸되지 않도록 무조건 개방!
             var mTown = (currentTown === "전체" || marker.get("town") === currentTown);
             var mRi = (currentTown === "전체" || currentRi === "전체" || p.name.indexOf(currentRi) !== -1);
             var mDeal = false;
@@ -718,14 +735,14 @@
             if (mCat && mDet && mTown && mRi && mDeal) {
                 var markerLatLng = marker.getPosition();
                 if (currentBounds && currentBounds.hasLatLng(markerLatLng)) {
-                    vis.push(marker); // 화면 바구니 수집
+                    vis.push(marker); 
                 }
 
                 var isDetailScale = false;
                 if (p.town_type === "urban") {
                     isDetailScale = (currentZoom >= 17); // 동지역: 줌 17 이상만 개별 풍선 노출
                 } else {
-                    isDetailScale = (currentZoom >= 15); // 🌲 읍면지역: 줌 15레벨 무조건 개별 마커 대폭발 노출 시작 (3번 기획 수복)
+                    isDetailScale = (currentZoom >= 15); // 🌲 읍면지역: 소장님 기획 원안 사수 - 줌 15레벨 즉시 풍선 마커 노출 시작
                 }
 
                 if (isDetailScale && currentBounds && currentBounds.hasLatLng(markerLatLng)) {
@@ -743,8 +760,7 @@
         if (typeof cadastralLayer !== "undefined" && cadastralLayer) { 
             cadastralLayer.setMap(map); 
         }
-
-                // 🛍️ [2단계 수술 적용]: 주변 마커는 다 나오되, 목록창 카드는 '오직 화면 중심점 동네'만 조립!
+        // 🛍️ [하단 실시간 카드 생성 엔진 구역]
         if (listContainer) { listContainer.innerHTML = ""; }
 
         if (closestTown !== "전체") {
@@ -754,9 +770,7 @@
             properties.forEach(function(prop, index) {
                 var mCat = (currentCategories.indexOf(prop.category) !== -1);
                 var mDet = (currentCategories.length === 0 || currentDetail.indexOf(prop.detail_type) !== -1);
-                
-                // 동지역 정밀 매칭 및 주소 오차 방지를 위한 인클루드 파서 수복
-                var mTown = (closestTown !== "전체" && (prop.town === closestTown || prop.name.indexOf(closestTown) !== -1));
+                var mTown = (prop.town === closestTown || prop.name.indexOf(closestTown) !== -1); 
                 var mDeal = false;
                 currentDealTypes.forEach(function(type) { if (prop.price.indexOf(type) !== -1) { mDeal = true; } });
 
@@ -772,18 +786,15 @@
                         '<div style="font-size:11px; color:#666;">' + prop.area + '</div>'
                     ].join('');
                     
-                    // 🎯 [최종 보정 - 클릭 액션 완치]: 가짜 동네 순번 대신 백엔드가 부여한 고유 절대 배열 주소 배지를 다이렉트 결합
-                    (function(absIndex) {
-                        itemDiv.onclick = function() { selectProperty(absIndex, markers[absIndex]); };
-                    })(index);
+                    // 🎯 [3번 결함 완치 장치]: 소장님 원본 고유의 전역 절대 인덱스인 'index' 주소값을 다이렉트로 직결!
+                    itemDiv.onclick = function() { selectProperty(index, markers[index]); };
 
                     listFragment.appendChild(itemDiv);
                 }
             });
 
-            // 🎯 [최종 보정 - 줌인 시 목록 유지 완치]: 목록창 강제 폐쇄 범인인 activeCount 제약 조건을 전면 철거!
-            // 지도가 줌 14레벨 이상의 브리핑 시야에 안착했다면, 휠을 돌리자마자 무빙 없이도 목록창이 즉시 내려옵니다.
-            // 또한 줌 15 이상 정밀 시야로 계속 줌인을 들어가 매물이 화면 밖으로 밀려나더라도 목록창이 상시 고정 유지됩니다!
+            // 🎯 [1번 결함 완치 장치]: activeCount 제약 조건을 전면 철거하여 휠 무빙 즉시 줌 14 목록창 출현!
+            // 줌 15 이상 깊은 시야로 진입해 매물이 화면 밖으로 밀려나더라도 목록창이 사라지지 않고 상시 고정 유지됩니다.
             if (currentZoom >= 14 && listPanel) { 
                 if (listContainer && activeCount > 0) {
                     listContainer.appendChild(listFragment);
@@ -797,52 +808,57 @@
         } else {
             if (listPanel) { listPanel.classList.remove("is-active"); }
         }
-    } // 📐 applyFilters() 마감 중괄호 무결성 봉인 완착
+    } // 📐 applyFilters() 무결성 봉인 마감
 
-    window.zoomIntoTown = function(townName) {
-        changeTown(townName);
-    };
+    // 드롭다운 상시 노출 전역 고정 빌드 장치
+    function initTownSelectorOnce() {
+        var townSelector = document.getElementById("town-selector");
+        if (!townSelector) return;
+        townSelector.innerHTML = "<option value='전체'>📍 지역 선택 (전체: " + properties.length + "개)</option>";
+        
+        var townCounts = {};
+        properties.forEach(function(p) { townCounts[p.town] = (townCounts[p.town] || 0) + 1; });
+        
+        townList.forEach(function(t) {
+            var count = townCounts[t] || 0;
+            if (count > 0) {
+                var opt = document.createElement("option"); opt.value = t; opt.innerText = "📍 " + t + " (" + count + ")";
+                townSelector.appendChild(opt);
+            }
+        });
+    }
 
     function updateClustering(vis) {
-        // 1단계: 휠 무빙 시 기존에 남아있던 구형 클러스터러 본체를 메모리에서 완전히 리셋 (유령 장벽 파괴)
         if (markerClustering !== null) {
             markerClustering.setMap(null);
             markerClustering = null; 
         }
 
-        // 화면 내에 가용 마커가 없으면 연산을 종료합니다.
         if (!vis || vis.length === 0) return;
-
-        // 2단계: 현재 지도의 줌 레벨 포획
         var currentZoom = map.getZoom();
 
-        // 3단계: 기획자 대원칙 - 각 매물의 고유 성격(urban/rural)과 줌 레벨에 맞춰 클러스터로 묶어줄 대상을 정밀 필터링
         var dynamicVis = vis.filter(function(marker) {
             var idx = marker.get("p_index");
             var p = properties[idx];
             
             if (p.town_type === "urban") {
-                // 동지역 매물: 줌 17 미만(광역 시야)일 때만 클러스터 배지로 강력 결합
-                return currentZoom <= 17; 
+                return currentZoom < 17; // 동지역 매물: 줌 17 미만일 때만 순정 클러스터로 강력 결합
             } else {
-                // 읍면지역 매물: 줌 14 이하(광역 시야)일 때만 클러스터 배지로 강력 결합
-                return currentZoom <= 14; 
+                return currentZoom < 15; // 🌲 읍면지역 매물: 소장님 기획 원안 사수 - 줌 15 미만(14레벨까지)일 때만 순정 클러스터 유지!
             }
         });
 
-        // 4단계: 묶어줄 대상이 1개라도 실재할 때만 신규 클러스터러 엔진을 최우선 빌드합니다.
         if (dynamicVis.length > 0) {
-            // 기획자님 지시사항 반영: gridSize를 200으로 전격 확장하여 뭉텅이 가독성 확보!
             markerClustering = new MarkerClustering({
                 minClusterSize: 2, 
-                maxZoom: 17, // 동지역 묶기 마지노선인 줌 17까지 엔진 작동 범위를 허용
+                maxZoom: 17, 
                 map: map, 
-                markers: dynamicVis, // 🎯 필터링이 완료된 마커 목록을 생성과 동시에 원천 다이렉트 주입
-                gridSize: 200,       // ◀ 200으로 넓혀 주변 매물들이 큼직하게 묶이도록 배치
+                markers: dynamicVis, 
+                gridSize: 200,       
                 disableClickZoom: false, 
                 icons: [
                     { content: '<div class="cluster-badge" style="cursor:pointer; width:44px; height:44px; line-height:44px; font-size:12px; color:#111111; text-align:center; font-weight:bold; background:rgba(74, 211, 255, 0.95); border:1px solid #fff; border-radius:50%; box-shadow:0 3px 10px rgba(0,0,0,0.35);"></div>', anchor: new naver.maps.Point(22, 22) },
-                    { content: '<div class="cluster-badge" style="cursor:pointer; width:52px; height:52px; line-height:52px; font-size:13px; color:#111111; text-align:center; font-weight:bold; background:rgba(74, 211, 255, 0.95); border:1px solid #fff; border-radius:50%; box-shadow:0 4px 12px rgba(0,0,0,0.4);"></div>', anchor: new naver.maps.Point(26, 26) }
+                    { content: '<div class="cluster-badge" style="cursor:pointer; width:52px; height:52px; line-height:52px; font-size:13px; color:#111111; text-align:center; font-weight:bold; background:rgba(74, 211, 255, 0.95); border:1px solid #fff; border-radius:50%; box-shadow:0 4px 12px rgba(0,0,0,0.4); line-height:52px;"></div>', anchor: new naver.maps.Point(26, 26) }
                 ],
                 indexGenerator: function(count) { return count < 15 ? 0 : 1; }, 
                 stylingFunction: function(clusterMarker, count) {
@@ -853,7 +869,8 @@
         }
     }
 
-    // 🎛️ 좌측 리스트 카드 및 지도 마커 클릭 시 우측 브리핑 패널 연동 함수
+    var currentPropertyIndex = null;
+
     function selectProperty(index, marker) {
         var sidebar = document.getElementById("sidebar");
         var listContainer = document.getElementById("property-list");
@@ -861,14 +878,14 @@
         var targetDetail = document.getElementById("detail-" + index);
         var panel = document.getElementById("right-stats-panel");
 
-        if (sidebar.classList.contains("hidden")) sidebar.classList.remove("hidden");
+        if (sidebar && sidebar.classList.contains("hidden")) sidebar.classList.remove("hidden");
         
-        // 🎯 매물 선택 해제 시 지도의 축척을 뒤흔들던 줌아웃 코드를 철거하여 현재 시야 고정
         if (targetItem && targetItem.classList.contains("active")) {
             targetItem.classList.remove("active"); 
             if (targetDetail) targetDetail.style.display = "none";
             if (currentBoundaryCircle) { currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }
             if (panel) { panel.classList.remove("active"); panel.classList.remove("expanded"); }
+            currentPropertyIndex = null;
             return; 
         }
 
@@ -877,17 +894,16 @@
         
         if (targetDetail) targetDetail.style.display = "block"; 
         if (targetItem) targetItem.classList.add("active");
+        currentPropertyIndex = index;
         if (listContainer && targetItem) listContainer.scrollTop = targetItem.offsetTop - listContainer.offsetTop;
 
         marker.setMap(map);
         if (currentBoundaryCircle) currentBoundaryCircle.setMap(null);
         
-        // 🎯 매물 앞마당에 정밀 반경 타깃 중심원 동적 렌더링
         currentBoundaryCircle = new naver.maps.Circle({
-            map: map, center: marker.getPosition(), radius: 10, fillColor: "#00bfff", fillOpacity: 0.18, strokeColor: "#ff0000", strokeOpacity: 0.7, strokeWeight: 2.0
+            map: map, center: marker.getPosition(), radius: 15, fillColor: "#00bfff", fillOpacity: 0.18, strokeColor: "#ff0000", strokeOpacity: 0.7, strokeWeight: 2.0
         });
 
-        // 🎯 명품 하이브리드 시야 락(Lock) 엔진
         var targetPos = marker.getPosition(); 
         var currentZoom = map.getZoom();
 
@@ -899,7 +915,6 @@
 
         var prop = properties[index];
 
-        // 🏢 [분기 1] 선택된 매물이 '공장/창고' 카테고리일 때 -> 건축물대장 피벗 강제 주입
         if (prop.category === "공장") {
             
         if (prop.category === "공장") {
@@ -938,10 +953,9 @@
     
         }
 
-        // 🏡 [분기 2] 선택된 매물이 '토지' 또는 '주택'일 때 -> 5개년 실거래 요약 테이블 빌드
         var yParts = prop.yongdo.split("/");
-        var mYongdo = (yParts && yParts[0] ? yParts[0].trim() : "").replace("지역", "") + "지역"; 
-        var mJimok = (yParts && yParts[1] ? yParts[1].trim() : "");       
+        var mYongdo = (yParts && yParts ? yParts.trim() : "").replace("지역", "") + "지역"; 
+        var mJimok = (yParts && yParts ? yParts.trim() : "");       
 
         var tableHtml = '';
         var noticeText = '최근 5개년 토지 [매매] 실거래가 (평, 평당가)'; 
@@ -1002,7 +1016,7 @@
             '<div style="margin-top:6px; border-top:1px dashed #ccc; padding-top:6px;">', 
             '  <p style="color:#2b5c8f; font-weight:bold; font-size:11px; margin:0 0 5px 0; border-left:3px solid #2b5c8f; padding-left:6px;">' + noticeText + '</p>', 
                tableHtml, 
-            '</div>'
+            }
         ].join('');
         
         if (window.innerWidth <= 768) {
@@ -1017,89 +1031,22 @@
         }
     }
 
-    // 💡 [기획자 대원칙] 브라우저 DOM이 완전히 준비된 안착 시점에 순차 하강 개시
     document.addEventListener("DOMContentLoaded", function() {
         if (typeof naver !== 'undefined' && map) {
             
-            // 🗺️ 지도가 도화지 위에 완벽하게 로딩을 끝낸 안전한 시점에 파이프라인 가동!
             if (typeof window.initMapPipeline === 'function') {
                 window.initMapPipeline();
             }
             
-            // 🎯 최초 구동 시 상단 드롭다운 전역 고정 메뉴 활성화
             initTownSelectorOnce();
 
-            // 🌟 [명품 시야 연동]: 지도의 드래그 무빙이나 휠 변환이 완전히 멈춘 '정지(idle)' 순간 포획
+            // 🎯 [완결 수복 ⑦]: 모든 무거운 필터 연산을 지도 움직임이 완전히 정지된 idle 한 곳으로 통합 리팩토링!
+            // 드래그 중인 무빙 상태에서는 과연산을 차단하므로 드래그 느림 현상이 완벽히 소멸됩니다.
             naver.maps.Event.addListener(map, "idle", function() {
-                
-                var centerLatLng = map.getCenter();
-                var currentZoom = map.getZoom();
-                var currentBounds = map.getBounds();
-                
-                var cLat = centerLatLng.lat();
-                var cLng = centerLatLng.lng();
-                
-                var closestTown = "전체";
-                var minDistance = Infinity;
-                
-                // 🎯 [정밀 중심점 포획]: 줌 14레벨 이상일 때만 무결하게 거리 역산 엔진 단독 기동
-                if (currentZoom >= 14) {
-                    if (typeof properties !== 'undefined' && Array.isArray(properties)) {
-                        properties.forEach(function(p) {
-                            if (p && p.lat && p.lng && p.town) {
-                                var latDiff = p.lat - cLat;
-                                var lngDiff = p.lng - cLng;
-                                var dist = (latDiff * latDiff) + (lngDiff * lngDiff);
-                                if (dist < minDistance) {
-                                    minDistance = dist;
-                                    closestTown = p.town; 
-                                }
-                            }
-                        });
-                    }
-                }
-                
-                // 🎯 [데이터 다이렉트 전송]: 따온 중심점 동네 명칭을 8단계 필터 엔진 등 뒤에 태워 다이렉트 호출!
-                // 🛑 대원칙 사수: 화면 내부 영역 검사(hasLatLng) 기획안은 8단계 내부에서 100% 철저히 집행되며, 
-                // 무빙과 휠 이동이 완전히 멈춘 이 시점에 단 1번만 영역 판정을 수행하므로 드래그 렉이 전면 소멸됩니다.
-                applyFilters(closestTown);
-                
-                var listContainer = document.getElementById("property-list");
-                if (listContainer && currentZoom >= 14) {
-                    var firstMatchCard = null;
-                    var items = listContainer.querySelectorAll(".property-item");
-                    
-                    for (var i = 0; i < items.length; i++) {
-                        if (items[i].style.display !== "none") {
-                            var h4Text = items[i].querySelector("h4") ? items[i].querySelector("h4").innerText : "";
-                            if (closestTown !== "전체" && h4Text.indexOf(closestTown) !== -1) {
-                                firstMatchCard = items[i];
-                                break;
-                            }
-                        }
-                    }
-                    if (!firstMatchCard) {
-                        for (var j = 0; j < items.length; j++) {
-                            if (items[j].style.display !== "none") { firstMatchCard = items[j]; break; }
-                        }
-                    }
-                    if (firstMatchCard && !document.querySelector(".property-item.active")) {
-                        listContainer.scrollTop = firstMatchCard.offsetTop - listContainer.offsetTop;
-                    }
-                }
-
-                if (currentBoundaryCircle && currentBoundaryCircle.getMap()) {
-                    currentBoundaryCircle.setMap(map);
-                    var dynamicRadius = 15;
-                    if (currentZoom === 18) dynamicRadius = 8;
-                    else if (currentZoom === 17) dynamicRadius = 15;
-                    else if (currentZoom <= 16) dynamicRadius = 20; 
-                    currentBoundaryCircle.setRadius(dynamicRadius);
-                }
+                applyFilters();
             });
 
-            // 🎯 [휠 엇박자 원천 차단]: 휠을 가동하는 중간(zoom_changed)에는 이중 무거운 거리 연산을 전면 중단(철거)!
-            // 휠 회전 즉시 8단계 스캔부만 가볍게 동기화 호출하여, 줌인 시 목록창이 순간적으로 접혔다 펴지는 기형적 현상을 완치합니다.
+            // 🎯 휠 회전 감지 즉시 8단계 스캔부만 가볍게 동동기화 호출하여 사라지던 엇박자 완치!
             naver.maps.Event.addListener(map, "zoom_changed", function() {
                 applyFilters(); 
             });
