@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.261006_1424</title>
+    <title>창공공인중개사사무소 - v.261006_1434</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -652,13 +652,23 @@
 
                 if (cNum > 0) {
                     var townLatLng = new naver.maps.LatLng(sumLat / cNum, sumLng / cNum);
-                    var badgeHtml = '<div class="cluster-badge" onclick="zoomIntoTown(\"' + townName + '\")" style="cursor:pointer; width:52px; height:34px; padding-top:18px; font-size:12px; color:#111111; text-align:center; font-weight:bold; background:rgba(74, 211, 255, 0.95); border:1px solid #fff; border-radius:50%; box-shadow:0 4px 12px rgba(0,0,0,0.4); line-height:1.2;">' + townName + '<br>' + count + '</div>';
+                    
+                    // 🎯 [2단계 수술 ①]: 따옴표 충돌을 우회하기 위해 html 속성 대신 자바스크립트 Marker 객체 자체에 직접 함수를 바인딩하는 무결성 공법 적용
+                    var badgeHtml = '<div class="cluster-badge" style="cursor:pointer; width:52px; height:34px; padding-top:18px; font-size:12px; color:#111111; text-align:center; font-weight:bold; background:rgba(74, 211, 255, 0.95); border:1px solid #fff; border-radius:50%; box-shadow:0 4px 12px rgba(0,0,0,0.4); line-height:1.2;">' + townName + '<br>' + count + '</div>';
                     
                     var tMarker = new naver.maps.Marker({
                         position: townLatLng,
                         map: map,
                         icon: { content: badgeHtml, anchor: new naver.maps.Point(26, 26) }
                     });
+                    
+                    // 따옴표 파열을 원천 차단하는 네이버 이벤트 리스너 직결 방식 수복
+                    (function(tName) {
+                        naver.maps.Event.addListener(tMarker, "click", function() {
+                            window.zoomIntoTown(tName);
+                        });
+                    })(townName);
+
                     townSummaryMarkers.push(tMarker);
                 }
             }
@@ -681,18 +691,18 @@
             var mDeal = false;
             currentDealTypes.forEach(function(type) { if (p.price.indexOf(type) !== -1) { mDeal = true; } });
 
-            // 🎯 [1단계 수술 ① 복원]: 듀얼 배지 기준 축척 임계값과 영역 검사 결합
             if (mCat && mDet && mTown && mRi && mDeal) {
                 var markerLatLng = marker.getPosition();
                 if (currentBounds && currentBounds.hasLatLng(markerLatLng)) {
                     vis.push(marker); 
                 }
 
+                // 🎛️ [2단계 수술 ②]: 3번 기획 수복을 위해 읍면지역의 노출 마지노선을 줌 14레벨(네이버 API 기준 줌 14 스케일)로 칼각 조정!
                 var isDetailScale = false;
                 if (p.town_type === "urban") {
-                    isDetailScale = (currentZoom >= 17); // 동지역: 줌 17 이상만 개별 마커 노출
+                    isDetailScale = (currentZoom >= 17); // 동지역: 줌 17 이상만 개별 마커 노출 (4번 기획 사수)
                 } else {
-                    isDetailScale = (currentZoom >= 15); // 읍면지역: 줌 14레벨(API 15) 이상 노출
+                    isDetailScale = (currentZoom >= 14); // 🌲 읍면지역: 소장님 기획대로 줌 14레벨이 되는 순간 무조건 풍선 마커 노출! (3번 기획 수복)
                 }
 
                 if (isDetailScale && currentBounds && currentBounds.hasLatLng(markerLatLng)) {
@@ -712,7 +722,7 @@
             cadastralLayer.setMap(map); 
         }
 
-        // 🎯 [실시간 목록 역산 제어]: 기존 도화지를 비우고 중심점 동네 카드만 타깃팅 생성
+        // 중심점 동네 카드 실시간 빌드 및 슬라이딩 트리거
         if (listContainer) { listContainer.innerHTML = ""; }
 
         if (typeof closestTown !== "undefined" && closestTown && closestTown !== "전체") {
@@ -746,7 +756,6 @@
             if (listContainer && activeCount > 0) {
                 listContainer.appendChild(listFragment);
                 
-                // 🎯 [1단계 수술 ② 복원]: 정밀 시야(줌 14 이상) 조건문 락 가동
                 if (currentZoom >= 14 && listPanel) { 
                     listPanel.classList.add("is-active"); 
                 } else {
@@ -758,7 +767,7 @@
         } else {
             if (listPanel) { listPanel.classList.remove("is-active"); }
         }
-    } // 📐 applyFilters() 함수 본체 완전 밀봉 완착!
+    }
 
     window.zoomIntoTown = function(townName) {
         var townSelector = document.getElementById("town-selector");
