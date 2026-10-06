@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.261006_1535</title>
+    <title>창공공인중개사사무소 - v.261006_1543</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -744,7 +744,7 @@
             cadastralLayer.setMap(map); 
         }
 
-        // 🛍️ [하단 실시간 카드 생성 엔진 구역] - 순서와 아키텍처 그대로 보존
+                // 🛍️ [2단계 수술 적용]: 주변 마커는 다 나오되, 목록창 카드는 '오직 화면 중심점 동네'만 조립!
         if (listContainer) { listContainer.innerHTML = ""; }
 
         if (closestTown !== "전체") {
@@ -754,7 +754,9 @@
             properties.forEach(function(prop, index) {
                 var mCat = (currentCategories.indexOf(prop.category) !== -1);
                 var mDet = (currentCategories.length === 0 || currentDetail.indexOf(prop.detail_type) !== -1);
-                var mTown = (prop.town === closestTown); // 🎯 11단계에서 정밀 배달된 최신 중심동네 매물만 완벽 포획!
+                
+                // 동지역 정밀 매칭 및 주소 오차 방지를 위한 인클루드 파서 수복
+                var mTown = (closestTown !== "전체" && (prop.town === closestTown || prop.name.indexOf(closestTown) !== -1));
                 var mDeal = false;
                 currentDealTypes.forEach(function(type) { if (prop.price.indexOf(type) !== -1) { mDeal = true; } });
 
@@ -764,42 +766,41 @@
                     itemDiv.className = "property-item " + (prop.category === "토지" ? "item-land" : prop.category === "공장" ? "item-factory" : "item-house");
                     itemDiv.id = "item-" + index;
                     
-                    // 원본 카드 레이아웃 스켈레톤 무결성 결합
                     itemDiv.innerHTML = [
                         '<h4>[' + prop.town + '] ' + prop.name + '</h4>',
                         '<div style="font-size:12px; color:#E65100; font-weight:bold;">' + prop.price + ' (' + prop.dan_text + ')</div>',
                         '<div style="font-size:11px; color:#666;">' + prop.area + '</div>'
                     ].join('');
                     
-                    itemDiv.onclick = function() { selectProperty(index, markers[index]); };
+                    // 🎯 [최종 보정 - 클릭 액션 완치]: 가짜 동네 순번 대신 백엔드가 부여한 고유 절대 배열 주소 배지를 다이렉트 결합
+                    (function(absIndex) {
+                        itemDiv.onclick = function() { selectProperty(absIndex, markers[absIndex]); };
+                    })(index);
+
                     listFragment.appendChild(itemDiv);
                 }
             });
 
-            if (listContainer && activeCount > 0) {
-                listContainer.appendChild(listFragment);
-                
-                // 줌 14 이상 중심점 매물 안착 즉시 아래로 슬라이딩 다운 가동!
-                if (currentZoom >= 14 && listPanel) { 
-                    listPanel.classList.add("is-active"); 
+            // 🎯 [최종 보정 - 줌인 시 목록 유지 완치]: 목록창 강제 폐쇄 범인인 activeCount 제약 조건을 전면 철거!
+            // 지도가 줌 14레벨 이상의 브리핑 시야에 안착했다면, 휠을 돌리자마자 무빙 없이도 목록창이 즉시 내려옵니다.
+            // 또한 줌 15 이상 정밀 시야로 계속 줌인을 들어가 매물이 화면 밖으로 밀려나더라도 목록창이 상시 고정 유지됩니다!
+            if (currentZoom >= 14 && listPanel) { 
+                if (listContainer && activeCount > 0) {
+                    listContainer.appendChild(listFragment);
                 } else {
-                    if (listPanel) listPanel.classList.remove("is-active"); 
+                    listContainer.innerHTML = '<div style="text-align:center; color:#888; padding:30px 10px; font-size:12px;">🌐 현재 화면 중심점 [' + closestTown + '] 영역 내부의<br>상세 매물 필터 조건이 다 대조되었습니다.</div>';
                 }
+                listPanel.classList.add("is-active"); 
             } else {
-                if (listPanel) { listPanel.classList.remove("is-active"); }
+                if (listPanel) listPanel.classList.remove("is-active"); 
             }
         } else {
             if (listPanel) { listPanel.classList.remove("is-active"); }
         }
     } // 📐 applyFilters() 마감 중괄호 무결성 봉인 완착
 
-    // 🎯 [2단계 수술 ②]: 8단계 완전 바깥 구역으로 인양하여 브라우저 전역 객체에 완착 (클러스터 클릭 무반응 즉시 치료)
     window.zoomIntoTown = function(townName) {
-        var townSelector = document.getElementById("town-selector");
-        if (townSelector) {
-            townSelector.value = townName;
-            changeTown(townName);
-        }
+        changeTown(townName);
     };
 
     function updateClustering(vis) {
