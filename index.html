@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.261006_1907</title>
+    <title>창공공인중개사사무소 - v.261006_1917</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -748,58 +748,58 @@
         if (listContainer) { listContainer.innerHTML = ""; }
 
 // ====== [진짜 1단계 교체본: 이 내용을 그대로 덮어씌워 주세요] ======
-                if (mCat && mDet && mTown && mDeal) {
-                    activeCount++;
-                    var itemDiv = document.createElement("div");
-                    itemDiv.className = "property-item " + (prop.category === "토지" ? "item-land" : prop.category === "공장" ? "item-factory" : "item-house");
-                    itemDiv.id = "item-" + index;
-                    
-                    // 🎯 [수복]: 7단계에서 유실되었던 평당가 분기 연산 레이어 실시간 매핑
-                    var danDisplayHtml = (prop.category === "토지") ? prop.py_price : '대지 ' + prop.py_price + ' / <span style="color:#2b5c8f; font-weight:bold;">연면적 ' + prop.year_price + '</span>';
-                    
-                    // 🎯 [수복]: 3대 부동산 아웃링크 환경변수 주소 완벽 복원
-                    var naverLandLink = '<a href="' + "{os.environ.get('URL_NAVER_REAL', 'https://naver.com')}" + prop.id + '" target="_blank" class="naver-land" onclick="event.stopPropagation();">네이버부동산</a>';
-                    var naverMapLink  = '<a href="' + "{os.environ.get('URL_NAVER_MAP', 'https://naver.com')}" + encodeURIComponent(prop.name) + '" target="_blank" class="naver-map" onclick="event.stopPropagation();">네이버지도</a>';
-                    var eumLandLink   = (prop.pnu && prop.pnu.trim() !== "") 
-                        ? '<a href="' + "{os.environ.get('URL_EUM_LAND', 'http://eum.go.kr')}" + prop.pnu.trim() + '" target="_blank" class="eum-land" onclick="event.stopPropagation();">토지이음</a>' 
-                        : '<a class="eum-none" title="PNU 미생성" onclick="event.stopPropagation();">미매칭</a>';
+            if (mCat && mDet && mTown && mDeal) {
+                activeCount++;
+                var itemDiv = document.createElement("div");
+                itemDiv.className = "property-item " + (prop.category === "토지" ? "item-land" : prop.category === "공장" ? "item-factory" : "item-house");
+                itemDiv.id = "item-" + index;
+                
+                // 🎯 [수복]: 7단계에서 유실되었던 평당가 분기 연산 레이어 실시간 매핑
+                var danDisplayHtml = (prop.category === "토지") ? prop.py_price : '대지 ' + prop.py_price + ' / <span style="color:#2b5c8f; font-weight:bold;">연면적 ' + prop.year_price + '</span>';
+                
+                // 🎯 [수복]: 3대 부동산 아웃링크 환경변수 주소 완벽 복원
+                var naverLandLink = '<a href="' + "{os.environ.get('URL_NAVER_REAL', 'https://naver.com')}" + prop.id + '" target="_blank" class="naver-land" onclick="event.stopPropagation();">네이버부동산</a>';
+                var naverMapLink  = '<a href="' + "{os.environ.get('URL_NAVER_MAP', 'https://naver.com')}" + encodeURIComponent(prop.name) + '" target="_blank" class="naver-map" onclick="event.stopPropagation();">네이버지도</a>';
+                var eumLandLink   = (prop.pnu && prop.pnu.trim() !== "") 
+                    ? '<a href="' + "{os.environ.get('URL_EUM_LAND', 'http://eum.go.kr')}" + prop.pnu.trim() + '" target="_blank" class="eum-land" onclick="event.stopPropagation();">토지이음</a>' 
+                    : '<a class="eum-none" title="PNU 미생성" onclick="event.stopPropagation();">미매칭</a>';
 
-                    // 🎯 [수복]: 거래방식 스위치 연동용 컬러 배지 태그 생성
-                    var badgeBg = "#2b5c8f"; var badgeText = "매매";
-                    if (prop.price.indexOf("전세") !== -1) {{ badgeBg = "#1B5E20"; badgeText = "전세"; }} 
-                    else if (prop.price.indexOf("월세") !== -1) {{ badgeBg = "#ff6e40"; badgeText = "월세"; }} 
-                    else if (prop.price.indexOf("단기") !== -1) {{ badgeBg = "#4A148C"; badgeText = "단기"; }}
-                    var dealBadgeHtml = '<span style="display: inline-block; padding: 4px 10px; font-size: 13px; font-weight: bold; color: #fff; background: ' + badgeBg + '; border-radius: 4px; white-space: nowrap; line-height: 1.0;">' + badgeText + '</span>';
-                    var infoLeftHtml = '<b>면적:</b> ' + prop.area + '<br>' + {js_factory_list_logic}.replace(/^'\s*\+\s*/, '').replace(/\s*\+\s*'$/, '');
+                // 🎯 [수복]: 거래방식 스위치 연동용 컬러 배지 태그 생성
+                var badgeBg = "#2b5c8f"; var badgeText = "매매";
+                if (prop.price.indexOf("전세") !== -1) {{ badgeBg = "#1B5E20"; badgeText = "전세"; }} 
+                else if (prop.price.indexOf("월세") !== -1) {{ badgeBg = "#ff6e40"; badgeText = "월세"; }} 
+                else if (prop.price.indexOf("단기") !== -1) {{ badgeBg = "#4A148C"; badgeText = "단기"; }}
+                var dealBadgeHtml = '<span style="display: inline-block; padding: 4px 10px; font-size: 13px; font-weight: bold; color: #fff; background: ' + badgeBg + '; border-radius: 4px; white-space: nowrap; line-height: 1.0;">' + badgeText + '</span>';
+                var infoLeftHtml = '<b>면적:</b> ' + prop.area + '<br>' + {js_factory_list_logic}.replace(/^'\s*\+\s*/, '').replace(/\s*\+\s*'$/, '');
 
-                    // 🎯 [수복]: 평공시가, 도로접면, 매물특징 장부방 레이아웃 전면 주입
-                    itemDiv.innerHTML = [
-                        '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">',
-                        '  <h4 style="margin: 0; font-size: 13px; font-weight: bold; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: calc(100% - 65px);">[' + prop.town + '] ' + prop.name + '</h4>', 
-                        '  <div style="flex-shrink: 0; display: flex; align-items: center;">' + dealBadgeHtml + '</div>',
-                        '</div>', 
-                        '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0;">', 
-                        '  <div style="font-size: 11px; color: #495057; line-height: 1.4; flex: 1; padding-right: 10px;">' + infoLeftHtml + '</div>', 
-                        '  <div style="text-align: right; flex-shrink: 0; display: flex; justify-content: flex-end; align-items: center; margin-top: -2px;">',
-                        '    <span style="font-size: 15px; font-weight: bold; color: ' + badgeBg + '; white-space: nowrap; letter-spacing: -0.3px; display: inline-block;">' + prop.price.replace(badgeText, "").trim() + '</span>',
-                        '  </div>', 
-                        '</div>', 
-                        // 처음 로딩시 메모리를 아끼기 위해 기본 디스플레이는 none(숨김)으로 실시간 배정
-                        '<div class="property-detail" id="detail-' + index + '" style="margin-top: 3px; padding-top: 3px; font-size: 12px; line-height: 1.3; display: none;">', 
-                        '  <div style="display: flex; flex-direction: column; gap: 1px; width: 100%;">', 
-                        '    <div style="display: flex; width: 100%;"><span style="font-weight: bold; color: #555; width: 52px; flex-shrink: 0;">평 당 가</span><span style="font-weight: bold; color: #555; width: 12px; flex-shrink: 0;">:</span><span style="color: #222; word-break: break-all;">' + danDisplayHtml + '</span></div>', 
-                        '    <div style="display: flex; width: 100%;"><div style="flex: 1; display: flex; overflow: hidden;"><span style="font-weight: bold; color: #555; width: 52px; flex-shrink: 0;">평공시가</span><span style="font-weight: bold; color: #555; width: 12px; flex-shrink: 0;">:</span><span style="color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + prop.gongsi_price + '</span></div><div style="flex: 1; display: flex; padding-left: 6px; overflow: hidden;"><span style="font-weight: bold; color: #555; width: 52px; flex-shrink: 0;">도로접면</span><span style="font-weight: bold; color: #555; width: 12px; flex-shrink: 0;">:</span><span style="color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + prop.road + '</span></div></div>', 
-                        '    <div style="display: flex; width: 100% !important;"><span style="font-weight: bold; color: #555; width: 52px; flex-shrink: 0;">매물특징</span><span style="font-weight: bold; color: #555; width: 12px; flex-shrink: 0;">:</span><span style="color: #222; word-break: break-all; flex: 1;">' + prop.feature + '</span></div>', 
-                        '  </div>', 
-                        '  <div class="links-row" style="margin-top: 4px; padding-top: 4px; margin-bottom: 0;">' + naverLandLink + naverMapLink + eumLandLink + '</div>', 
-                        '</div>'
-                    ].join('');
-                    
-                    (function(absIndex) {
-                        itemDiv.onclick = function() { selectProperty(absIndex, markers[absIndex]); };
-                    })(index);
+                // 🎯 [수복]: 평공시가, 도로접면, 매물특징 장부방 레이아웃 전면 주입
+                itemDiv.innerHTML = [
+                    '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">',
+                    '  <h4 style="margin: 0; font-size: 13px; font-weight: bold; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: calc(100% - 65px);">[' + prop.town + '] ' + prop.name + '</h4>', 
+                    '  <div style="flex-shrink: 0; display: flex; align-items: center;">' + dealBadgeHtml + '</div>',
+                    '</div>', 
+                    '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0;">', 
+                    '  <div style="font-size: 11px; color: #495057; line-height: 1.4; flex: 1; padding-right: 10px;">' + infoLeftHtml + '</div>', 
+                    '  <div style="text-align: right; flex-shrink: 0; display: flex; justify-content: flex-end; align-items: center; margin-top: -2px;">',
+                    '    <span style="font-size: 15px; font-weight: bold; color: ' + badgeBg + '; white-space: nowrap; letter-spacing: -0.3px; display: inline-block;">' + prop.price.replace(badgeText, "").trim() + '</span>',
+                    '  </div>', 
+                    '</div>', 
+                    // 처음 로딩시 메모리를 아끼기 위해 기본 디스플레이는 none(숨김)으로 실시간 배정
+                    '<div class="property-detail" id="detail-' + index + '" style="margin-top: 3px; padding-top: 3px; font-size: 12px; line-height: 1.3; display: none;">', 
+                    '  <div style="display: flex; flex-direction: column; gap: 1px; width: 100%;">', 
+                    '    <div style="display: flex; width: 100%;"><span style="font-weight: bold; color: #555; width: 52px; flex-shrink: 0;">평 당 가</span><span style="font-weight: bold; color: #555; width: 12px; flex-shrink: 0;">:</span><span style="color: #222; word-break: break-all;">' + danDisplayHtml + '</span></div>', 
+                    '    <div style="display: flex; width: 100%;"><div style="flex: 1; display: flex; overflow: hidden;"><span style="font-weight: bold; color: #555; width: 52px; flex-shrink: 0;">평공시가</span><span style="font-weight: bold; color: #555; width: 12px; flex-shrink: 0;">:</span><span style="color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + prop.gongsi_price + '</span></div><div style="flex: 1; display: flex; padding-left: 6px; overflow: hidden;"><span style="font-weight: bold; color: #555; width: 52px; flex-shrink: 0;">도로접면</span><span style="font-weight: bold; color: #555; width: 12px; flex-shrink: 0;">:</span><span style="color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + prop.road + '</span></div></div>', 
+                    '    <div style="display: flex; width: 100% !important;"><span style="font-weight: bold; color: #555; width: 52px; flex-shrink: 0;">매물특징</span><span style="font-weight: bold; color: #555; width: 12px; flex-shrink: 0;">:</span><span style="color: #222; word-break: break-all; flex: 1;">' + prop.feature + '</span></div>', 
+                    '  </div>', 
+                    '  <div class="links-row" style="margin-top: 4px; padding-top: 4px; margin-bottom: 0;">' + naverLandLink + naverMapLink + eumLandLink + '</div>', 
+                    '</div>'
+                ].join('');
+                
+                (function(absIndex) {
+                    itemDiv.onclick = function() { selectProperty(absIndex, markers[absIndex]); };
+                })(index);
 
-                    listFragment.appendChild(itemDiv);
+                listFragment.appendChild(itemDiv);
                 }
             });
 
