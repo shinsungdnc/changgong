@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공공인중개사사무소 - v.261006_1434</title>
+    <title>창공공인중개사사무소 - v.261006_1459</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -257,20 +257,36 @@
         applyFilters();
     }
 
-    // 📁 좌측 사이드바 접기/펴기 UI 제어 함수
+    // 📁 [마스터 버튼 토글 수복]: 소장님의 2단계 연속 무빙 기획(목록 슬라이드 업 ➔ 필터 페이드 아웃) 칼각 동기화
     function toggleSidebar() {
-        var sidebar = document.getElementById("sidebar");
+        var filterPanel = document.getElementById("sidebar-header");
+        var listPanel = document.getElementById("property-list-panel");
         var currentCenter = map.getCenter();
-        var panel = document.getElementById("right-stats-panel");
-        if (sidebar.classList.contains("hidden")) {
-            sidebar.classList.remove("hidden");
-            var hasActiveProperty = document.querySelector(".property-item.active");
-            if (hasActiveProperty && panel) panel.classList.add("active");
+
+        if (filterPanel && filterPanel.classList.contains("is-hidden")) {
+            // 🔓 [열기 무빙]: 필터 패널이 먼저 좌측에서 페이드 인으로 튀어나옴
+            filterPanel.classList.remove("is-hidden");
+            
+            // 줌 14레벨 이상이고 활성화된 카드가 존재할 때만 하단 목록 패널을 아래로 스르륵 개방
+            setTimeout(function() {
+                var currentZoom = map.getZoom();
+                var hasCards = document.getElementById("property-list") && document.getElementById("property-list").children.length > 0;
+                if (currentZoom >= 14 && hasCards && listPanel) {
+                    listPanel.classList.add("is-active");
+                }
+            }, 200);
         } else {
-            sidebar.classList.add("hidden");
-            if (panel) { panel.classList.remove("active"); panel.classList.remove("expanded"); }
+            // 🔒 [닫기 무빙 1단계]: 하단 매물 목록 패널부터 상단 필터부 안쪽으로 사르륵 슬라이드 업 숨김!
+            if (listPanel) { listPanel.classList.remove("is-active"); }
+            
+            // 🔒 [닫기 무빙 2단계]: 목록창이 다 올라간 직후 상단 필터부가 좌측 화면 밖으로 페이드 아웃!
+            setTimeout(function() {
+                if (filterPanel) { filterPanel.classList.add("is-hidden"); }
+            }, 300);
         }
-        setTimeout(function() { map.setCenter(currentCenter); }, 260);
+        
+        // 지도 캔버스 그래픽 왜곡 현상을 방지하기 위해 중심점 시야 최종 고정 방어선
+        setTimeout(function() { map.setCenter(currentCenter); }, 350);
     }
 
     // 📱 모바일 환경 우측 브리핑 패널 터치 확장 제어 함수
@@ -304,8 +320,9 @@
         var panel = document.getElementById("detail-selector");
         if(panel) panel.style.display = "none";
         
+        // 🎯 [중심점 불일치 완치]: 고정 숫자를 파괴하고 백엔드가 역산한 실시간 평균 위경도 좌표인 36.56205455304659, 127.317132309319와 칼각 동기화!
         if (town === "전체") {
-            var initialLatLng = new naver.maps.LatLng(36.55, 127.25); 
+            var initialLatLng = new naver.maps.LatLng(36.56205455304659, 127.317132309319); 
             map.setZoom(12); 
             map.panTo(initialLatLng);
             requestAnimationFrame(function() {
