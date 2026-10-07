@@ -269,7 +269,7 @@ function updateTownSelectorOptions() {
 }
 
 // =========================================================================
-// [공정 3-A단계] 줌 12, 13레벨 광역 행정 배지 제어 블록
+// [공정 3-A단계] 줌 12, 13레벨 광역 행정 배지 2단 줄바꿈 제어 블록
 // =========================================================================
 
 var markerClustering = null; 
@@ -288,11 +288,11 @@ function applyFilters(forcedTown) {
     var closestTown = forcedTown || "전체";
 
     // -------------------------------------------------------------------------
-    // 🛑 [트랙 A: 광역 브리핑 사양] 줌 12, 13일 때: 매물 카드 연산 0으로 차단 및 광역 배지 매핑
+    // 🛑 [트랙 A: 광역 브리핑 사양] 줌 12, 13일 때: 매물 카드 연산 0으로 차단 및 2단 줄바꿈 배지 기동
     // -------------------------------------------------------------------------
     if (currentZoom < 14) {
-        // ① 하단 목록창 커튼을 완전히 닫고 내부 돔(DOM) 객체 조립 공정을 즉시 파괴
-        if (listPanel) { listPanel.classList.remove("is-active"); }
+        // ① 하단 목록창을 완전히 숨김(display: none) 처리하여 화면 바닥의 백지 리스크를 원천 차단!
+        if (listPanel) { listPanel.style.display = "none"; }
         if (listContainer) { listContainer.innerHTML = ""; } 
         
         // ② 개별 마커 풍선 및 네이버 정규 클러스터러, 반경원 흔적 일제 소멸
@@ -330,22 +330,27 @@ function applyFilters(forcedTown) {
             if (cNum > 0) {
                 var townLatLng = new naver.maps.LatLng(sumLat / cNum, sumLng / cNum);
                 
-                // 손가락으로 콕 짚어 브리핑하기 가장 좋은 큼직한 원형 숫자 뭉텅이 배지 명세 디자인
-                var badgeHtml = '<div class="cluster-badge" style="cursor:pointer; width:56px; height:56px; line-height:56px; font-size:12px; color:#111111; text-align:center; font-weight:bold; background:rgba(74, 211, 255, 0.95); border:2px solid #ffffff; border-radius:50%; box-shadow:0 4px 12px rgba(0,0,0,0.35); overflow:hidden; white-space:nowrap; text-overflow:ellipsis;">' + townName.substring(0,3) + ' ' + count + '</div>';
+                // 🎯 [명품 2단 줄바꿈 레이아웃]: 중개사님이 기획하신 명세 그대로 동네 이름이 나오고, 
+                // 그 바로 아래에 매물 숫자가 부드럽게 안착되도록 <br> 장치를 심어 입체감 있게 가공했습니다.
+                var badgeHtml = [
+                    '<div class="cluster-badge" style="cursor:pointer; width:58px; height:44px; padding-top:14px; font-size:12px; color:#111111; text-align:center; font-weight:bold; background:rgba(74, 211, 255, 0.95); border:2px solid #ffffff; border-radius:50%; box-shadow:0 4px 12px rgba(0,0,0,0.35); line-height:1.2;">',
+                    '  ' + townName.substring(0, 3) + '<br>', // 1단: 고운동, 연서면 등 3글자 노출
+                    '  <span style="font-size:11px; color:#ff6e40; font-weight:800;">' + count + '</span>', // 2단: 실시간 필터 수량 꽂기
+                    '</div>'
+                ].join('');
                 
                 var tMarker = new naver.maps.Marker({
                     position: townLatLng,
                     map: map,
-                    icon: { content: badgeHtml, anchor: new naver.maps.Point(28, 28) }
+                    icon: { content: badgeHtml, anchor: new naver.maps.Point(29, 29) }
                 });
                 
-                // 🎯 [흡입식 시야 락킹]: 배지를 누르는 순간 기획서 조건 사양으로 즉시 흡입 기동 연동
+                // 🎯 [흡입식 시야 락킹]: 배지를 누르는 순간 도시형(동)은 줌 17, 농촌형(읍면)은 줌 15로 강력 흡입!
                 (function(tName, tLatLng) {
                     naver.maps.Event.addListener(tMarker, "click", function() {
                         var targetZoom = tName.endsWith('동') ? 17 : 15;
                         map.setZoom(targetZoom);
                         map.panTo(tLatLng);
-                        // 시야 셋업이 완전히 끝난 120ms 뒤에 정밀 시야 필터를 기동시켜 타이밍 꼬임 현상을 완치
                         setTimeout(function() { applyFilters(tName); }, 120);
                     });
                 })(townName, townLatLng);
@@ -354,7 +359,7 @@ function applyFilters(forcedTown) {
             }
         }
         updateTownSelectorOptions();
-        return; // 💡 중요: 하단의 무거운 카드 조립 공정 구역으로 내려가지 못하게 장벽(Lock)을 쳐서 리턴시킵니다!
+        return; // 💡 중요: 하단의 무거운 카드 조립 공정 구역으로 내려가지 못하게 단단한 벽(Lock)을 쳐서 리턴시킵니다!
     }
 
 // =========================================================================
@@ -362,7 +367,7 @@ function applyFilters(forcedTown) {
 // =========================================================================
 
     // -------------------------------------------------------------------------
-    // 🟢 [트랙 B: 정밀 브리핑 사양] 줌 14 이상일 때: 화면 사각형 내부 매물만 실시간 카드 조립
+    // 🟢 [트랙 B: 정밀 브리핑 사양] 줌 14 이상일 때: 화면 내 매물만 실시간 카드 조립 및 목록 개방
     // -------------------------------------------------------------------------
     if (typeof townSummaryMarkers !== 'undefined' && townSummaryMarkers !== null) {
         townSummaryMarkers.forEach(function(tm) { tm.setMap(null); });
@@ -370,8 +375,8 @@ function applyFilters(forcedTown) {
     }
 
     var activeCount = 0;
-    var listFragment = document.createDocumentFragment(); // 🚀 브라우저 렉 방지용 가상 도화지 기동
-    if (listContainer) listContainer.innerHTML = ""; // 기존 장부 깔끔히 밀어내기
+    var listFragment = document.createDocumentFragment(); // 🚀 가상 도화지 공법으로 렉 소멸
+    if (listContainer) listContainer.innerHTML = ""; 
 
     markers.forEach(function(marker, index) {
         var prop = properties[index];
@@ -385,13 +390,10 @@ function applyFilters(forcedTown) {
 
         if (mCat && mDet && mTown && mRi && mDeal) {
             var markerLatLng = marker.getPosition();
-            
-            // 🎯 내 눈앞에 펼쳐진 브라우저 화면 사각형 영역(Bounds) 내부에 존재하는 매물만 선별 포획
             if (currentBounds && currentBounds.hasLatLng(markerLatLng)) {
                 vis.push(marker);
             }
 
-            // 도시형(동)은 줌 17, 농촌형(읍면)은 줌 15 이상일 때만 개별 가격 풍선 마커 노출
             var isDetailScale = (prop.town_type === "urban") ? (currentZoom >= 17) : (currentZoom >= 15);
 
             if (isDetailScale && currentBounds && currentBounds.hasLatLng(markerLatLng)) {
@@ -400,7 +402,7 @@ function applyFilters(forcedTown) {
                 marker.setMap(null); 
             }
 
-            // 🛍️ [렉 완치 핵심 사양]: 현재 화면 중심점 동네 영역 내부의 알맹이 매물만 실시간 즉석 가공
+            // 내 화면 중심점 동네 영역 내부의 매물만 실시간 즉석 가공
             if (closestTown === "전체" || prop.town === closestTown) {
                 activeCount++;
                 var itemDiv = document.createElement("div");
@@ -409,7 +411,6 @@ function applyFilters(forcedTown) {
                 
                 var danDisplayHtml = (prop.category === "토지") ? prop.py_price : '대지 ' + prop.py_price + ' / <span style="color:#2b5c8f; font-weight:bold;">연면적 ' + prop.year_price + '</span>';
                 
-                // 아웃링크 상대 경로 연동 마감
                 var naverLandLink = '<a href="https://naver.com' + prop.id + '" target="_blank" class="naver-land" onclick="event.stopPropagation();">네이버부동산</a>';
                 var naverMapLink  = '<a href="https://naver.com' + encodeURIComponent(prop.name) + '" target="_blank" class="naver-map" onclick="event.stopPropagation();">네이버지도</a>';
                 var eumLandLink   = (prop.pnu && prop.pnu.trim() !== "") 
@@ -422,7 +423,6 @@ function applyFilters(forcedTown) {
                 else if (prop.price.indexOf("단기") !== -1) { badgeBg = "#4A148C"; badgeText = "단기"; }
                 var dealBadgeHtml = '<span style="display: inline-block; padding: 4px 10px; font-size: 13px; font-weight: bold; color: #fff; background: ' + badgeBg + '; border-radius: 4px; white-space: nowrap; line-height: 1.0;">' + badgeText + '</span>';
                 
-                // 백엔드 파이썬 주입 구역 안전 마감 결합
                 var infoLeftHtml = '<b>면적:</b> ' + prop.area + '<br>' + js_factory_list_logic;
 
                 itemDiv.innerHTML = [
@@ -457,23 +457,22 @@ function applyFilters(forcedTown) {
         }
     });
     
-    // 네이버 정규 마커 클러스터러 엔진 바통 터치 가동
     updateClustering(vis); 
     updateTownSelectorOptions();
 
-    // 🌟 완성된 정예 매물 카드 묶음을 실제 브라우저 화면 리스트방에 단 1번에 주입
+    // 🌟 줌 14레벨 이상 진입 시에만 매물 카드 리스트방을 display: flex로 활짝 열어 깨끗하게 표출!
     if (listPanel && listContainer) { 
         if (activeCount > 0) {
             listContainer.appendChild(listFragment);
         } else {
             listContainer.innerHTML = '<div style="text-align:center; color:#888; padding:30px 10px; font-size:12px;">🌐 현재 화면 중심점 [' + closestTown + '] 영역 내부의<br>상세 매물 필터 조건이 다 대조되었습니다.</div>';
         }
-        listPanel.classList.add("is-active"); // 매물 목록 패널 커튼 아래로 개방
+        listPanel.style.display = "flex"; 
     }
 } // 📐 applyFilters() 마감 중괄호 무결성 봉인 완착
 
 // =========================================================================
-// [공정 4-1단계] 개별 마커 정렬 등록 및 스마트 시야 락(Lock) 엔진 블록
+// [공정 4-A단계] 개별 마커 정렬 등록 및 스마트 시야 락(Lock) 엔진 블록
 // =========================================================================
 
 // 🚀 지도가 도화지 위에 완전히 로딩을 끝낸 안전한 시점에 파이썬 백엔드가 수령한 
@@ -571,14 +570,12 @@ function selectProperty(index, marker) {
 
     // 🏢 [분기 1] 선택된 매물이 '공장/창고' 카테고리일 때 -> 건축물대장 피벗 강제 주입
     if (prop.category === "공장") {
-        // 백엔드 f-string으로 묶인 스크립트 실행 함수 다이렉트 가동
         if (typeof js_factory_right_panel_logic === 'function') {
             js_factory_right_panel_logic();
         }
     } 
     // 🏡 [분기 2] 선택된 매물이 '토지' 또는 '주택'일 때 -> 5개년 실거래 요약 테이블 빌드
     else {
-        // 다음 단계(4-2)에서 넘어올 국토부 5개년 요약 레이어 자동 연결 대기
         if (typeof buildRealTradeTableLayout === 'function') {
             buildRealTradeTableLayout(prop, panel);
         }
@@ -586,7 +583,7 @@ function selectProperty(index, marker) {
 }
 
 // =========================================================================
-// [공정 4-2단계] 실거래 테이블 빌드 및 최종 드래그 렉 소멸 리스너 블록
+// [공정 4-B단계] 실거래 테이블 빌드 및 최종 드래그 렉 소멸 리스너 블록
 // =========================================================================
 
 // 🏡 국토부 5개년 실거래가 요약 피벗 장부를 읽어와 HTML 테이블 명세표로 빌드하는 가동 엔진
@@ -706,7 +703,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 applyFilters(closestTown);
                 
                 // 🌟 [성공안 반경원 크기 보정 수복]: 지도를 멀리 조작해도 파란 중심원이 끊기지 않고 
-                // 축척 경계선에 따라 반지름 반지름 크기를 20m 이상으로 자동 벌려주어 광역 시각적 거점을 영구 보존합니다.
+                // 축척 경계선에 따라 반지름 크기를 20m 이상으로 자동 벌려주어 광역 시각적 거점을 영구 보존합니다.
                 if (currentBoundaryCircle && currentBoundaryCircle.getMap()) {
                     currentBoundaryCircle.setMap(map);
                     var dynamicRadius = 15;
@@ -718,8 +715,8 @@ document.addEventListener("DOMContentLoaded", function() {
                 }
             });
 
-            // 🌟 [휠 엇박자 전면 교정]: 휠을 가동하는 중간(zoom_changed)에는 무거운 연산을 일절 차단하고 
-            // 8단계 스캔부만 가볍게 동기화 호출하여 줌 변경 시 목록창이 접히는 버그를 완치합니다.
+            // 🌟 [휠 엇박자 전면 교정]: 휠을 가동하는 중간(zoom_changed)에는 이중 무거운 거리 연산을 전면 중단(철거)!
+            // 휠 회전 즉시 8단계 스캔부만 가볍게 동기화 호출하여 줌 변경 시 목록창이 접히는 버그를 완치합니다.
             naver.maps.Event.addListener(map, "zoom_changed", function() {
                 applyFilters(); 
             });
