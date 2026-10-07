@@ -673,56 +673,66 @@ document.addEventListener("DOMContentLoaded", function() {
                 initTownSelectorOnce();
             }
 
-            // 🌟 [드래그 렉 완치]: 지도의 드래그 무빙이나 휠 회전이 완전히 멈춘 '정지(idle)' 순간만 정밀 포획
-            naver.maps.Event.addListener(map, "idle", function() {
-                var centerLatLng = map.getCenter();
-                var currentZoom = map.getZoom();
-                
-                var cLat = centerLatLng.lat();
-                var cLng = centerLatLng.lng();
-                
-                var closestTown = "전체";
-                var minDistance = Infinity;
-                
-                // 🎯 줌 14레벨 이상 정밀 시야 상태에서만 중심점 동네 역산 엔진 단독 기동
-                if (currentZoom >= 14) {
-                    if (typeof properties !== 'undefined' && Array.isArray(properties)) {
-                        properties.forEach(function(p) {
-                            if (p && p.lat && p.lng && p.town) {
-                                var latDiff = p.lat - cLat;
-                                var lngDiff = p.lng - cLng;
-                                var dist = (latDiff * latDiff) + (lngDiff * lngDiff);
-                                if (dist < minDistance) {
-                                    minDistance = dist;
-                                    closestTown = p.town; 
-                                }
-                            }
-                        });
-                    }
-                }
-                
-                // 🛑 대원칙 사수: 화면 내부 영역 검사 및 카드 실시간 가공은 무빙이 멈춘 이 시점에 단 1번만 
-                // 수행되므로 화면을 이리저리 끄집어 당길 때 발생하던 드래그 렉이 완벽히 박멸됩니다!
-                applyFilters(closestTown);
-                
-                // 🌟 [성공안 반경원 크기 보정 수복]: 지도를 멀리 조작해도 파란 중심원이 끊기지 않고 
-                // 축척 경계선에 따라 반지름 크기를 20m 이상으로 자동 벌려주어 광역 시각적 거점을 영구 보존합니다.
-                if (currentBoundaryCircle && currentBoundaryCircle.getMap()) {
-                    currentBoundaryCircle.setMap(map);
-                    var dynamicRadius = 15;
-                    if (currentZoom === 18) dynamicRadius = 8;
-                    else if (currentZoom === 17) dynamicRadius = 15;
-                    else if (currentZoom <= 16) dynamicRadius = 24; // ◀ 줌 15, 14 이하로 멀어지더라도 시각적 거점 24m 크기로 굳건히 사수!
-                    
-                    currentBoundaryCircle.setRadius(dynamicRadius);
-                }
-            });
+    // =========================================================================
+    // 🟢 [최종 마감] 마우스 드래그 락 박멸 및 '리' 셀렉터 완벽 부활 통합 엔진
+    // =========================================================================
+    var idleTimeoutId = null;
 
-            // 🌟 [휠 엇박자 전면 교정]: 휠을 가동하는 중간(zoom_changed)에는 이중 무거운 거리 연산을 전면 중단(철거)!
-            // 휠 회전 즉시 8단계 스캔부만 가볍게 동기화 호출하여 줌 변경 시 목록창이 접히는 버그를 완치합니다.
-            naver.maps.Event.addListener(map, "zoom_changed", function() {
-                // applyFilters(); 
-            });
+    naver.maps.Event.addListener(map, "idle", function() {
+        // 💡 [조치 1]: 마우스를 움직이는 도중에는 연산을 멈추고 마우스 손을 놔줍니다.
+        // 드래그가 완벽히 끝나고 '0.15초' 멈춰있을 때만 딱 1번 연산하므로 드래그 락이 완치됩니다!
+        if (idleTimeoutId) clearTimeout(idleTimeoutId);
+        
+        idleTimeoutId = setTimeout(function() {
+            var centerLatLng = map.getCenter();
+            var currentZoom = map.getZoom();
+            var cLat = centerLatLng.lat(), cLng = centerLatLng.lng();
+            var closestTown = "전체"; var minDistance = Infinity;
+            
+            if (currentZoom >= 14 && typeof properties !== 'undefined') {
+                properties.forEach(function(p) {
+                    if (p && p.lat && p.lng && p.town) {
+                        var dist = (p.lat - cLat)*(p.lat - cLat) + (p.lng - cLng)*(p.lng - cLng);
+                        if (dist < minDistance) { minDistance = dist; closestTown = p.town; }
+                    }
+                });
+            }
+            
+            // 🎯 [조치 2]: 연서면, 장군면 등 읍면 선택 시 하위 '리' 목록을 주소록에서 발라내어 채워줍니다.
+            var riSelector = document.getElementById("ri-selector");
+            if (riSelector) {
+                if (currentTown !== "전체" && (currentTown.endsWith("읍") || currentTown.endsWith("면"))) {
+                    var riSet = new Set();
+                    properties.forEach(function(p) {
+                        if (p.town === currentTown && p.name && p.name.indexOf("리 ") !== -1) {
+                            var tokens = p.name.split(" ");
+                            for(var i=0; i<tokens.length; i++) {
+                                if(tokens[i].endsWith("리")) { riSet.add(tokens[i].trim()); break; }
+                            }
+                        }
+                    });
+                    var sortedRis = Array.from(riSet).sort();
+                    var savedRi = currentRi;
+                    riSelector.innerHTML = "<option value='전체'>📍 리 선택 (전체)</option>";
+                    sortedRis.forEach(function(r) {
+                        var opt = document.createElement("option"); opt.value = r; opt.innerText = r;
+                        if (r === savedRi) opt.selected = true;
+                        riSelector.appendChild(opt);
+                    });
+                    riSelector.style.display = "block";
+                } else {
+                    riSelector.style.display = "none";
+                    currentRi = "전체";
+                }
+            }
+            applyFilters(closestTown);
+        }, 150);
+    });
+
+    // 🌟 [휠 엇박자 완치 스위치]: 휠 조작 중간에는 폭주 연산을 완전히 비워두어 버벅임을 차단합니다.
+    naver.maps.Event.addListener(map, "zoom_changed", function() {
+        // 휠 중간 연산 원천 차단 전막
+    });
 
         } catch (infrastructureError) {
             console.warn("⚠️ 외부 확장 프로그램 간섭 차단 및 방어 완료:", infrastructureError);
