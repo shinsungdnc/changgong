@@ -718,7 +718,7 @@ document.addEventListener("DOMContentLoaded", function() {
             // 🌟 [휠 엇박자 전면 교정]: 휠을 가동하는 중간(zoom_changed)에는 이중 무거운 거리 연산을 전면 중단(철거)!
             // 휠 회전 즉시 8단계 스캔부만 가볍게 동기화 호출하여 줌 변경 시 목록창이 접히는 버그를 완치합니다.
             naver.maps.Event.addListener(map, "zoom_changed", function() {
-                applyFilters(); 
+                // applyFilters(); 
             });
 
         } catch (infrastructureError) {
