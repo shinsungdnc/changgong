@@ -3,6 +3,9 @@
 // 파일명: NaverRealMap_Script.js (최상단 기초 인프라 및 상태 필터 블록)
 // =========================================================================
 
+var js_factory_list_logic = ' <b>대장:</b> ' + (function(prop) { try { if (prop.category === "공장") { var dongs = JSON.parse(prop.Building_List_JSON); if (dongs && dongs.length > 0) return (dongs[0].structure || '-') + ' / ' + (dongs[0].use || '-') + ' / ' + (dongs[0].height || '-'); } else if (prop.category === "주택") { return prop.house_ledger; } } catch(e) {} return prop.yongdo || '대장없음'; })();
+
+
 // 💡 줌 12, 13에서 실시간으로 생성 및 파괴될 광역 읍면동 통계 배지들을 기억할 전역 장부
 var townSummaryMarkers = [];
 var markers = []; // 백엔드 수령 매물에 대응하는 개별 마커 객체 메모리 방
@@ -423,7 +426,7 @@ function applyFilters(forcedTown) {
                 else if (prop.price.indexOf("단기") !== -1) { badgeBg = "#4A148C"; badgeText = "단기"; }
                 var dealBadgeHtml = '<span style="display: inline-block; padding: 4px 10px; font-size: 13px; font-weight: bold; color: #fff; background: ' + badgeBg + '; border-radius: 4px; white-space: nowrap; line-height: 1.0;">' + badgeText + '</span>';
                 
-                var infoLeftHtml = '<b>면적:</b> ' + prop.area + '<br>' + js_factory_list_logic;
+                var infoLeftHtml = '<b>면적:</b> ' + prop.area + '<br>' + js_factory_list_logic(prop);
 
                 itemDiv.innerHTML = [
                     '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">',
