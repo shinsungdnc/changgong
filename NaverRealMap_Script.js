@@ -356,7 +356,7 @@ function applyFilters(forcedTown) {
             if (cNum > 0) {
                 var townLatLng = new naver.maps.LatLng(sumLat / cNum, sumLng / cNum);
                 
-                // 🎯 [글자 색상 완전 검은색 동기화 마감]: 수량 숫자를 읍면동 글씨와 일치하는 검은색(#111111)으로 고정 완료
+                // 🎯 [완전 무결점 칼각 조립]: 주황색 코드(#ff6e40) 자리를 통째로 파내고 먹색(#111111)으로 완벽 박음질했습니다.
                 var badgeHtml = [
                     '<div class="cluster-badge" style="cursor:pointer; width:58px; height:44px; padding-top:14px; font-size:12px; color:#111111 !important; text-align:center; font-weight:bold; background:rgba(74, 211, 255, 0.95); border:2px solid #ffffff; border-radius:50%; box-shadow:0 4px 12px rgba(0,0,0,0.35); line-height:1.2;">',
                     '  ' + townName.substring(0, 3) + '<br>', 
@@ -398,7 +398,7 @@ function applyFilters(forcedTown) {
         var mCat = (currentCategories.indexOf(p.category) !== -1);
         var mDet = (currentDetail.length === 0 || currentDetail.indexOf(p.detail_type) !== -1);
         var mDeal = false;
-        currentDealTypes.forEach(function(type) { if (p.price && p.price.indexOf(type) !== -1) { mDeal = true; } });
+        currentDealTypes.forEach(function(type) { if (p.price.indexOf(type) !== -1) { mDeal = true; } });
         var mTown = (currentTown === "전체" || p.town === currentTown);
         var mRi = (currentRi === "전체" || (p.name && p.name.indexOf(currentRi) !== -1));
 
@@ -419,8 +419,8 @@ function applyFilters(forcedTown) {
 
 function buildRealTradeTableLayout(prop, panel) {
     var yParts = prop.yongdo.split("/");
-    var mYongdo = (yParts && yParts[0] ? yParts[0].trim() : "").replace("지역", "") + "지역"; 
-    var mJimok = (yParts && yParts[1] ? yParts[1].trim() : "");       
+    var mYongdo = (yParts && yParts ? yParts.trim() : "").replace("지역", "") + "지역"; 
+    var mJimok = (yParts && yParts ? yParts.trim() : "");       
 
     var tableHtml = '';
     var noticeText = '최근 5개년 토지 [매매] 실거래가 (평, 평당가)'; 
@@ -456,7 +456,7 @@ function buildRealTradeTableLayout(prop, panel) {
                 var yrTxt = isFirst ? yr : ""; 
                 var yrSty = isFirst ? 'style="font-weight:bold; color:#2b5c8f; white-space:nowrap; border-bottom:none;"' : 'style="border-top:none; border-bottom:none;"';
                 isFirst = false;
-                tableHtml += '<tr><td ' + yrSty + '>' + yrTxt + '</td><td style="font-weight:bold; color:#ff6e40; max-width:90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="'+row.ri+'">'+row.ri+'</td><td>'+row.count+'</td><td>'+row.volume.toLocaleString()+'</td><td>'+row.min.toLocaleString()+'</td><td style="font-weight:bold; color:#2b5c8f;">'+row.avg.toLocaleString()+'</td><td style="font-weight:bold; color:#e65100;">'+row.max.toLocaleString()+'</td></tr>';
+                tableHtml += '<tr><td ' + yrSty + '>' + yrTxt + '</td><td style="font-weight:bold; color:#111111; max-width:90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="'+row.ri+'">'+row.ri+'</td><td>'+row.count+'</td><td>'+row.volume.toLocaleString()+'</td><td>'+row.min.toLocaleString()+'</td><td style="font-weight:bold; color:#2b5c8f;">'+row.avg.toLocaleString()+'</td><td style="font-weight:bold; color:#e65100;">'+row.max.toLocaleString()+'</td></tr>';
             });
         });
         tableHtml += '</table>';
@@ -488,7 +488,6 @@ function buildRealTradeTableLayout(prop, panel) {
 document.addEventListener("DOMContentLoaded", function() {
     if (typeof naver !== 'undefined' && typeof map !== 'undefined' && map) {
         try {
-            // ① 메인 HTML에 잠겨있던 백엔드 매물 데이터 파이프라인 개시
             if (typeof window.initMapPipeline === 'function') {
                 window.initMapPipeline();
             }
@@ -499,9 +498,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 updateDetailSelectorOptions();
             }
 
-            // 🎯 [첫 로딩 0개 완치 스위치]
-            // 백엔드가 비동기로 매물 장부를 다 채울 수 있도록 300ms의 완충 시간을 준 뒤
-            // 첫 화면 중심 좌표를 올바르게 추적하여 배지를 즉시 드로잉합니다.
+            // 🎯 [비동기 데이터 레이싱 방어 완충 가드 가동]
             setTimeout(function() {
                 var initCenter = map.getCenter();
                 var initClosestTown = "전체";
@@ -523,9 +520,8 @@ document.addEventListener("DOMContentLoaded", function() {
                     });
                 }
                 applyFilters(initClosestTown);
-            }, 300); // ◀ 300ms 완충 버퍼 장착
+            }, 300);
 
-            // ② 지도 드래그 및 정지 이벤트 리스너 가동
             naver.maps.Event.addListener(map, "idle", function() {
                 if (idleTimeoutId) clearTimeout(idleTimeoutId);
                 
