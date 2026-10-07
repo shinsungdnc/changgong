@@ -121,7 +121,7 @@ function toggleDetailSelectorPanel() {
     }
 }
 
-// =========================================================================
+/// =========================================================================
 // [공정 2단계] 소분류 옵션 동적 빌드 및 행정구역 카운트 정밀 동기화 블록
 // =========================================================================
 
@@ -199,7 +199,6 @@ function initTownSelectorOnce() {
     });
 }
 
-// 📍 [실시간 개수 역산 및 리 셀렉터 분기]
 function updateTownSelectorOptions() {
     var townSelector = document.getElementById("town-selector");
     var riSelector = document.getElementById("ri-selector");
@@ -216,35 +215,43 @@ function updateTownSelectorOptions() {
         var mDet = (currentCategories.length === 0 || currentDetail.indexOf(p.detail_type) !== -1);
         var mDeal = false;
         currentDealTypes.forEach(function(type) {
-            if (p.price.indexOf(type) !== -1) { mDeal = true; }
+            if (p.price && p.price.indexOf(type) !== -1) { mDeal = true; }
         });
 
         if (mCat && mDet && mDeal) {
             totalCount++;
             townCounts[p.town] = (townCounts[p.town] || 0) + 1;
             
-            if (p.town && p.name.indexOf(p.town) !== -1) {
-                var remainAddr = p.name.split(p.town)[1] ? p.name.split(p.town)[1].trim() : "";
-                var tokens = remainAddr.split(" ");
-                if (tokens.length > 0 && tokens[0].endsWith("리")) {
-                    var riName = tokens[0].trim();
-                    if (!riCounts[p.town]) riCounts[p.town] = {};
-                    riCounts[p.town][riName] = (riCounts[p.town][riName] || 0) + 1;
+            // 📍 [리 분리 파싱 무결점 교정 완료]: 안전하게 문자열 객체 타겟팅 후 slice 처리
+            if (p.town && p.name && p.name.indexOf(p.town) !== -1) {
+                var nameParts = p.name.split(p.town);
+                if (nameParts.length > 1) {
+                    var remainAddr = nameParts[1].trim(); 
+                    var tokens = remainAddr.split(" ");
+                    if (tokens.length > 0) {
+                        var firstToken = tokens[0].trim();
+                        if (firstToken.slice(-1) === "리") { 
+                            var riName = firstToken;
+                            if (!riCounts[p.town]) riCounts[p.town] = {};
+                            riCounts[p.town][riName] = (riCounts[p.town][riName] || 0) + 1;
+                        }
+                    }
                 }
             }
         }
     });
 
-    if (townSelector.options[0]) {
+    // 🎯 [DOM 제어 문법 교정]: options[0].text 규격에 맞춰 개수 카운트 스왑 연동
+    if (townSelector.options && townSelector.options.length > 0) {
         townSelector.options[0].text = "📍 지역 선택 (전체: " + totalCount + "개)";
-    }
-    for (var i = 1; i < townSelector.options.length; i++) {
-        var val = townSelector.options[i].value;
-        var count = townCounts[val] || 0;
-        townSelector.options[i].text = "📍 " + val + " (" + count + ")";
+        for (var i = 1; i < townSelector.options.length; i++) {
+            var val = townSelector.options[i].value;
+            var count = townCounts[val] || 0;
+            townSelector.options[i].text = "📍 " + val + " (" + count + ")";
+        }
     }
 
-    if (currentTown !== "전체" && (currentTown.endsWith("읍") || currentTown.endsWith("면"))) {
+    if (currentTown !== "전체" && (currentTown.slice(-1) === "읍" || currentTown.slice(-1) === "면")) {
         riSelector.style.display = "block";
         var targetTownRis = riCounts[currentTown] || {};
         var sortedRis = Object.keys(targetTownRis).sort();
@@ -264,8 +271,43 @@ function updateTownSelectorOptions() {
 }
 
 // =========================================================================
-// [공정 3단계] 마스터 필터 제어 및 광역 읍면동 통계 배지 제어 블록
+// [공정 3단계] 마스터 필터 제어 및 네이버 순정 마커 클러스터러 가동 엔진
 // =========================================================================
+
+function updateClustering() {
+    if (!map || typeof MarkerClustering === 'undefined') return;
+
+    if (markerClustering) {
+        markerClustering.setMap(null);
+        markerClustering = null;
+    }
+
+    var activeMarkers = markers.filter(function(m) {
+        return m && m.getMap && m.getMap() === map;
+    });
+
+    if (activeMarkers.length > 0) {
+        markerClustering = new MarkerClustering({
+            minClusterSize: 2,      
+            maxZoom: 19,            
+            map: map,
+            markers: activeMarkers,
+            gridSize: 80,           
+            icons: [
+                {
+                    content: '<div style="cursor:pointer;width:40px;height:40px;line-height:42px;font-size:12px;color:white;text-align:center;font-weight:bold;background:#1e88e5;border:3px solid #fff;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>',
+                    size: new naver.maps.Size(40, 40),
+                    anchor: new naver.maps.Point(20, 20)
+                }
+            ],
+            indexGenerator: function(count) { return 0; },
+            stylingFunction: function(clusterMarker, count) {
+                var div = clusterMarker.getElement().querySelector('div');
+                if (div) div.innerText = count;
+            }
+        });
+    }
+}
 
 function applyFilters(forcedTown) {
     var currentZoom = map.getZoom();
@@ -273,7 +315,6 @@ function applyFilters(forcedTown) {
     var listContainer = document.getElementById("property-list");
     var closestTown = forcedTown || "전체";
 
-    // 🛑 줌 14레벨 미만일 때: 광역 브리핑 처리 후 안전하게 탈출(Lock)
     if (currentZoom < 14) {
         if (listPanel) { listPanel.style.display = "none"; }
         if (listContainer) { listContainer.innerHTML = ""; } 
@@ -291,7 +332,7 @@ function applyFilters(forcedTown) {
         properties.forEach(function(p) {
             var mCat = (currentCategories.indexOf(p.category) !== -1);
             var mDeal = false;
-            currentDealTypes.forEach(function(type) { if (p.price.indexOf(type) !== -1) { mDeal = true; } });
+            currentDealTypes.forEach(function(type) { if (p.price && p.price.indexOf(type) !== -1) { mDeal = true; } });
             var mDet = (currentDetail.length === 0 || currentDetail.indexOf(p.detail_type) !== -1);
 
             if (mCat && mDeal && mDet) {
@@ -314,10 +355,12 @@ function applyFilters(forcedTown) {
 
             if (cNum > 0) {
                 var townLatLng = new naver.maps.LatLng(sumLat / cNum, sumLng / cNum);
+                
+                // 🎯 [글자 색상 완전 검은색 동기화 마감]: 수량 숫자를 읍면동 글씨와 일치하는 검은색(#111111)으로 고정 완료
                 var badgeHtml = [
-                    '<div class="cluster-badge" style="cursor:pointer; width:58px; height:44px; padding-top:14px; font-size:12px; color:#111111; text-align:center; font-weight:bold; background:rgba(74, 211, 255, 0.95); border:2px solid #ffffff; border-radius:50%; box-shadow:0 4px 12px rgba(0,0,0,0.35); line-height:1.2;">',
+                    '<div class="cluster-badge" style="cursor:pointer; width:58px; height:44px; padding-top:14px; font-size:12px; color:#111111 !important; text-align:center; font-weight:bold; background:rgba(74, 211, 255, 0.95); border:2px solid #ffffff; border-radius:50%; box-shadow:0 4px 12px rgba(0,0,0,0.35); line-height:1.2;">',
                     '  ' + townName.substring(0, 3) + '<br>', 
-                    '  <span style="font-size:11px; color:#ff6e40; font-weight:800;">' + count + '</span>', 
+                    '  <span style="font-size:11px; color:#111111 !important; font-weight:800; display:inline-block !important;">' + count + '</span>', 
                     '</div>'
                 ].join('');
                 
@@ -342,6 +385,31 @@ function applyFilters(forcedTown) {
         updateTownSelectorOptions();
         return; 
     }
+
+    if (typeof townSummaryMarkers !== 'undefined' && townSummaryMarkers !== null) {
+        townSummaryMarkers.forEach(function(tm) { tm.setMap(null); });
+    }
+    townSummaryMarkers = [];
+
+    markers.forEach(function(marker) {
+        var p = marker.get ? marker.get('propertyData') : null; 
+        if (!p) return;
+
+        var mCat = (currentCategories.indexOf(p.category) !== -1);
+        var mDet = (currentDetail.length === 0 || currentDetail.indexOf(p.detail_type) !== -1);
+        var mDeal = false;
+        currentDealTypes.forEach(function(type) { if (p.price && p.price.indexOf(type) !== -1) { mDeal = true; } });
+        var mTown = (currentTown === "전체" || p.town === currentTown);
+        var mRi = (currentRi === "전체" || (p.name && p.name.indexOf(currentRi) !== -1));
+
+        if (mCat && mDet && mDeal && mTown && mRi) {
+            marker.setMap(map); 
+        } else {
+            marker.setMap(null); 
+        }
+    });
+
+    updateClustering();
     updateTownSelectorOptions();
 }
 
@@ -420,13 +488,44 @@ function buildRealTradeTableLayout(prop, panel) {
 document.addEventListener("DOMContentLoaded", function() {
     if (typeof naver !== 'undefined' && typeof map !== 'undefined' && map) {
         try {
+            // ① 메인 HTML에 잠겨있던 백엔드 매물 데이터 파이프라인 개시
             if (typeof window.initMapPipeline === 'function') {
                 window.initMapPipeline();
             }
             if (typeof initTownSelectorOnce === 'function') {
                 initTownSelectorOnce();
             }
+            if (typeof updateDetailSelectorOptions === 'function') {
+                updateDetailSelectorOptions();
+            }
 
+            // 🎯 [첫 로딩 0개 완치 스위치]
+            // 백엔드가 비동기로 매물 장부를 다 채울 수 있도록 300ms의 완충 시간을 준 뒤
+            // 첫 화면 중심 좌표를 올바르게 추적하여 배지를 즉시 드로잉합니다.
+            setTimeout(function() {
+                var initCenter = map.getCenter();
+                var initClosestTown = "전체";
+                var initMinDistance = Infinity;
+
+                if (initCenter && typeof properties !== 'undefined' && Array.isArray(properties)) {
+                    var initLat = initCenter.lat();
+                    var initLng = initCenter.lng();
+                    properties.forEach(function(p) {
+                        if (p && p.lat && p.lng && p.town) {
+                            var latDiff = p.lat - initLat;
+                            var lngDiff = p.lng - initLng;
+                            var dist = (latDiff * latDiff) + (lngDiff * lngDiff);
+                            if (dist < initMinDistance) {
+                                initMinDistance = dist;
+                                initClosestTown = p.town; 
+                            }
+                        }
+                    });
+                }
+                applyFilters(initClosestTown);
+            }, 300); // ◀ 300ms 완충 버퍼 장착
+
+            // ② 지도 드래그 및 정지 이벤트 리스너 가동
             naver.maps.Event.addListener(map, "idle", function() {
                 if (idleTimeoutId) clearTimeout(idleTimeoutId);
                 
