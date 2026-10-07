@@ -3,7 +3,7 @@
 // 파일명: NaverRealMap_Script.js (최상단 기초 인프라 및 상태 필터 블록)
 // =========================================================================
 
-var js_factory_list_logic = ' <b>대장:</b> ' + (function(prop) { try { if (prop.category === "공장") { var dongs = JSON.parse(prop.Building_List_JSON); if (dongs && dongs.length > 0) return (dongs[0].structure || '-') + ' / ' + (dongs[0].use || '-') + ' / ' + (dongs[0].height || '-'); } else if (prop.category === "주택") { return prop.house_ledger; } } catch(e) {} return prop.yongdo || '대장없음'; })();
+function js_factory_list_logic(prop) { try { if (prop.category === "공장") { var dongs = JSON.parse(prop.Building_List_JSON); if (dongs && dongs.length > 0) return ' <b>대장:</b> ' + (dongs.structure || '-') + ' / ' + (dongs.use || '-') + ' / ' + (dongs.height || '-'); } else if (prop.category === "주택") { return ' <b>대장:</b> ' + prop.house_ledger; } } catch(e) {} return ' <b>대장:</b> ' + (prop.yongdo || '대장없음'); }
 
 
 // 💡 줌 12, 13에서 실시간으로 생성 및 파괴될 광역 읍면동 통계 배지들을 기억할 전역 장부
