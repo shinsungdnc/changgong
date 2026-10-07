@@ -333,9 +333,9 @@ function applyFilters(forcedTown) {
                 // 🎯 [명품 2단 줄바꿈 레이아웃]: 중개사님이 기획하신 명세 그대로 동네 이름이 나오고, 
                 // 그 바로 아래에 매물 숫자가 부드럽게 안착되도록 <br> 장치를 심어 입체감 있게 가공했습니다.
                 var badgeHtml = [
-                    '<div class="cluster-badge" style="cursor:pointer; width:58px; height:44px; padding-top:14px; font-size:12px; color:#111111; text-align:center; font-weight:bold; background:rgba(74, 211, 255, 0.95); border:2px solid #ffffff; border-radius:50%; box-shadow:0 4px 12px rgba(0,0,0,0.35); line-height:1.2;">',
+                    '<div class="cluster-badge" style="cursor:pointer; width:58px; height:44px; padding-top:14px; font-size:12px; color:#111111; text-align:center; font-weight:bold; background:rgba(74, 211, 255, 0.95); border:1px solid #ffffff; border-radius:50%; box-shadow:0 4px 12px rgba(0,0,0,0.35); line-height:1.2;">',
                     '  ' + townName.substring(0, 3) + '<br>', // 1단: 고운동, 연서면 등 3글자 노출
-                    '  <span style="font-size:11px; color:#ff6e40; font-weight:800;">' + count + '</span>', // 2단: 실시간 필터 수량 꽂기
+                    '  <span style="font-size:11px; color:#111111; font-weight:800;">' + count + '</span>', // 2단: 실시간 필터 수량 꽂기
                     '</div>'
                 ].join('');
                 
