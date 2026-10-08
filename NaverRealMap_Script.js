@@ -1,6 +1,6 @@
 // =========================================================================
 // [마스터 완결판] 창공부동산 차세대 프롭테크 지도 브리핑 엔진
-// 파일명: NaverRealMap_Script.js (기획안 순서 및 예외 가드 완치 통합본 - Part 1)
+// 파일명: NaverRealMap_Script.js (기획안 스펙 및 함수 순서 완치 통합본 - Part 1/5)
 // =========================================================================
 
 // 💡 전역 인터페이스 상태 장부 구조 고정 (연산 교란 차단 가드)
@@ -11,7 +11,7 @@ var filterTimeout = null;       // 디바운싱(연산 과부하 방지)용 타�
 var isLockScrollParking = false; // 자동 주차 스크롤 락 플래그
 var isMorphMoving = false;       // 스마트 줌인 시야 필터 교란 차단 플래그
 
-// 🎛️ [초기 상태 정의] 전역 상태 배열
+// 🎛️ [초기 상태 정의] 유저가 직접 조작하기 전까지 굳건히 유지될 전역 상태 배열
 var currentCategories = ["토지", "공장", "주택"];
 var currentDetail = []; 
 var currentTown = "전체";
@@ -23,64 +23,141 @@ if (typeof properties === 'undefined') var properties = [];
 if (typeof townList === 'undefined') var townList = [];
 if (typeof realTradeStats === 'undefined') var realTradeStats = {};
 if (typeof map === 'undefined') var map = null; 
-if (typeof townStaticBadges === 'undefined') var townStaticBadges = []; // 줌 12~13 광역 읍면동 정적 배지
+if (typeof townStaticBadges === 'undefined') var townStaticBadges = [];
 
 // =========================================================================
-// 📡 1단계: 유저 인터랙션 상태 포획 레이어 (상태 수집 후 applyFilters로 단방향 수렴)
+// 📍 [순서 완치 - 1] 읍면동/리 지역 셀렉터 옵션 연산 빌더 (최선행 배치)
 // =========================================================================
-function toggleDealType(type) {
-    var btnId = "btn-" + (type === "매매" ? "maemae" : type === "전세" ? "jeonse" : type === "월세" ? "wolse" : "dangi");
-    var activeClass = "active-" + (type === "매매" ? "maemae" : type === "전세" ? "jeonse" : type === "월세" ? "wolse" : "dangi");
-    var btn = document.getElementById(btnId);
-    var idx = currentDealTypes.indexOf(type);
+function updateTownSelectorOptions() {
+    var townSelector = document.getElementById("town-selector");
+    var riSelector = document.getElementById("ri-selector");
+    if (!townSelector || !riSelector) return;
     
-    if (idx > -1) {
-        currentDealTypes.splice(idx, 1);
-        if (btn) btn.classList.remove(activeClass);
+    var savedTown = currentTown;
+    var savedRi = currentRi;
+    
+    var totalCount = 0;
+    var townCounts = {};
+    var riCounts = {};
+    
+    properties.forEach(function(p) {
+        var mCat = (currentCategories.indexOf(p.category) !== -1);
+        var mDet = (currentCategories.length === 0 || currentDetail.indexOf(p.detail_type) !== -1);
+        
+        var mDeal = false;
+        currentDealTypes.forEach(function(type) {
+            if (p.price && p.price.indexOf(type) !== -1) { mDeal = true; }
+        });
+
+        if (mCat && mDet && mDeal) {
+            totalCount++;
+            townCounts[p.town] = (townCounts[p.town] || 0) + 1;
+            
+            if (p.town && p.name && p.name.indexOf(p.town) !== -1) {
+                var remainAddr = p.name.split(p.town)[1];
+                if (remainAddr) {
+                    var tokens = remainAddr.trim().split(" ");
+                    if (tokens.length > 0 && tokens[0].endsWith("리")) {
+                        var riName = tokens[0].trim();
+                        if (!riCounts[p.town]) riCounts[p.town] = {};
+                        riCounts[p.town][riName] = (riCounts[p.town][riName] || 0) + 1;
+                    }
+                }
+            }
+        }
+    });
+
+    townSelector.innerHTML = "<option value='전체'>📍 지역 선택 (전체: " + totalCount + "개)</option>";
+    var activeTownList = (townList && townList.length > 0) ? townList : Object.keys(townCounts).sort();
+
+    activeTownList.forEach(function(t) {
+        var count = townCounts[t] || 0;
+        if (count > 0) {
+            var opt = document.createElement("option"); opt.value = t; opt.innerText = "📍 " + t + " (" + count + ")";
+            if (t === savedTown) opt.selected = true;
+            townSelector.appendChild(opt);
+        }
+    });
+
+    if (currentTown !== "전체" && (currentTown.endsWith("읍") || currentTown.endsWith("면"))) {
+        riSelector.style.display = "block";
+        var targetTownRis = riCounts[currentTown] || {};
+        var sortedRis = Object.keys(targetTownRis).sort();
+        var townTotal = townCounts[currentTown] || 0;
+        
+        riSelector.innerHTML = "<option value='전체'>📍 리 전체 (" + townTotal + ")</option>";
+        sortedRis.forEach(function(r) {
+            var rCount = targetTownRis[r] || 0;
+            var opt = document.createElement("option"); opt.value = r; opt.innerText = r + " (" + rCount + ")";
+            if (r === savedRi) opt.selected = true;
+            riSelector.appendChild(opt);
+        });
     } else {
-        currentDealTypes.push(type);
-        if (btn) btn.classList.add(activeClass);
+        riSelector.style.display = "none";
+        currentRi = "전체";
     }
-    applyFilters();
 }
 
-function toggleCategory(cat) {
-    var btnId = ""; var activeClass = "";
-    if (cat === "토지") { btnId = "btn-land"; activeClass = "active-land"; }
-    if (cat === "공장") { btnId = "btn-factory"; activeClass = "active-factory"; }
-    if (cat === "주택") { btnId = "btn-house"; activeClass = "active-house"; }
+// =========================================================================
+// 📍 [순서 완치 - 2] 상세 소분류 체크박스 동적 옵션 제어 엔진
+// =========================================================================
+function updateDetailSelectorOptions() {
+    var container = document.getElementById("detail-selector");
+    var trigger = document.getElementById("filter-toggle-btn");
+    if (!container || !trigger) return;
     
-    var btn = document.getElementById(btnId); var idx = currentCategories.indexOf(cat);
-    if (idx > -1) {
-        currentCategories.splice(idx, 1);
-        if (btn) btn.classList.remove(activeClass);
-    } else {
-        currentCategories.push(cat);
-        if (btn) btn.classList.add(activeClass);
-    }
-    applyFilters();
-}
-
-function toggleSidebar() {
-    var sidebar = document.getElementById("sidebar");
-    var panel = document.getElementById("right-stats-panel");
-    if (!sidebar) return;
+    var detailsSet = new Set();
+    properties.forEach(function(p) { 
+        if (currentCategories.indexOf(p.category) !== -1) { detailsSet.add(p.detail_type); } 
+    });
     
-    if (sidebar.classList.contains("hidden")) {
-        sidebar.classList.remove("hidden");
-        var hasActiveProperty = document.querySelector(".property-item.active");
-        if (hasActiveProperty && panel) panel.classList.add("active");
-    } else {
-        sidebar.classList.add("hidden");
-        if (panel) { panel.classList.remove("active"); panel.classList.remove("expanded"); }
-    }
-}
+    var sortedDetails = Array.from(detailsSet).sort();
+    if (container.children.length === sortedDetails.length + 1) { return; } 
+    
+    container.innerHTML = "";
+    trigger.style.display = "flex"; 
+    container.style.display = "none";
+    var activeBg = "#ffffff", activeColor = "#004b6e", activeBorder = "#004b6e";
 
-function toggleDetailSelectorPanel() {
-    var panel = document.getElementById("detail-selector");
-    if (panel) {
-        panel.style.display = (panel.style.display === "none" || panel.style.display === "") ? "flex" : "none";
-    }
+    var masterWrapper = document.createElement("label");
+    masterWrapper.style = "display: inline-flex; align-items: center; font-size: 12px; font-weight: bold; cursor: pointer; padding: 5px 12px; border-radius: 4px; flex-shrink: 0; background:" + activeBg + "; color:" + activeColor + "; border: 2px solid " + activeBorder;
+    var masterChk = document.createElement("input"); masterChk.type = "checkbox"; masterChk.checked = true; masterChk.style.display = "none";
+
+    masterChk.onchange = function() {
+        var childLabels = container.querySelectorAll(".child-label");
+        var isChecked = this.checked;
+        masterWrapper.style.background = isChecked ? activeBg : "#e9ecef";
+        masterWrapper.style.color = isChecked ? activeColor : "#868e96";
+        masterWrapper.style.border = isChecked ? "2px solid " + activeBorder : "2px solid #ced4da";
+        childLabels.forEach(function(wrapper) {
+            var input = wrapper.querySelector("input");
+            if (input && input.checked !== isChecked) {
+                input.checked = isChecked;
+                wrapper.style.background = isChecked ? activeBg : "#e9ecef";
+                wrapper.style.color = isChecked ? activeColor : "#868e96";
+                wrapper.style.border = isChecked ? "2px solid " + activeBorder : "2px solid #ced4da";
+            }
+        });
+        currentDetail = isChecked ? [...sortedDetails] : [];
+        applyFilters(); 
+    };
+    masterWrapper.appendChild(masterChk); masterWrapper.appendChild(document.createTextNode("전체")); container.appendChild(masterWrapper);
+
+    sortedDetails.forEach(function(d) {
+        var wrapper = document.createElement("label"); wrapper.className = "child-label"; wrapper.style = "display: inline-flex; align-items: center; font-size: 12px; font-weight: bold; cursor: pointer; padding: 5px 12px; border-radius: 20px; flex-shrink: 0; background:" + activeBg + "; color:" + activeColor + "; border: 2px solid " + activeBorder;
+        var chk = document.createElement("input"); chk.type = "checkbox"; chk.value = d; chk.checked = true; chk.style.display = "none";
+        chk.onchange = function() {
+            wrapper.style.background = this.checked ? activeBg : "#e9ecef";
+            wrapper.style.color = this.checked ? activeColor : "#868e96";
+            wrapper.style.border = this.checked ? "2px solid " + activeBorder : "2px solid #ced4da";
+            if (!this.checked) { masterChk.checked = false; masterWrapper.style.background = "#e9ecef"; masterWrapper.style.color = "#868e96"; masterWrapper.style.border = "2px solid #ced4da"; }
+            var checkedBoxes = container.querySelectorAll(".child-label input:checked");
+            currentDetail = Array.from(checkedBoxes).map(function(c) { return c.value; });
+            if (currentDetail.length === sortedDetails.length) { masterChk.checked = true; masterWrapper.style.background = activeBg; masterWrapper.style.color = activeColor; masterWrapper.style.border = "2px solid " + activeBorder; }
+            applyFilters();
+        };
+        wrapper.appendChild(chk); wrapper.appendChild(document.createTextNode(d)); container.appendChild(wrapper);
+    });
 }
 
 // =========================================================================
@@ -89,8 +166,8 @@ function toggleDetailSelectorPanel() {
 function initMap() {
     var townSelector = document.getElementById("town-selector");
     
-    // 🎯 [기획 2단계 수복]: 초기 2,894개 매물에 대한 소분류/수량 계산 전면 금지 및 차단
-    // 백엔드가 이미 정렬해서 넘겨준 'townList' 데이터만 드롭다운에 단순 매핑하여 초기 부하를 완벽히 제거
+    // 🎯 [기획 2단계 반영]: 초기 로딩 시 2,894개 전체 매물에 대한 소분류/수량 계산 루프 전면 차단!
+    // 백엔드가 이미 공급해 준 townList 데이터만 단순 드롭다운 메뉴에 매핑하여 로딩 병목을 완전히 격파합니다.
     if (townSelector && townList && townList.length > 0) {
         var optHtml = ["<option value='전체'>📍 지역 선택 (전체)</option>"];
         townList.forEach(function(t) {
@@ -101,7 +178,7 @@ function initMap() {
 
     markers = [];
     
-    // 개별 마커의 도화지(setMap) 등록을 전면 보류하고 순수 자바스크립트 오브젝트로만 메모리 적재
+    // 개별 마커를 네이버 지도 캔버스 위에 무단 등록(setMap)하지 않고, 가벼운 순수 객체 형태로만 적재
     properties.forEach(function(prop, index) {
         var latlng = new naver.maps.LatLng(prop.lat, prop.lng);
         
@@ -118,11 +195,13 @@ function initMap() {
             icon: { content: markerHtml, anchor: new naver.maps.Point(0, 0) } 
         });
         
+        // 하강 필터 파이프라인이 읽어 내릴 메타데이터 영구 낙인
         marker.set("category", prop.category); 
         marker.set("detail_type", prop.detail_type); 
         marker.set("town", prop.town); 
         marker.set("p_index", index); 
         
+        // [자석식 Sticky 클릭 UX 결합]: 마커를 직접 터치/클릭했을 때 상세페이지 연동 이벤트 미리 바인딩
         naver.maps.Event.addListener(marker, "click", function() { 
             if (typeof selectProperty === 'function') selectProperty(index, marker); 
         });
@@ -130,20 +209,19 @@ function initMap() {
         markers.push(marker);
     });
 
-    // 메모리 적재 즉시 하강 파이프라인 시동
+    // 메모리 적재 즉시 단방향 하강 필터 시스템 가동
     applyFilters();
 }
 
-// 🎛️ 디바운싱 필터 밸브 조절 (이동 중 연산 차단 브레이크)
+// 🎛️ 디바운싱 필터 밸브 조절 (지도가 마우스 드래그나 휠 스케일링 중일 때는 연산 완전 차단)
 function applyFilters() {
     if (filterTimeout) clearTimeout(filterTimeout);
     filterTimeout = setTimeout(executeFilteringPipeline, 120); 
 }
 
 // =========================================================================
-// 📡 [Part 2] 지연 렌더링(Lazy Rendering) 실행 파이프라인 및 클러스터 인터록
+// 📡 [Part 3/5] 지연 렌더링(Lazy Rendering) 실행 파이프라인 및 클러스터러 엔진 ON
 // =========================================================================
-
 function executeFilteringPipeline() {
     if (!map) return;
     var vis = []; 
@@ -151,7 +229,7 @@ function executeFilteringPipeline() {
     var currentBounds = map.getBounds();
     var listContainer = document.getElementById("property-list");
 
-    // [예외 안전 가드]: 스마트 줌인(morph) 카메라 비행 중에는 시야 연산 일시 중지
+    // 🎯 [예외 안전 가드]: 스마트 줌인(morph) 카메라가 이동하는 중에는 시야 필터 연산을 일시 정지
     if (isMorphMoving) return;
 
     // ---------------------------------------------------------------------
@@ -160,14 +238,14 @@ function executeFilteringPipeline() {
     if (currentZoom < 14) {
         if (listContainer) { 
             listContainer.style.display = "none"; 
-            listContainer.innerHTML = ""; // 3단계: 목록창 레이아웃 완전 소멸
+            listContainer.innerHTML = ""; // 3단계: 목록창 레이아웃 완전 소멸 (렉 방지)
         }
         
-        // 5단계: 개별 마커 및 순정 클러스터러 엔진 전면 OFF
+        // 5단계: 개별 마커 및 순정 클러스터러 엔진 전면 휴면(OFF)
         markers.forEach(function(m) { if (m.getMap() !== null) m.setMap(null); });
         if (markerClustering !== null) { try { markerClustering.setMap(null); } catch(e) {} markerClustering = null; }
         
-        // 5단계: 광역 정적 통계 배지 활성화 노출
+        // 5단계: 백엔드가 공급한 순수 읍면동별 총 매물수 통계 정적 배지만 노출 가동
         if (typeof townStaticBadges !== 'undefined' && Array.isArray(townStaticBadges)) {
             townStaticBadges.forEach(function(badge) { if (badge && badge.getMap() !== map) badge.setMap(map); });
         }
@@ -181,7 +259,7 @@ function executeFilteringPipeline() {
     // 🏢 [3부·4부 스펙] 정밀 진입 및 도농 복합 제어 모드 (지도 줌 14레벨 이상)
     // ---------------------------------------------------------------------
     
-    // 광역 배지 자동 소멸 타임라인 처리
+    // 광역 배지 자동 소멸 처리
     if (typeof townStaticBadges !== 'undefined' && Array.isArray(townStaticBadges)) {
         townStaticBadges.forEach(function(badge) { if (badge && badge.getMap() !== null) badge.setMap(null); });
     }
@@ -233,9 +311,9 @@ function executeFilteringPipeline() {
                     '      <b>면적:</b> ' + prop.area + '<br>',
                     '      <b>용도:</b> ' + prop.yongdo + '',
                     '    </div>',
-                    '    <span style="font-size: 15px; font-weight: bold; color: #2b5c8f;">' + prop.price.replace(/[가-힣\s]/g, "") + '</span>',
+                    '    <span style="font-size: 15px; font-weight: bold; color: #2b5c8f;">' + prop.price.replace(/[가-힣\s\/0-9]/g, "") + '</span>',
                     '  </div>',
-                    '  <div class="property-detail" id="detail-' + i + '" style="display:none;"></div>', // 12단계 상세페이지 확장 도화지
+                    '  <div class="property-detail" id="detail-' + i + '" style="display:none;"></div>', 
                     '</div>'
                 );
             } else {
@@ -258,8 +336,10 @@ function executeFilteringPipeline() {
     // 7단계 기획: 네이버 순정 클러스터러 기동 제어 유도
     updateClustering(vis); 
     
-    // 9단계 기획: 리스트 스크롤 오토 주차 피팅 엔진 가동
-    executeScrollAutoParking(vis);
+    // 9단계 기획: 리스트 스크롤 오토 주차 피팅 엔진 호출
+    if (typeof executeScrollAutoParking === 'function') {
+        executeScrollAutoParking(vis);
+    }
 }
 
 // =========================================================================
@@ -279,7 +359,6 @@ function updateClustering(vis) {
         var idx = marker.get("p_index");
         var prop = properties[idx];
         if (!prop) return false;
-        // 🌾 읍면은 줌 14이하 결합, 🏢 동지역은 줌 17이하까지 클러스터 내부에 단단히 강력 락(Lock)
         return (prop.town_type === "urban") ? (currentZoom <= 17) : (currentZoom <= 14);
     });
 
@@ -305,15 +384,15 @@ function updateClustering(vis) {
 }
 
 // =========================================================================
-// 📡 [Part 3] 9단계 리스트 스크롤 오토 주차 및 3부 축척 무빙 가동 엔진
+// 📡 [Part 4/5] 9단계 리스트 스크롤 오토 주차 및 수동 셀렉터 시야 동기화 엔진
 // =========================================================================
 
 function executeScrollAutoParking(vis) {
     var listContainer = document.getElementById("property-list");
     var currentZoom = map.getZoom();
     
-    // 🎯 [9단계 기획 안전 가드]: 줌 14레벨 미만이거나, 유저가 마우스로 목록창을 수동 탐색 중이거나,
-    // 특정 매물을 수동 클릭해 상세페이지를 락(Lock) 상태로 열어두었다면 스크롤 오토 무빙 연산 즉시 잠금 차단!
+    // 🎯 [9단계 기획 안전 가드]: 줌 14레벨 미만이거나, 유저가 목록창을 마우스로 직접 수동 탐색 중이거나,
+    // 특정 카드를 클릭해 상세페이지를 락(Lock) 형태로 열어둔 컨텍스트 상태라면 자동 스크롤 바운스를 원천 차단!
     if (!listContainer || currentZoom < 14 || isLockScrollParking) return;
     
     var centerLatLng = map.getCenter();
@@ -323,24 +402,24 @@ function executeScrollAutoParking(vis) {
     var closestPropertyIndex = -1;
     var minDistance = Infinity;
     
-    // 🎯 [8단계 기획 반영]: 행정 경계를 타파하고 화면 범위(Bounds) 내부에서 살아남은 매물을 대상으로 최단거리 역산 스캔
+    // 🎯 [8단계 기획 반영]: 행정 경계를 타파하고 뷰포트 화면 범위 내에서 포착된 모든 매물 마커 대조 스캔
     vis.forEach(function(marker) {
         var idx = marker.get("p_index");
         var prop = properties[idx];
         if (prop) {
-            // 피타고라스 좌표 거리 최단 지점 역산 공식 가동
+            // 위경도 최단 거리 제곱 피타고라스 역산 공식 시전
             var latDiff = prop.lat - cLat;
             var lngDiff = prop.lng - cLng;
             var dist = (latDiff * latDiff) + (lngDiff * lngDiff);
             
             if (dist < minDistance) {
                 minDistance = dist;
-                closestPropertyIndex = idx; // 지도 정중앙과 거리상 가장 인접한 정예 매물 인덱스 포획
+                closestPropertyIndex = idx; // 지도 정중앙 좌표와 가장 인접한 정예 매물 인덱스 캡처
             }
         }
     });
     
-    // 🎯 [9단계 기획 반영]: 유저 필터 드롭다운 상태('전체' 등)는 절대 건들지 않고, 목록창의 스크롤바만 칼각 주차
+    // 🎯 [9단계 기획 반영]: 유저 필터 드롭다운 상태(전체)는 절대 건들지 않고, 목록창의 스크롤바 위치만 오토 주차
     if (closestPropertyIndex !== -1) {
         var targetCard = document.getElementById("item-" + closestPropertyIndex);
         if (targetCard && targetCard.style.display !== "none") {
@@ -349,17 +428,15 @@ function executeScrollAutoParking(vis) {
     }
 }
 
-// =========================================================================
-// 🎛️ [3부 스펙] 읍면동 셀렉터 드롭다운 조작 시 기획서 성공안 기준 시야 동기화 엔진
-// =========================================================================
+// 🎛️ [3부 스펙 수복] 읍면동 셀렉터 변경 시 기획자 성공안 기준 축척 고정 엔진
 function changeTown(town) {
     currentTown = town;
-    currentRi = "전체"; // 읍면동 리셋 시 하위 리 선택은 자동 해제
+    currentRi = "전체"; // 읍면동 리셋 시 리 선택은 자동으로 초기화 해제
     
     var panel = document.getElementById("detail-selector");
     if (panel) panel.style.display = "none";
     
-    // 🎯 [3부 5단계 매칭]: 지역 '전체' 복귀 선택 시 초기화면 광역 축척인 줌 12레벨 시야 셋업 회귀
+    // 🎯 [3부 5단계 매칭]: 지역 '전체' 복귀 선택 시 초기 화면 광역 축척인 줌 12레벨 시야 회귀
     if (town === "전체") {
         if (map) {
             var initialLatLng = new naver.maps.LatLng(36.55, 127.25); 
@@ -368,7 +445,7 @@ function changeTown(town) {
             applyFilters();
         }
     } 
-    // 🎯 [3부 10단계 듀얼 트랙 무빙 연동]: 특정 읍면동을 유저가 콕 집어 수동 선택했을 때의 시야 락킹 분기
+    // 🎯 [3부 10단계 듀얼 트랙 무빙 연동]: 특정 행정동/읍면을 유저가 콕 집어 선택했을 때의 시야 락킹 분기
     else {
         var sumLat = 0; var sumLng = 0; var matchCount = 0;
         
@@ -381,8 +458,8 @@ function changeTown(town) {
         if (matchCount > 0) {
             var moveLatLng = new naver.maps.LatLng(sumLat / matchCount, sumLng / matchCount);
             
-            // 🎯 [기획 사양 칼각 수복]: 끝자리가 '동' 지역이면 줌 17, '읍/면' 지역이면 줌 15 즉시 다이렉트 락!
-            // 이 명령 직후 클러스터 장벽을 건너뛰고 개별 풍선 마커 노출 가이드라인과 즉시 동기화됩니다.
+            // 🎯 [기획 사양 성공안 칼각 반영]: 끝자리가 '동' 지역이면 줌 17, '읍/면' 지역이면 줌 15 즉시 다이렉트 락!
+            // 지역 셀렉트 순간 클러스터 락 장벽을 즉시 통과하며 개별 매물 풍선 노출 가이드라인과 즉시 동기화됩니다.
             var targetZoom = town.endsWith('동') ? 17 : 15;
             
             if (map) {
@@ -398,7 +475,7 @@ function changeRi(ri) {
     currentRi = ri;
     if (!map) return;
 
-    // '리 전체(해제)' 선택 시 읍면동 전체 시야 고도 레벨(줌 15) 복귀
+    // '리 전체(해제)' 선택 시 읍면동 레벨 전체 시야 축척(줌 15)으로 안전 복귀
     if (ri === "전체") {
         var sumLat = 0; var sumLng = 0; var matchCount = 0;
         properties.forEach(function(p) {
@@ -409,7 +486,7 @@ function changeRi(ri) {
             map.setCenter(new naver.maps.LatLng(sumLat / matchCount, sumLng / matchCount));
         }
     } 
-    // 특정 '리' 경계선 콕 집어 타깃 선택 시 필지선 분석이 유리해지는 줌 16 초정밀 축척 진입
+    // 특정 '리' 경계선 콕 집어 선택 시 필지 지형 분석이 명확해지는 줌 16 초정밀 축척 진입
     else {
         var sumLat = 0; var sumLng = 0; var matchCount = 0;
         properties.forEach(function(p) {
@@ -423,25 +500,8 @@ function changeRi(ri) {
     applyFilters();
 }
 
-// 🎯 [오토 주차 연산 충돌 방어 가드]: 유저가 목록창에 마우스를 올려두고 직접 수동 휠 스크롤 중일 때 오토 주차 브레이크 바인딩
-document.addEventListener("DOMContentLoaded", function() {
-    var listContainer = document.getElementById("property-list");
-    if (listContainer) {
-        listContainer.addEventListener("mouseenter", function() {
-            if (!document.querySelector(".property-item.active")) {
-                isLockScrollParking = true; // 유저 제어권 우선 양보 잠금
-            }
-        });
-        listContainer.addEventListener("mouseleave", function() {
-            if (!document.querySelector(".property-item.active")) {
-                isLockScrollParking = false; // 제어권 개방 복원
-            }
-        });
-    }
-});
-
 // =========================================================================
-// 📡 [Part 4 - 1번 조각] 5부 매물 선택 시 스마트 무빙 및 카메라 락 엔진
+// 📡 [Part 5-1] 5부 매물 선택 시 스마트 무빙 및 카메라 시야 락 엔진
 // =========================================================================
 
 // 🧲 [5부 11단계·12단계] 리스트 카드 및 지도 마커 클릭 시 발동하는 핵심 브리핑 결합부
@@ -457,17 +517,19 @@ function selectProperty(index, marker) {
         sidebar.classList.remove("hidden");
     }
     
-    // 🎯 [시야 락(Lock) 체계]: 이미 선택된 활성화 카드를 다시 누르면 청소 후 고정 해제 복귀
+    // 🎯 [시야 락(Lock) 체계]: 이미 선택된 활성화 카드를 유저가 다시 누르면 스크롤 요동치지 않고 깔끔히 락 해제 복귀
     if (targetItem.classList.contains("active")) {
         targetItem.classList.remove("active"); 
         if (targetDetail) { targetDetail.style.display = "none"; targetDetail.innerHTML = ""; }
         if (currentBoundaryCircle) { try { currentBoundaryCircle.setMap(null); } catch(e) {} currentBoundaryCircle = null; }
         if (panel) { panel.classList.remove("active"); panel.classList.remove("expanded"); }
-        isLockScrollParking = false; // 오토 주차 스크롤 락 해제
+        
+        // 매물 선택이 완전 해제되었으므로 9단계 오토 스크롤 주차 잠금장치 해제
+        isLockScrollParking = false; 
         return; 
     }
 
-    // 새 매물 조명을 위해 기존에 열려있던 카드들의 액티브 흔적 일제 클리닝
+    // 새 매물 조명을 위해 기존에 열려있던 카드들의 활성 흔적 일제 클리닝
     document.querySelectorAll(".property-detail").forEach(function(el) { el.style.display = "none"; el.innerHTML = ""; });
     document.querySelectorAll(".property-item").forEach(function(el) { el.classList.remove("active"); });
     
@@ -519,11 +581,11 @@ function selectProperty(index, marker) {
 }
 
 // =========================================================================
-// 🏢 [Part 4 - 2번 조각] 우측 데이터 브리핑 룸 명세 피딩 연동 엔진
+// 🏢 [Part 5-2] 우측 데이터 브리핑 룸 명세 피딩 연동 및 최종 리스너 마감선
 // =========================================================================
 function executeRightPanelDataFeeding(prop, panel) {
     
-    // 🏢 [분기 1] 선택된 매물이 '공장/창고' 카테고리일 때 ➡️ 건축물대장 명세표 주입
+    // 🏢 [우측 패널 분기 1] 선택된 매물이 '공장/창고' 카테고리일 때 ➡️ 건축물대장 명세표 주입
     if (prop.category === "공장") {
         var statsTitleEl = document.getElementById("stats-title");
         if (statsTitleEl) statsTitleEl.innerText = "🏢 [" + prop.town + "] 건축물대장 분석";
@@ -622,3 +684,44 @@ function executeRightPanelDataFeeding(prop, panel) {
     
     if (panel) { panel.classList.remove("expanded"); panel.classList.add("active"); }
 }
+
+// =========================================================================
+// 📡 7단계 생명주기 최종 결합: 지도 인스턴스 정지 감지 센서 및 휠 가드 바인딩
+// =========================================================================
+document.addEventListener("DOMContentLoaded", function() {
+    if (typeof naver !== 'undefined' && typeof map !== 'undefined' && map) {
+        
+        if (typeof window.initMapPipeline === 'function') {
+            window.initMapPipeline();
+        }
+
+        // 🎯 [순서 완치 완결]: 꼬여있던 동적 계산을 도려내고 일방통행 인프라 엔진 안전하게 최초 점화 시동!
+        initMap();
+
+        // 🌟 지도의 스크롤/드래그 무빙이 완전히 멈춘 정지 시점 포획 인터록
+        naver.maps.Event.addListener(map, "idle", function() {
+            if (!isMorphMoving) {
+                applyFilters();
+            }
+
+            var currentZoom = map.getZoom();
+            if (currentBoundaryCircle && currentBoundaryCircle.getMap()) {
+                currentBoundaryCircle.setMap(map);
+                var dynamicRadius = 15;
+                if (currentZoom === 18) dynamicRadius = 8;
+                else if (currentZoom === 17) dynamicRadius = 15;
+                else if (currentZoom <= 16) dynamicRadius = 20; 
+                currentBoundaryCircle.setRadius(dynamicRadius);
+            }
+        });
+
+        // 🌟 휠 줌 스케일링 회전 인터록 (디바운스 과부하 브레이크)
+        naver.maps.Event.addListener(map, "zoom_changed", function() {
+            if (filterTimeout) clearTimeout(filterTimeout);
+            filterTimeout = setTimeout(executeFilteringPipeline, 150);
+        });
+    }
+});
+// =========================================================================
+// 🏁 [마스터 완결판 엔드라인] 이 아래에는 더 이상 코드를 두지 마세요.
+// =========================================================================
