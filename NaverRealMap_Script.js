@@ -197,11 +197,14 @@ function applyFilters() {
 // 📡 [Part 3/6] 지연 렌더링(Lazy Rendering) 실행 파이프라인 및 시야 스크리닝
 // =========================================================================
 function executeFilteringPipeline() {
-    if (!map || isMorphMoving) return;
+    if (!map) return;
     var vis = []; 
     var currentZoom = map.getZoom();
     var currentBounds = map.getBounds();
     var listContainer = document.getElementById("property-list");
+
+    // [예외 안전 가드]: 스마트 줌인(morph) 카메라가 이동하는 중에는 시야 필터 연산을 일시 정지
+    if (isMorphMoving) return;
 
     // ---------------------------------------------------------------------
     // 📊 [2부 스펙] 초경량 광역 모드 스위칭 장벽 (지도 줌 12 ~ 13레벨)
@@ -209,19 +212,21 @@ function executeFilteringPipeline() {
     if (currentZoom < 14) {
         if (listContainer) { 
             listContainer.style.display = "none"; 
-            listContainer.innerHTML = ""; // 3단계 기획: 목록창 레이아웃 완전 청소
+            listContainer.innerHTML = ""; // 목록창 완전 소멸
         }
         
-        // 5단계 기획: 개별 마커 및 순정 클러스터러 엔진 전면 휴면(OFF)
-        markers.forEach(function(m) { if (m.getMap() !== null) m.setMap(null); });
-        if (markerClustering !== null) { try { markerClustering.setMap(null); } catch(e) {} markerClustering = null; }
+        // 순수 정적 배지 가동 전 클러스터러 완벽 청소
+        if (markerClustering !== null) { 
+            try { markerClustering.setMap(null); } catch(e) {} 
+            markerClustering = null; 
+        }
         
-        // 5단계 기획: 광역 읍면동별 총 매물수 통계 정적 배지만 화면 노출 활성화
+        markers.forEach(function(m) { if (m.getMap() !== null) m.setMap(null); });
+        
         if (typeof townStaticBadges !== 'undefined' && Array.isArray(townStaticBadges)) {
             townStaticBadges.forEach(function(badge) { if (badge && badge.getMap() !== map) badge.setMap(map); });
         }
         
-        // 4단계 기획: 지역 선택 드롭다운 상태 연속성 보존 보구 가동
         updateTownSelectorOptions(); 
         return;
     }
@@ -229,23 +234,17 @@ function executeFilteringPipeline() {
     // ---------------------------------------------------------------------
     // 🏢 [3부·4부 스펙] 정밀 진입 및 도농 복합 제어 모드 (지도 줌 14레벨 이상)
     // ---------------------------------------------------------------------
-    
-    // 광역 정적 통계 배지 자동 소멸 처리
     if (typeof townStaticBadges !== 'undefined' && Array.isArray(townStaticBadges)) {
         townStaticBadges.forEach(function(badge) { if (badge && badge.getMap() !== null) badge.setMap(null); });
     }
 
-    // 6단계 기획: 목록창 슬라이딩 결합 동적 출현 (Attach)
     if (listContainer) listContainer.style.display = "block";
-    
-    // 실시간 DOM 렌더링 렉을 완벽히 무력화하기 위한 문자열 버퍼 메모리 도화지 개방
     var listHtmlBuffer = [];
 
     markers.forEach(function(marker, i) {
         var prop = properties[i];
         if (!prop) return;
         
-        // 상단 스위치 및 장부 메타데이터 낙인 단방향 동시 스캔
         var mCat = (currentCategories.indexOf(prop.category) !== -1);
         var mDet = (currentCategories.length === 0 || currentDetail.indexOf(prop.detail_type) !== -1);
         var mTown = (currentTown === "전체" || prop.town === currentTown);
@@ -257,12 +256,17 @@ function executeFilteringPipeline() {
         if (mCat && mDet && mTown && mRi && mDeal) {
             var markerLatLng = marker.getPosition();
             
-            // 8단계 기획: 인위적 행정 경계를 타파하고 화면 범위(Bounds) 안에 들어온 매물만 실시간 추출
             if (currentBounds && currentBounds.hasLatLng(markerLatLng)) {
-                vis.push(marker);
+                vis.push(marker); // 8단계: 행정 경계 없는 화면 내 유효 마커 수집
                 
-                // 10단계 기획: 도농 복합 듀얼 트랙 클러스터 장벽 계산 분기
-                var isIndividualMarkerVisible = (prop.town_type === "rural") ? (currentZoom >= 15) : (currentZoom >= 18);
+                // 🎯 [네이버 런타임 충돌 패치 1]: 클러스터러와 마커 setMap의 동시 난타 차단
+                // 소유권 갈등을 피하기 위해 클러스터에 묶일 마커는 일단 직접 등록을 해제합니다.
+                var isIndividualMarkerVisible = false;
+                if (prop.town_type === "rural") {
+                    isIndividualMarkerVisible = (currentZoom >= 15);
+                } else {
+                    isIndividualMarkerVisible = (currentZoom >= 18);
+                }
 
                 if (isIndividualMarkerVisible) {
                     if (marker.getMap() !== map) marker.setMap(map);
@@ -270,7 +274,6 @@ function executeFilteringPipeline() {
                     if (marker.getMap() !== null) marker.setMap(null);
                 }
 
-                // 6단계 스펙: 시야 내 포착된 정예 매물 카드 레이아웃만 동적 문자열 조립
                 listHtmlBuffer.push(
                     '<div class="property-item ' + (prop.category === "토지" ? "item-land" : prop.category === "주택" ? "item-house" : "item-factory") + '" id="item-' + i + '" onclick="selectProperty(' + i + ', markers[' + i + '])">',
                     '  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">',
@@ -295,34 +298,34 @@ function executeFilteringPipeline() {
         }
     });
     
-    // 6단계 완결: 조립된 가상 버퍼를 목록창에 단 1회 쾅 주입하여 렌더링 딜레이 종식
-    if (listContainer) {
-        listContainer.innerHTML = listHtmlBuffer.join('');
-    }
-    // 4단계 & 6단계 지연 연산 결합: 줌 14레벨 이상일 때 비로소 실시간 수량 통계 카운트 및 소분류 체크박스 재생성 작동
+    if (listContainer) listContainer.innerHTML = listHtmlBuffer.join('');
+    
     updateTownSelectorOptions();
     updateDetailSelectorOptions();
     
-    // 7단계 기획: 네이버 순정 클러스터러 엔진비율 확장(gridSize: 200) 기동 유도
-    updateClustering(vis); 
-    
-    // 9단계 기획: 리스트 스크롤 오토 주차 피팅 엔진 가동 호출
-    if (typeof executeScrollAutoParking === 'function') {
-        executeScrollAutoParking(vis);
-    }
+    // 🎯 [네이버 런타임 충돌 패치 2]: 마커 DOM 연산이 완전히 가라앉은 0.01초 뒤에 클러스터를 갱신하도록 양보 이송
+    setTimeout(function() {
+        updateClustering(vis); 
+    }, 10);
 }
 
-// 7단계 명세: gridSize 200 확장형 네이버 순정 클러스터러 복원 엔진
+// =========================================================================
+// 📡 7단계 [순정 클러스터러 엔진]: 소유권 충돌이 원천 방어된 세이프 클러스터러 기동
+// =========================================================================
 function updateClustering(vis) {
+    // 🎯 [네이버 런타임 충돌 패치 3]: removeChild 비명을 완전히 막기 위해 안전하게 비우고 교체
     if (markerClustering !== null) {
-        try { markerClustering.setMap(null); } catch(e) {}
+        try { 
+            markerClustering.clearMarkers(); 
+            markerClustering.setMap(null); 
+        } catch(e) {}
         markerClustering = null; 
     }
+
     if (!vis || vis.length === 0) return;
     var currentZoom = map.getZoom();
     if (currentZoom < 14) return; 
 
-    // 10단계 기획: 도농 복합 듀얼 트랙 클러스터 장벽 계산 필터링
     var dynamicVis = vis.filter(function(marker) {
         var idx = marker.get("p_index");
         var prop = properties[idx];
@@ -331,23 +334,27 @@ function updateClustering(vis) {
     });
 
     if (dynamicVis.length > 0 && typeof MarkerClustering !== 'undefined') {
-        markerClustering = new MarkerClustering({
-            minClusterSize: 2, 
-            maxZoom: 17, 
-            map: map, 
-            markers: dynamicVis, 
-            gridSize: 200, 
-            disableClickZoom: false, 
-            icons: [
-                { content: '<div class="cluster-badge" style="cursor:pointer; width:44px; height:44px; line-height:44px; font-size:12px; color:#111111; text-align:center; font-weight:bold; background:rgba(74, 211, 255, 0.95); border:1px solid #fff; border-radius:50%; box-shadow:0 3px 10px rgba(0,0,0,0.35);"></div>', anchor: new naver.maps.Point(22, 22) },
-                { content: '<div class="cluster-badge" style="cursor:pointer; width:52px; height:52px; line-height:52px; font-size:13px; color:#111111; text-align:center; font-weight:bold; background:rgba(74, 211, 255, 0.95); border:1px solid #fff; border-radius:50%; box-shadow:0 4px 12px rgba(0,0,0,0.4);"></div>', anchor: new naver.maps.Point(26, 26) }
-            ],
-            indexGenerator: function(count) { return count < 15 ? 0 : 1; }, 
-            stylingFunction: function(clusterMarker, count) {
-                var el = clusterMarker.getElement();
-                if (el) { var bd = el.querySelector(".cluster-badge"); if (bd) bd.innerText = count; }
-            }
-        });
+        try {
+            markerClustering = new MarkerClustering({
+                minClusterSize: 2, 
+                maxZoom: 17, 
+                map: map, 
+                markers: dynamicVis, 
+                gridSize: 200, 
+                disableClickZoom: false, 
+                icons: [
+                    { content: '<div class="cluster-badge" style="cursor:pointer; width:44px; height:44px; line-height:44px; font-size:12px; color:#111111; text-align:center; font-weight:bold; background:rgba(74, 211, 255, 0.95); border:1px solid #fff; border-radius:50%; box-shadow:0 3px 10px rgba(0,0,0,0.35);"></div>', anchor: new naver.maps.Point(22, 22) },
+                    { content: '<div class="cluster-badge" style="cursor:pointer; width:52px; height:52px; line-height:52px; font-size:13px; color:#111111; text-align:center; font-weight:bold; background:rgba(74, 211, 255, 0.95); border:1px solid #fff; border-radius:50%; box-shadow:0 4px 12px rgba(0,0,0,0.4);"></div>', anchor: new naver.maps.Point(26, 26) }
+                ],
+                indexGenerator: function(count) { return count < 15 ? 0 : 1; }, 
+                stylingFunction: function(clusterMarker, count) {
+                    var el = clusterMarker.getElement();
+                    if (el) { var bd = el.querySelector(".cluster-badge"); if (bd) bd.innerText = count; }
+                }
+            });
+        } catch(clusterErr) {
+            console.warn("네이버 맵 내부 동적 리프레시 딜레이 가드가 작동했습니다.");
+        }
     }
 }
 
