@@ -330,7 +330,7 @@ function drawTownStaticBadges() {
         ].join('');
 
         // 네이버 지도 고유 레이어 가드로 안전 벨트 체결
-        var staticBadge = new naver.maps.CustomOverlay({
+        var staticBadge = new naver.maps.OverlayView({
             position: badgeLatLng,
             map: map,
             content: badgeHtml
