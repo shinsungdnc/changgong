@@ -209,26 +209,49 @@ function executeFilteringPipeline() {
     // ---------------------------------------------------------------------
     // 📊 [2부 스펙] 초경량 광역 모드 스위칭 장벽 (지도 줌 12 ~ 13레벨)
     // ---------------------------------------------------------------------
+    var listPanel = document.getElementById("property-list-panel") || document.getElementById("sidebar");
+
+    // 🛑 [트랙 A: 광역 격리 모드] 지도 줌 12 ~ 13레벨 체계 (소장님 명품 브리핑 규격)
     if (currentZoom < 14) {
-        if (listContainer) { 
-            listContainer.style.display = "none"; 
-            listContainer.innerHTML = ""; // 목록창 완전 소멸
+        if (listPanel) {
+            // 목록창 뼈대 패널 자체를 화면 레이아웃에서 흔적도 없이 완벽하게 암전 격리합니다.
+            listPanel.style.setProperty("display", "none", "important"); 
+        }
+        if (listContainer) listContainer.innerHTML = ""; 
+        
+        // 네이버 순정 클러스터러 메모리 소멸 (구형 유령 잔재 장벽 완전 파괴)
+        if (window.markerClustering !== null) { 
+            try { window.markerClustering.setMap(null); } catch(e) {} 
+            window.markerClustering = null; 
+        }
+        window.markers.forEach(function(m) { m.setMap(null); });
+        
+        // 🗺️ 순정 광역 배지(읍면동 뭉텅이 총수량) 레이어만 지도 바닥에 단독 표출
+        var targetBadges = window.townStaticBadges || window.townSummaryMarkers;
+        if (typeof targetBadges !== 'undefined' && Array.isArray(targetBadges)) {
+            targetBadges.forEach(function(badge) { 
+                if (badge && typeof badge.setMap === 'function') badge.setMap(window.map); 
+            });
         }
         
-        // 순수 정적 배지 가동 전 클러스터러 완벽 청소
-        if (markerClustering !== null) { 
-            try { markerClustering.setMap(null); } catch(e) {} 
-            markerClustering = null; 
-        }
-        
-        markers.forEach(function(m) { if (m.getMap() !== null) m.setMap(null); });
-        
-        if (typeof townStaticBadges !== 'undefined' && Array.isArray(townStaticBadges)) {
-            townStaticBadges.forEach(function(badge) { if (badge && badge.getMap() !== map) badge.setMap(map); });
-        }
-        
-        updateTownSelectorOptions(); 
+        if (typeof updateTownSelectorOptions === 'function') updateTownSelectorOptions(); 
         return;
+    }
+
+    // 🟢 [트랙 B: 정밀 분석 모드] 지도 줌 14레벨 이상 체계 진입 (목록창 스르륵 부활)
+    if (listPanel) {
+        listPanel.style.setProperty("display", "flex", "important"); 
+        if (listPanel.classList && typeof listPanel.classList.add === 'function') {
+            listPanel.classList.add("is-active"); // 소장님 순정 커튼 애니메이션 오픈 동기화
+        }
+    }
+
+    // 🗺️ 정밀 진입 시 광역 배지들은 시야에서 부드럽게 걷어내어 격리 청소
+    var targetBadgesClear = window.townStaticBadges || window.townSummaryMarkers;
+    if (typeof targetBadgesClear !== 'undefined' && Array.isArray(targetBadgesClear)) {
+        targetBadgesClear.forEach(function(badge) { 
+            if (badge && typeof badge.setMap === 'function') badge.setMap(null); 
+        });
     }
 
     // ---------------------------------------------------------------------
@@ -238,7 +261,6 @@ function executeFilteringPipeline() {
         townStaticBadges.forEach(function(badge) { if (badge && badge.getMap() !== null) badge.setMap(null); });
     }
 
-    if (listContainer) listContainer.style.display = "block";
     var listHtmlBuffer = [];
 
     markers.forEach(function(marker, i) {
@@ -274,20 +296,32 @@ function executeFilteringPipeline() {
                     if (marker.getMap() !== null) marker.setMap(null);
                 }
 
+                // =========================================================================
+                // [교정 사양 1] NaverRealMap_Script.js - 목록 카드 디자인 포장 구역 핀포인트 교체
+                // =========================================================================
+                // 💡 Main.py가 미리 구워준 정예 배지 필드를 자바스크립트는 그대로 받아서 출력만 합니다.
+                var badgeText = prop.deal_badge_text || "매매";
+                var priceText = prop.price_display_text || "0";
+                var ledgerText = prop.category === "공장" ? prop.factory_ledger_clean : (prop.category === "주택" ? prop.house_ledger_clean : prop.yongdo);
+
+                // 🎨 소장님 순정 디자인 사수: 거래 유형 배지 테마 색상 지정
+                var badgeBg = (badgeText === "전세") ? "#1B5E20" : (badgeText === "월세" ? "#ff6e40" : (badgeText === "단기" ? "#4A148C" : "#2b5c8f"));
+
                 listHtmlBuffer.push(
-                    '<div class="property-item ' + (prop.category === "토지" ? "item-land" : prop.category === "주택" ? "item-house" : "item-factory") + '" id="item-' + i + '" onclick="selectProperty(' + i + ', markers[' + i + '])">',
+                    '<div class="property-item ' + (prop.category === "토지" ? "item-land" : prop.category === "주택" ? "item-house" : "item-factory") + '" id="item-' + i + '" onclick="selectProperty(' + i + ', window.markers[' + i + '])">',
                     '  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">',
-                    '    <h4 style="margin: 0; font-size: 13px; font-weight: bold; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: calc(100% - 65px);">[' + prop.detail_type + '] ' + prop.name + '</h4>',
-                    '    <span class="deal-badge" style="background:' + (prop.price.indexOf("전세") !== -1 ? "#1B5E20" : prop.price.indexOf("월세") !== -1 ? "#ff6e40" : prop.price.indexOf("단기") !== -1 ? "#4A148C" : "#2b5c8f") + '; color:#fff; padding:3px 8px; font-size:11px; font-weight:bold; border-radius:4px;">' + (prop.price.indexOf("전세") !== -1 ? "전세" : prop.price.indexOf("월세") !== -1 ? "월세" : prop.price.indexOf("단기") !== -1 ? "단기" : "매매") + '</span>',
+                    '    <h4 style="margin: 0; font-size: 13px; font-weight: bold; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: calc(100% - 65px);">[' + prop.town + '] ' + prop.name + '</h4>',
+                    '    <!-- 🏷️ 우측 상단 독립 거래 방식 사각형 캡슐 배지 장착 -->',
+                    '    <span class="deal-badge" style="background:' + badgeBg + '; color:#fff; padding:4px 10px; font-size:11px; font-weight:bold; border-radius:4px; white-space:nowrap; line-height:1.0;">' + badgeText + '</span>',
                     '  </div>',
                     '  <div style="display: flex; justify-content: space-between; align-items: center;">',
                     '    <div style="font-size: 11px; color: #495057; line-height: 1.4;">',
                     '      <b>면적:</b> ' + prop.area + '<br>',
-                    '      <b>용도:</b> ' + prop.yongdo + '',
+                    '      <b>대장:</b> ' + ledgerText + '',
                     '    </div>',
-                    '    <span style="font-size: 15px; font-weight: bold; color: #2b5c8f;">' + prop.price.replace(/[가-힣\s\/0-9]/g, "") + '</span>',
+                    '    <!-- 📊 우측 하단 행분리 대형 굵은 서체 금액 단독 배치 레이어 -->',
+                    '    <span style="font-size: 15px; font-weight: bold; color: ' + badgeBg + '; white-space: nowrap; letter-spacing: -0.3px; display: inline-block;">' + priceText + '</span>',
                     '  </div>',
-                    '  <div class="property-detail" id="detail-' + i + '" style="display:none;"></div>', 
                     '</div>'
                 );
             } else {
