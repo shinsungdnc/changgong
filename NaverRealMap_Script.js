@@ -193,96 +193,43 @@ function applyFilters() {
     filterTimeout = setTimeout(executeFilteringPipeline, 120); 
 }
 
-// 전역에 가상 배지들을 추적 관리할 장부 선언 (함수 바깥 최상단에 두셔도 되고 안전하게 내부에 선언 관리)
-if (typeof window.dynamicTownBadges === 'undefined') window.dynamicTownBadges = [];
-
+// =========================================================================
+// 📡 [Part 3/6] 지연 렌더링(Lazy Rendering) 실행 파이프라인 및 시야 스크리닝
+// =========================================================================
 function executeFilteringPipeline() {
     if (!map) return;
     var vis = []; 
     var currentZoom = map.getZoom();
     var currentBounds = map.getBounds();
     var listContainer = document.getElementById("property-list");
-    var listPanel = document.getElementById("property-list-panel"); // 💡 하단 목록 패널 기둥
 
+    // [예외 안전 가드]: 스마트 줌인(morph) 카메라가 이동하는 중에는 시야 필터 연산을 일시 정지
     if (isMorphMoving) return;
 
     // ---------------------------------------------------------------------
-    // 📊 [성공 보장 교정 개시] 지도 줌 12 ~ 13레벨 광역 통제 파이프라인
+    // 📊 [2부 스펙] 초경량 광역 모드 스위칭 장벽 (지도 줌 12 ~ 13레벨)
     // ---------------------------------------------------------------------
     if (currentZoom < 14) {
-        // ① 좌측 매물 목록 및 패널 전체 숨김 비노출 처리
-        if (listContainer) listContainer.style.display = "none";
-        if (listPanel) listPanel.style.display = "none";
+        if (listContainer) { 
+            listContainer.style.display = "none"; 
+            listContainer.innerHTML = ""; // 목록창 완전 소멸
+        }
         
-        // ② 네이버 마커 및 구형 순정 클러스터러 초기화 제거
+        // 순수 정적 배지 가동 전 클러스터러 완벽 청소
         if (markerClustering !== null) { 
-            try { markerClustering.clearMarkers(); markerClustering.setMap(null); } catch(e) {} 
+            try { markerClustering.setMap(null); } catch(e) {} 
             markerClustering = null; 
         }
+        
         markers.forEach(function(m) { if (m.getMap() !== null) m.setMap(null); });
         
-        // ③ 기존에 그려져 있던 동적 가상 배지 싹 청소해서 잔상 제거
-        window.dynamicTownBadges.forEach(function(b) { b.setMap(null); });
-        window.dynamicTownBadges = [];
-
-        // ④ 넘어온 매물 데이터셋(properties)을 기반으로 실시간 읍면동별 수량 카운팅 연산 개시
-        var townCounts = {};
-        properties.forEach(function(p) {
-            // 현재 유저가 켜둔 대분류 카테고리 탭(토지, 공장, 주택)에 부합하는 매물만 수량 산정
-            if (currentCategories.indexOf(p.category) !== -1) {
-                var dealMatch = false;
-                currentDealTypes.forEach(function(t) { if (p.price && p.price.indexOf(t) !== -1) dealMatch = true; });
-                if (dealMatch) {
-                    townCounts[p.town] = (townCounts[p.town] || 0) + 1;
-                }
-            }
-        });
-
-        // ⑤ 카운트 완료된 읍면동 자리에 '단 1개의 명품 수량 클러스터 배지' 드로잉
-        for (var townName in townCounts) {
-            var countNum = townCounts[townName];
-            if (countNum <= 0) continue;
-            
-            // 파이썬이 패킹해 준 정밀 읍면동 고정 좌표 가져오기
-            var centerCoord = (typeof townCenters !== 'undefined' && townCenters[townName]) ? townCenters[townName] : null;
-            if (!centerCoord) continue; // 마스터 좌표가 없다면 예외 패스
-
-            var badgeHtml = [
-                '<div class="dynamic-town-badge" style="cursor:pointer; padding:8px 12px; background:rgba(74, 211, 255, 0.95); border:2px solid #ffffff; border-radius:20px; font-size:12px; font-weight:bold; color:#111111; text-align:center; white-space:nowrap; box-shadow:0 4px 12px rgba(0,0,0,0.35); transform:translate(-50%, -50%);">',
-                '  📍 ' + townName + ' <span style="color:#E65100; margin-left:3px;">(' + countNum + '개)</span>',
-                '</div>'
-            ].join('');
-
-            var badgeMarker = new naver.maps.Marker({
-                position: new naver.maps.LatLng(centerCoord.lat, centerCoord.lng),
-                map: map,
-                icon: { content: badgeHtml, anchor: new naver.maps.Point(0, 0) }
-            });
-
-            // [기획 스펙 확장 UX]: 광역 배지를 마우스로 클릭하면 해당 읍면동 정밀 모드로 기분 좋게 강제 흡입 무빙!
-            (function(tName) {
-                naver.maps.Event.addListener(badgeMarker, "click", function() {
-                    if (typeof changeTown === 'function') {
-                        var townSelector = document.getElementById("town-selector");
-                        if (townSelector) { townSelector.value = tName; }
-                        changeTown(tName);
-                    }
-                });
-            })(townName);
-
-            window.dynamicTownBadges.push(badgeMarker);
+        if (typeof townStaticBadges !== 'undefined' && Array.isArray(townStaticBadges)) {
+            townStaticBadges.forEach(function(badge) { if (badge && badge.getMap() !== map) badge.setMap(map); });
         }
-
-        // 광역 모드에서도 좌측 상단 드롭다운의 수량 텍스트는 상시 연동 동기화 작동
+        
         updateTownSelectorOptions(); 
-        return; // 🎯 뒤쪽에 있는 줌 14 이상용 정밀 연산 블록으로 내려가지 못하게 단단히 장벽 침!
+        return;
     }
-
-    // ---------------------------------------------------------------------
-    // 🏢 정밀 진입 모드 (지도 줌 14레벨 이상) - 기존 코드로 자연스럽게 바통 터치
-    // ---------------------------------------------------------------------
-    if (listPanel) listPanel.style.display = "flex"; // 정밀 모드 복귀 시 패널 정상 부활
-    window.dynamicTownBadges.forEach(function(b) { b.setMap(null); }); // 광역 배지 완전 소멸
 
     // ---------------------------------------------------------------------
     // 🏢 [3부·4부 스펙] 정밀 진입 및 도농 복합 제어 모드 (지도 줌 14레벨 이상)
