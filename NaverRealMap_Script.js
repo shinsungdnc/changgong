@@ -698,8 +698,6 @@ function updateTownSelectorOptions() {
     var townSelector = document.getElementById("town-selector");
     var riSelector = document.getElementById("ri-selector");
     if (!townSelector || !riSelector) return;
-    if (hasPopulatedSelectors) return; 
-    hasPopulatedSelectors = true;
 
     var savedTown = currentTown; var savedRi = currentRi;
     var totalCount = 0; var townCounts = {}; var riCounts = {};
@@ -793,6 +791,10 @@ document.addEventListener("DOMContentLoaded", function() {
         
         // 🎯 순서 완치: 파일 전 구간 상하 6단 분기 호이스팅 순서 정렬이 칼각 완결되어 안전 점화 개시!
         initMap();
+
+        setTimeout(function() {
+            executeFilteringPipeline();
+        }, 250);
         
         naver.maps.Event.addListener(map, "idle", function() {
             if (!isMorphMoving) applyFilters();
