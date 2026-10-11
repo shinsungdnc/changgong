@@ -755,21 +755,26 @@ function updateDetailSelectorOptions() {
 // =========================================================================
 document.addEventListener("DOMContentLoaded", function() {
     if (typeof naver !== 'undefined') {
-        // 네이버 모든 모듈 및 세부 모듈 로딩 완료 신호 포획
+        // 네이버 핵심 및 서브 모듈이 완전히 브라우저에 안착한 타이밍 포획
         naver.maps.onJSContentLoaded = function() {
             if (!map) return;
             
             try {
-                // 1. 초기 딜레이에 의해 굳어버린 셀렉터 무한루프 차단 가드를 강제로 해제
+                // 1. 줌 레벨 12에서 필터 방어막이 잠기는 것을 막기 위해 가드 플래그를 강제로 개방
                 hasPopulatedSelectors = false;
                 
-                // 2. 지적도 파이프라인 기동
+                // 2. 파이프라인 기동 (지적도 활성화)
                 if (typeof window.initMapPipeline === 'function') window.initMapPipeline();
                 
-                // 3. 순정 마커 데이터 적재 및 최초 필터 연산 일제 점화
+                // 3. 순정 마커 데이터 뼈대 적재
                 initMap();
                 
-                // 4. 시야 정지/무빙 센서 레이어 최종 결합
+                // 4. 초기 줌 12 상태에서 강제로 리스트가 소멸하는 것을 방어하기 위해 최초 연산 강제 갱신
+                if (typeof executeFilteringPipeline === 'function') {
+                    executeFilteringPipeline();
+                }
+                
+                // 5. 시야 정지/무빙 센서 레이어 최종 바인딩
                 naver.maps.Event.addListener(map, "idle", function() {
                     if (!isMorphMoving) applyFilters();
                     var currentZoom = map.getZoom();
