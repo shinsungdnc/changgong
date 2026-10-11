@@ -755,18 +755,21 @@ function updateDetailSelectorOptions() {
 // =========================================================================
 document.addEventListener("DOMContentLoaded", function() {
     if (typeof naver !== 'undefined') {
-        // 네이버 지도 핵심 및 서브 모듈(geocoder, visualization 등)이 100% 로드 완료될 때까지 대기
+        // 네이버 모든 모듈 및 세부 모듈 로딩 완료 신호 포획
         naver.maps.onJSContentLoaded = function() {
-            if (!map) return; // 상위 map 객체 안착 확인
+            if (!map) return;
             
             try {
-                // 1. 파이프라인 기동 (지적도 드로잉)
+                // 1. 초기 딜레이에 의해 굳어버린 셀렉터 무한루프 차단 가드를 강제로 해제
+                hasPopulatedSelectors = false;
+                
+                // 2. 지적도 파이프라인 기동
                 if (typeof window.initMapPipeline === 'function') window.initMapPipeline();
                 
-                // 2. 최후방 마커 엔진 장부 충전 및 실행
+                // 3. 순정 마커 데이터 적재 및 최초 필터 연산 일제 점화
                 initMap();
                 
-                // 3. 시야 감지 센서 레이어 최종 바인딩
+                // 4. 시야 정지/무빙 센서 레이어 최종 결합
                 naver.maps.Event.addListener(map, "idle", function() {
                     if (!isMorphMoving) applyFilters();
                     var currentZoom = map.getZoom();
@@ -782,7 +785,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     filterTimeout = setTimeout(executeFilteringPipeline, 150); 
                 });
                 
-                console.log("🎉 [차세대 엔진] 네이버 모든 모듈 안착 및 마커 드로잉 대성공!");
+                console.log("🎉 [차세대 엔진] 동기화 타이밍 락 해제 및 마커 화면 출력 완결!");
             } catch (loadErr) {
                 console.warn("⚠️ 초기 로딩 가드 작동:", loadErr);
             }
