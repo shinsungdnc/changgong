@@ -210,10 +210,10 @@ function executeFilteringPipeline() {
     // 📊 [2부 스펙] 초경량 광역 모드 스위칭 장벽 (지도 줌 12 ~ 13레벨)
     // ---------------------------------------------------------------------
     if (currentZoom < 14) {
-        if (listContainer) { 
-            listContainer.style.display = "none"; 
-            listContainer.innerHTML = ""; // 목록창 완전 소멸
-        }
+        // 💡 부모 컨트롤 패널 상자 자체를 암전 격리하여 초기 로딩 병목을 완벽히 차단합니다.
+        var listPanel = document.getElementById("property-list-panel");
+        if (listPanel) listPanel.style.display = "none";
+        if (listContainer) listContainer.innerHTML = ""; 
         
         // 순수 정적 배지 가동 전 클러스터러 완벽 청소
         if (markerClustering !== null) { 
@@ -238,9 +238,11 @@ function executeFilteringPipeline() {
         townStaticBadges.forEach(function(badge) { if (badge && badge.getMap() !== null) badge.setMap(null); });
     }
 
+    var listPanel = document.getElementById("property-list-panel");
+    if (listPanel) listPanel.style.display = "flex";
     if (listContainer) listContainer.style.display = "block";
     var listHtmlBuffer = [];
-
+    
     markers.forEach(function(marker, i) {
         var prop = properties[i];
         if (!prop) return;
