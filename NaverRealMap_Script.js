@@ -755,21 +755,29 @@ function updateDetailSelectorOptions() {
 // =========================================================================
 document.addEventListener("DOMContentLoaded", function() {
     if (typeof naver !== 'undefined') {
-        // 네이버 핵심 및 서브 모듈이 완전히 브라우저에 안착한 타이밍 포획
+        // 네이버 핵심 및 서브 모듈이 완벽하게 안착하는 시그널 포획
         naver.maps.onJSContentLoaded = function() {
-            if (!map) return;
+            // 💡 [핵심 교정]: 파이썬이 만든 원본 지도 객체가 전역 변수 map에 확실히 연결되도록 강제 고정
+            if (typeof window.map !== 'undefined' && window.map) {
+                map = window.map;
+            }
+            
+            if (!map) {
+                console.warn("⚠️ [차세대 엔진] 지도 객체 연결 대기 중...");
+                return;
+            }
             
             try {
-                // 1. 줌 레벨 12에서 필터 방어막이 잠기는 것을 막기 위해 가드 플래그를 강제로 개방
+                // 1. 초기 딜레이에 의해 굳어버린 셀렉터 무한루프 차단 가드를 개방
                 hasPopulatedSelectors = false;
                 
-                // 2. 파이프라인 기동 (지적도 활성화)
+                // 2. 지적도 파이프라인 기동
                 if (typeof window.initMapPipeline === 'function') window.initMapPipeline();
                 
                 // 3. 순정 마커 데이터 뼈대 적재
                 initMap();
                 
-                // 4. 초기 줌 12 상태에서 강제로 리스트가 소멸하는 것을 방어하기 위해 최초 연산 강제 갱신
+                // 4. 초기 줌 12 상태에서 튕겨나가는 현상을 방어하기 위해 최초 필터 연산 강제 갱신
                 if (typeof executeFilteringPipeline === 'function') {
                     executeFilteringPipeline();
                 }
@@ -790,7 +798,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     filterTimeout = setTimeout(executeFilteringPipeline, 150); 
                 });
                 
-                console.log("🎉 [차세대 엔진] 동기화 타이밍 락 해제 및 마커 화면 출력 완결!");
+                console.log("🎉 [차세대 엔진] 지도 주소 연결 성공 및 마커 표출 완료!");
             } catch (loadErr) {
                 console.warn("⚠️ 초기 로딩 가드 작동:", loadErr);
             }
