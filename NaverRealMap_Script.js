@@ -229,7 +229,7 @@ function updateClustering(validMarkers) {
     if (!validMarkers || validMarkers.length === 0) return;
 
     markerClustering = new MarkerClustering({
-        minClusterSize: 2, maxZoom: 16, map: map, markers: validMarkers, gridSize: 90, 
+        minClusterSize: 2, maxZoom: 16, map: map, markers: validMarkers, gridSize: 150, 
         icons: [{ content: '<div class="pure-naver-cluster" style="cursor:pointer; width:44px; height:44px; line-height:42px; font-size:12px; color:#111111; text-align:center; font-weight:bold; background:rgba(74, 211, 255, 0.95); border:1px solid #ffffff; border-radius:50%; box-shadow:0 3px 10px rgba(0,0,0,0.25); box-sizing:border-box;"></div>', anchor: new naver.maps.Point(22, 22) }],
         stylingFunction: function(clusterMarker, count) {
             var el = clusterMarker.getElement(); if (el) { var bd = el.querySelector(".pure-naver-cluster"); if (bd) bd.innerText = count; }
