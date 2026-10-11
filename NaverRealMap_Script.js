@@ -288,7 +288,7 @@ function initMap() {
     }, 300);
 }
 // =========================================================================
-// 🗺️ 실시간 시야 사각형 데이터 정밀 필터링 및 임계값 제어 엔진 [6번 블록 - 클릭 절대 반응 완결판]
+// 🗺️ 실시간 시야 사각형 데이터 정밀 필터링 및 임계값 제어 엔진 [6번 블록 - 필터 완전 동기화 완결판]
 // =========================================================================
 function applyFilters() {
     var validMarkersForCluster = []; 
@@ -296,46 +296,59 @@ function applyFilters() {
     var currentBounds = map.getBounds();
     var listPanel = document.getElementById("property-list-panel");
 
-    // 🎯 [완벽 구현] 줌 12, 13레벨 구간: 상하 2단 구조 행정구역 매물수 클러스터 모드 기동
+    // 🎯 [완벽 구현] 줌 12, 13레벨 구간: 지역 선택 박스 및 2단 알약 배지 실시간 필터 연동
     if (currentZoom < 14) {
         if (listPanel) listPanel.style.display = "none";
         
-        // 지도 위 개별 풍선 및 예전 클러스터러, 구형 광역 마커 일체 초기화 소멸
-        markers.forEach(function(m) { m.setMap(null); m.set("isActive", true); });
+        // ① 구형 잔상 제거 및 메모리 청소
         if (markerClustering !== null) { markerClustering.setMap(null); markerClustering = null; }
         virtualTownMarkers.forEach(function(vm) { vm.setMap(null); });
         virtualTownMarkers = [];
 
+        // ② [핵심 교정]: 가상 계산기가 동작하기 전에 개별 마커들의 필터 통과 여부(isActive)를 먼저 연산
+        markers.forEach(function(marker, i) {
+            var p = properties[i];
+            var mCat = (currentCategories.indexOf(marker.get("category")) !== -1);
+            var mDet = (currentCategories.length === 0 || currentDetail.indexOf(marker.get("detail_type")) !== -1);
+            var mTown = (currentTown === "전체" || marker.get("town") === currentTown);
+            var mRi = (currentRi === "전체" || p.name.indexOf(currentRi) !== -1);
+            var mDeal = false;
+            currentDealTypes.forEach(function(t) { if (p.price && p.price.indexOf(t) !== -1) mDeal = true; });
+
+            var isFilterPassed = (mCat && mDet && mTown && mRi && mDeal);
+            marker.set("isActive", isFilterPassed); // 💡 강제 true 주입을 해제하고 실제 필터 결과값 주입
+            marker.setMap(null); 
+        });
+
+        // ③ 정밀 교정된 필터 통계 데이터셋 추출
         var townStats = getActiveTownCenterStats();
 
+        // 💡 [6번 블록 중간 교정부]: 읍면동 알약 배지 생성 및 클릭 기능 복원
         Object.keys(townStats).forEach(function(tName) {
             var stat = townStats[tName];
             if (stat.count === 0) return; 
 
             var townLatLng = new naver.maps.LatLng(stat.lat, stat.lng);
             
-            // 🎨 [클릭 권한 오픈]: pointer-events: auto 및 z-index 조율로 클릭 씹힘 버그 원천 차단
             var townClusterHtml = [
-                '<div class="custom-town-cluster" style="cursor:pointer; pointer-events:auto !important; z-index:9999 !important; width:64px; height:64px; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(74, 211, 255, 0.95); border:1px solid #ffffff; border-radius:50%; box-shadow:0 3px 12px rgba(0,0,0,0.3); transform:translate(-50%, -50%); box-sizing:border-box; padding:2px;">',
-                '  <div style="font-size:11px; font-weight:700; color:#111111; line-height:1.2; text-align:center; max-width:58px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; pointer-events:none;">' + tName.replace('오송읍', '오송').replace('조치원읍', '조치원') + '</div>',
-                '  <div style="font-size:13px; font-weight:800; color:#111111; line-height:1.2; margin-top:2px; pointer-events:none;">' + stat.count + '</div>',
+                '<div class="custom-town-cluster" style="cursor:pointer; width:64px; height:64px; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(74, 211, 255, 0.95); border:1px solid #ffffff; border-radius:50%; box-shadow:0 3px 12px rgba(0,0,0,0.3); transform:translate(-50%, -50%); box-sizing:border-box; padding:2px;">',
+                '  <div style="font-size:11px; font-weight:700; color:#111111; line-height:1.2; text-align:center; max-width:58px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">' + tName.replace('오송읍', '오송').replace('조치원읍', '조치원') + '</div>',
+                '  <div style="font-size:13px; font-weight:800; color:#111111; line-height:1.2; margin-top:2px;">' + stat.count + '</div>',
                 '</div>'
             ].join('');
 
             var vTownMarker = new naver.maps.Marker({
                 position: townLatLng,
                 map: map,
-                icon: { content: townClusterHtml, anchor: new naver.maps.Point(0, 0) },
-                clickable: true // 💡 네이버 엔진에 클릭 가능한 마커임을 명시적으로 주입
+                icon: { content: townClusterHtml, anchor: new naver.maps.Point(0, 0) }
             });
 
-            // ⚡ [스마트 시야 흡입 엔진 복원]: 터치 시 오타 없이 안전하게 해당 동네로 자동 줌인 무빙
+            // ⚡ [완벽 교정]: endsWith 오타를 지우고, 대안 수식(indexOf)으로 안전하게 클릭 시 확대 액션 복원
             naver.maps.Event.addListener(vTownMarker, "click", function() {
-                var isDong = (tName.indexOf('동') !== -1);
-                var targetZoom = isDong ? 17 : 15;
+                var isDong = (tName.indexOf('동') !== -1); 
+                var targetZoom = isDong ? 17 : 15; // 동지역은 17레벨, 읍면지역은 15레벨 설정
                 
-                // 중심 좌표를 정밀하게 수확하여 지도를 부드럽게 밀어 넣습니다.
-                map.morph(townLatLng, targetZoom);
+                map.morph(townLatLng, targetZoom); // 🎯 지도가 중심점으로 부드럽게 줌인 이동합니다!
                 
                 var townSelector = document.getElementById("town-selector");
                 if (townSelector) {
@@ -348,11 +361,12 @@ function applyFilters() {
             virtualTownMarkers.push(vTownMarker); 
         });
 
-        updateTownSelectorOptions(true);
+        // ④ [핵심 교정]: 백엔드 고정값 강제 로딩을 해제(false)하여 실시간 필터 수량이 출력되도록 바꿈
+        updateTownSelectorOptions(false); 
         return;
     }
 
-    // 🎯 줌 14레벨 이상 구간: 광역 마커 철거 및 실시간 시야 전용 마커/순정 클러스터링 가동
+    // 🎯 줌 14레벨 이상 구간: (기존 로직 완벽 유지)
     virtualTownMarkers.forEach(function(vm) { vm.setMap(null); });
     virtualTownMarkers = [];
 
@@ -366,7 +380,7 @@ function applyFilters() {
         var mTown = (currentTown === "전체" || marker.get("town") === currentTown);
         var mRi = (currentRi === "전체" || p.name.indexOf(currentRi) !== -1);
         var mDeal = false;
-        currentDealTypes.forEach(function(t) { if (p.price.indexOf(t) !== -1) mDeal = true; });
+        currentDealTypes.forEach(function(t) { if (p.price && p.price.indexOf(t) !== -1) mDeal = true; });
 
         var item = document.getElementById("item-" + i);
         var isFilterPassed = (mCat && mDet && mTown && mRi && mDeal);
