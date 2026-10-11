@@ -753,65 +753,15 @@ function updateDetailSelectorOptions() {
 // =========================================================================
 // 📡 7단계 생명주기 최종 결합: 지도 인스턴스 정지 감지 센서 및 휠 가드 바인딩
 // =========================================================================
+//  [2주간의 엇박자 완치 복구 코드]: 복잡한 대기 가드를 걷어내고 순정 타이밍으로 복귀!
 document.addEventListener("DOMContentLoaded", function() {
-    if (typeof naver !== 'undefined') {
-        // 네이버 핵심 및 서브 모듈이 완벽하게 안착하는 시그널 포획
-        naver.maps.onJSContentLoaded = function() {
-            // 💡 [핵심 교정]: 파이썬이 만든 원본 지도 객체가 전역 변수 map에 확실히 연결되도록 강제 고정
-            if (typeof window.map !== 'undefined' && window.map) {
-                map = window.map;
-            }
-            
-            if (!map) {
-                console.warn("⚠️ [차세대 엔진] 지도 객체 연결 대기 중...");
-                return;
-            }
-            
-            try {
-                // 1. 초기 딜레이에 의해 굳어버린 셀렉터 무한루프 차단 가드를 개방
-                hasPopulatedSelectors = false;
-                
-                // 2. 지적도 파이프라인 기동
-                if (typeof window.initMapPipeline === 'function') window.initMapPipeline();
-                
-                // 3. 순정 마커 데이터 뼈대 적재
-                initMap();
-                
-                // 4. 초기 줌 12 상태에서 튕겨나가는 현상을 방어하기 위해 최초 필터 연산 강제 갱신
-                if (typeof executeFilteringPipeline === 'function') {
-                    executeFilteringPipeline();
-                }
-                
-                // 5. 시야 정지/무빙 센서 레이어 최종 바인딩
-                naver.maps.Event.addListener(map, "idle", function() {
-                    if (!isMorphMoving) applyFilters();
-                    var currentZoom = map.getZoom();
-                    if (currentBoundaryCircle && currentBoundaryCircle.getMap()) {
-                        currentBoundaryCircle.setMap(map);
-                        var dynamicRadius = (currentZoom === 18) ? 8 : (currentZoom === 17) ? 15 : 20;
-                        currentBoundaryCircle.setRadius(dynamicRadius);
-                    }
-                });
-                
-                naver.maps.Event.addListener(map, "zoom_changed", function() { 
-                    if (filterTimeout) clearTimeout(filterTimeout); 
-                    filterTimeout = setTimeout(executeFilteringPipeline, 150); 
-                });
-
-                // 💡 [최종 완치]: 데이터 본진이 브라우저 메모리에 완전히 도킹할 수 있도록 0.1초 양보 이송!
-                setTimeout(function() {
-                    hasPopulatedSelectors = false; // 가드 강제 개방
-                    initMap(); // 메모리 데이터 충전
-                    if (typeof executeFilteringPipeline === 'function') {
-                        executeFilteringPipeline(); // 화면 및 셀렉터 강제 출고
-                    }
-                    console.log("🎉 [차세대 엔진] 데이터 최종 도킹 및 마커 화면 출력 완벽 대성공!");
-                }, 100);
-
-            } catch (loadErr) {
-                console.warn("⚠️ 초기 로딩 가드 작동:", loadErr);
-            }
-        };
+    if (typeof naver !== 'undefined' && window.map) {
+        map = window.map; // 최상위 원본 지도 객체 즉시 연결
+        hasPopulatedSelectors = false; // 셀렉터 잠금 해제
+        
+        if (typeof window.initMapPipeline === 'function') window.initMapPipeline(); // 지적도 가동
+        
+        initMap(); //  메모리 데이터 적재 및 최초 화면 즉시 출고 (기존 정상 작동 타이밍)
     }
 });
 // =========================================================================
