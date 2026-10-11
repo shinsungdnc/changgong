@@ -24,8 +24,49 @@ var currentRi = "전체";
 var currentDealTypes = ["매매", "전세", "월세", "단기"];
 var markerClustering = null; 
 var currentBoundaryCircle = null;
+var virtualTownMarkers = []; // 줌 12, 13 광역 읍면동 마커 저장소
 // =========================================================================
-// 🎛️ 하이브리드 카운트 엔진 (광역 백엔드 사전자산 / 정밀 화면 마커 실시간 스위칭) [2번 블록]
+// 🎯 실시간 동네별 가상 중심점 및 수량 수확 계산기 [2번 블록 - 필터 연동 교정판]
+// =========================================================================
+function getActiveTownCenterStats() {
+    var stats = {};
+    
+    properties.forEach(function(p, index) {
+        // ① 상단 대분류(토지/공장/주택) 필터 매칭 검사
+        var pCat = p.category;
+        var mCat = (currentCategories.indexOf(pCat) !== -1);
+        
+        // ② 상세 소분류 체크박스 필터 매칭 검사
+        var mDet = (currentCategories.length === 0 || currentDetail.indexOf(p.detail_type) !== -1);
+        
+        // ③ 4대 거래유형(매매/전세/월세/단기) 필터 매칭 검사
+        var mDeal = false; 
+        currentDealTypes.forEach(function(t) { 
+            if (p.price && p.price.indexOf(t) !== -1) { mDeal = true; } 
+        });
+
+        // 💡 3가지 필터 조건을 완벽하게 모두 통과한 매물만 통계에 포함 (핵심 교정)
+        if (mCat && mDet && mDeal) {
+            var tName = p.town;
+            if (!stats[tName]) {
+                stats[tName] = { count: 0, sumLat: 0, sumLng: 0, lat: p.lat, lng: p.lng };
+            }
+            stats[tName].count++;
+            stats[tName].sumLat += p.lat;
+            stats[tName].sumLng += p.lng;
+        }
+    });
+
+    Object.keys(stats).forEach(function(tName) {
+        if (stats[tName].count > 0) {
+            stats[tName].lat = stats[tName].sumLat / stats[tName].count;
+            stats[tName].lng = stats[tName].sumLng / stats[tName].count;
+        }
+    });
+    return stats;
+}
+// =========================================================================
+// 🎛️ 하이브리드 카운트 엔진 (광역 백엔드 사전자산 / 정밀 화면 마커 실시간 스위칭) [3번 블록]
 // =========================================================================
 function updateTownSelectorOptions(isGlobalMode) {
     var townSelector = document.getElementById("town-selector");
@@ -38,13 +79,10 @@ function updateTownSelectorOptions(isGlobalMode) {
     var townCounts = {};
     var riCounts = {};
     
-    // ① 광역 상태 상태일 때 ➡️ 백엔드 사전 자산 인용 (0개 증발 원천 차단)
     if (isGlobalMode && Object.keys(townCountsFromBackend).length > 0) {
         townCounts = townCountsFromBackend;
         Object.keys(townCounts).forEach(function(k) { totalCount += townCounts[k]; });
-    } 
-    // ② 정밀 필터 상태일 때 ➡️ 네이버 지도 화면 내부 플래그를 스캔해서 카운트
-    else {
+    } else {
         markers.forEach(function(pMarker) {
             if (pMarker.get("isActive") === true) {
                 var tName = pMarker.get("town");
@@ -54,7 +92,6 @@ function updateTownSelectorOptions(isGlobalMode) {
         });
     }
 
-    // 읍면 지역 하위 '리' 셀렉터에 실시간 매핑할 수량 역산 제어 루프
     properties.forEach(function(p) {
         var mCat = (currentCategories.indexOf(p.category) !== -1);
         var mDet = (currentCategories.length === 0 || currentDetail.indexOf(p.detail_type) !== -1);
@@ -65,8 +102,8 @@ function updateTownSelectorOptions(isGlobalMode) {
             if (p.town && p.name && p.name.indexOf(p.town) !== -1) {
                 var remainAddr = p.name.substring(p.name.indexOf(p.town) + p.town.length).trim();
                 var tokens = remainAddr.split(" ");
-                if (tokens.length > 0 && tokens[0].endsWith("리")) {
-                    var riName = tokens[0].trim();
+                if (tokens.length > 0 && tokens.endsWith("리")) {
+                    var riName = tokens.trim();
                     if (!riCounts[p.town]) riCounts[p.town] = {};
                     riCounts[p.town][riName] = (riCounts[p.town][riName] || 0) + 1;
                 }
@@ -74,7 +111,6 @@ function updateTownSelectorOptions(isGlobalMode) {
         }
     });
 
-    // 읍면동 대분류 드롭다운 메뉴 렌더링
     townSelector.innerHTML = "<option value='전체'>📍 지역 선택 (전체: " + totalCount + "개)</option>";
     townList.forEach(function(t) {
         var count = townCounts[t] || 0;
@@ -83,7 +119,6 @@ function updateTownSelectorOptions(isGlobalMode) {
         townSelector.appendChild(opt);
     });
 
-    // 특정 읍/면 콕 집어 선택 시 하위 '리' 셀렉터 노출 분기 및 수량 결합
     if (currentTown !== "전체" && (currentTown.endsWith("읍") || currentTown.endsWith("면"))) {
         riSelector.style.display = "block";
         var targetTownRis = riCounts[currentTown] || {};
@@ -102,7 +137,7 @@ function updateTownSelectorOptions(isGlobalMode) {
     }
 }
 // =========================================================================
-// 🔠 소분류 옵션 동적 빌드 및 마스터 전체선택 토글 제어 엔진 [3번 블록]
+// 🔠 소분류 옵션 동적 빌드 및 마스터 전체선택 토글 제어 엔진 [4번 블록]
 // =========================================================================
 function updateDetailSelectorOptions() {
     var container = document.getElementById("detail-selector");
@@ -110,9 +145,7 @@ function updateDetailSelectorOptions() {
     
     var detailsSet = new Set();
     properties.forEach(function(p) { 
-        if (currentCategories.indexOf(p.category) !== -1) {
-            detailsSet.add(p.detail_type); 
-        }
+        if (currentCategories.indexOf(p.category) !== -1) { detailsSet.add(p.detail_type); }
     });
     container.innerHTML = "";
     
@@ -120,7 +153,6 @@ function updateDetailSelectorOptions() {
     currentDetail = [...sortedDetails]; 
     var activeBg = "#ffffff", activeColor = "#004b6e", activeBorder = "#004b6e";
 
-    // 🎯 '전체' 마스터 체크박스 라벨 버튼 설계
     var masterWrapper = document.createElement("label");
     masterWrapper.style = "display: inline-flex; align-items: center; font-size: 12px; font-weight: bold; cursor: pointer; padding: 5px 12px; border-radius: 4px; flex-shrink: 0; background:" + activeBg + "; color:" + activeColor + "; border: 2px solid " + activeBorder;
     var masterChk = document.createElement("input"); masterChk.type = "checkbox"; masterChk.checked = true; masterChk.style.display = "none";
@@ -147,7 +179,6 @@ function updateDetailSelectorOptions() {
     masterWrapper.appendChild(document.createTextNode("전체")); 
     container.appendChild(masterWrapper);
 
-    // 🎯 개별 세부 소분류 낱개 라벨 알약 스위치 링킹
     sortedDetails.forEach(function(d) {
         var wrapper = document.createElement("label"); 
         wrapper.className = "child-label"; 
@@ -165,7 +196,6 @@ function updateDetailSelectorOptions() {
                 masterWrapper.style.color = "#868e96"; 
                 masterWrapper.style.border = "2px solid #ced4da"; 
             }
-            
             var checkedBoxes = container.querySelectorAll(".child-label input:checked");
             currentDetail = Array.from(checkedBoxes).map(function(c) { return c.value; });
             
@@ -183,7 +213,7 @@ function updateDetailSelectorOptions() {
     });
 }
 // =========================================================================
-// 🚀 초기 지도 마커 인스턴스 빌드 및 초기화 안착 버퍼 엔진 [4번 블록]
+// 🚀 초기 지도 마커 인스턴스 빌드 및 0.3초 초기화 안착 버퍼 엔진 [4번 블록]
 // =========================================================================
 function initMap() {
     var listContainer = document.getElementById("property-list");
@@ -252,13 +282,13 @@ function initMap() {
     });
     if (listContainer) listContainer.appendChild(listFragment);
 
+    // 💡 [핵심 교정]: 초기 로딩 0.3초 대기 버퍼 구간에서 true 가드를 강제로 해제하고 계산기 즉시 연동
     setTimeout(function() {
-        updateTownSelectorOptions(true);
-        applyFilters();
+        applyFilters(); 
     }, 300);
 }
 // =========================================================================
-// 🗺️ 실시간 시야 사각형 데이터 정밀 필터링 및 임계값 제어 엔진 [5번 블록]
+// 🗺️ 실시간 시야 사각형 데이터 정밀 필터링 및 임계값 제어 엔진 [6번 블록 - 클릭 절대 반응 완결판]
 // =========================================================================
 function applyFilters() {
     var validMarkersForCluster = []; 
@@ -266,34 +296,66 @@ function applyFilters() {
     var currentBounds = map.getBounds();
     var listPanel = document.getElementById("property-list-panel");
 
-    // 🎯 광역 모드 스위칭 장벽 (지도 줌 14레벨 미만) ➡️ 좌측 패널 숨기고 클러스터 가동
+    // 🎯 [완벽 구현] 줌 12, 13레벨 구간: 상하 2단 구조 행정구역 매물수 클러스터 모드 기동
     if (currentZoom < 14) {
         if (listPanel) listPanel.style.display = "none";
-        markers.forEach(function(m) { 
-            m.setMap(null); 
-            m.set("isActive", true); 
-        });
         
-        markers.forEach(function(marker, i) {
-            var p = properties[i];
-            var mCat = (currentCategories.indexOf(marker.get("category")) !== -1);
-            var mDet = (currentCategories.length === 0 || currentDetail.indexOf(marker.get("detail_type")) !== -1);
-            var mTown = (currentTown === "전체" || marker.get("town") === currentTown);
-            var mRi = (currentRi === "전체" || p.name.indexOf(currentRi) !== -1);
-            var mDeal = false;
-            currentDealTypes.forEach(function(t) { if (p.price.indexOf(t) !== -1) mDeal = true; });
+        // 지도 위 개별 풍선 및 예전 클러스터러, 구형 광역 마커 일체 초기화 소멸
+        markers.forEach(function(m) { m.setMap(null); m.set("isActive", true); });
+        if (markerClustering !== null) { markerClustering.setMap(null); markerClustering = null; }
+        virtualTownMarkers.forEach(function(vm) { vm.setMap(null); });
+        virtualTownMarkers = [];
 
-            if (mCat && mDet && mTown && mRi && mDeal) {
-                validMarkersForCluster.push(marker);
-            }
+        var townStats = getActiveTownCenterStats();
+
+        Object.keys(townStats).forEach(function(tName) {
+            var stat = townStats[tName];
+            if (stat.count === 0) return; 
+
+            var townLatLng = new naver.maps.LatLng(stat.lat, stat.lng);
+            
+            // 🎨 [클릭 권한 오픈]: pointer-events: auto 및 z-index 조율로 클릭 씹힘 버그 원천 차단
+            var townClusterHtml = [
+                '<div class="custom-town-cluster" style="cursor:pointer; pointer-events:auto !important; z-index:9999 !important; width:64px; height:64px; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(74, 211, 255, 0.95); border:1px solid #ffffff; border-radius:50%; box-shadow:0 3px 12px rgba(0,0,0,0.3); transform:translate(-50%, -50%); box-sizing:border-box; padding:2px;">',
+                '  <div style="font-size:11px; font-weight:700; color:#111111; line-height:1.2; text-align:center; max-width:58px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; pointer-events:none;">' + tName.replace('오송읍', '오송').replace('조치원읍', '조치원') + '</div>',
+                '  <div style="font-size:13px; font-weight:800; color:#111111; line-height:1.2; margin-top:2px; pointer-events:none;">' + stat.count + '</div>',
+                '</div>'
+            ].join('');
+
+            var vTownMarker = new naver.maps.Marker({
+                position: townLatLng,
+                map: map,
+                icon: { content: townClusterHtml, anchor: new naver.maps.Point(0, 0) },
+                clickable: true // 💡 네이버 엔진에 클릭 가능한 마커임을 명시적으로 주입
+            });
+
+            // ⚡ [스마트 시야 흡입 엔진 복원]: 터치 시 오타 없이 안전하게 해당 동네로 자동 줌인 무빙
+            naver.maps.Event.addListener(vTownMarker, "click", function() {
+                var isDong = (tName.indexOf('동') !== -1);
+                var targetZoom = isDong ? 17 : 15;
+                
+                // 중심 좌표를 정밀하게 수확하여 지도를 부드럽게 밀어 넣습니다.
+                map.morph(townLatLng, targetZoom);
+                
+                var townSelector = document.getElementById("town-selector");
+                if (townSelector) {
+                    townSelector.value = tName;
+                    currentTown = tName;
+                    currentRi = "전체";
+                }
+            });
+
+            virtualTownMarkers.push(vTownMarker); 
         });
-        
+
         updateTownSelectorOptions(true);
-        updateClustering(validMarkersForCluster);
         return;
     }
 
-    // 🎯 정밀 모드 스위칭 진입 (지도 줌 14레벨 이상) ➡️ 좌측 리스트 노출
+    // 🎯 줌 14레벨 이상 구간: 광역 마커 철거 및 실시간 시야 전용 마커/순정 클러스터링 가동
+    virtualTownMarkers.forEach(function(vm) { vm.setMap(null); });
+    virtualTownMarkers = [];
+
     if (listPanel) listPanel.style.display = "flex";
     
     markers.forEach(function(marker, i) {
@@ -315,7 +377,6 @@ function applyFilters() {
             var latLng = marker.getPosition();
             var isInView = (currentBounds && currentBounds.hasLatLng(latLng));
 
-            // [기획 사양 동기화] 동지역(urban) 줌 17 이상, 읍면지역(rural) 줌 15 이상 개별 노출
             var isDetailScale = (p.town_type === "urban") ? (currentZoom >= 17) : (currentZoom >= 15);
 
             if (isInView) {
@@ -338,45 +399,58 @@ function applyFilters() {
     updateClustering(validMarkersForCluster);
 }
 // =========================================================================
-// 📊 듀얼 트랙 마커 클러스터러 재생성 및 유령 배지 소멸 엔진 [6번 블록]
+// 📊 줌 14레벨 이상 전용 네이버 순정 클러스터러 가동 및 클릭 액션 엔진 [7번 블록]
 // =========================================================================
 function updateClustering(validMarkers) {
-    // 1단계: 기존에 결합되어 굳어있던 구형 클러스터러 본체를 메모리에서 원천 리셋
     if (markerClustering !== null) { 
         markerClustering.setMap(null); 
         markerClustering = null; 
     }
     
     if (!validMarkers || validMarkers.length === 0) return;
-    
-    // 2단계: 정제 완료된 유효 마커 데이터셋을 클러스터러에 일괄 이송 주입
+
     markerClustering = new MarkerClustering({
-        minClusterSize: 1, 
+        minClusterSize: 2, 
         maxZoom: 16, 
         map: map, 
         markers: validMarkers, 
-        gridSize: 160,
+        gridSize: 90, 
         icons: [
-            { content: '<div class="cluster-badge" style="cursor:pointer; width:46px; height:46px; line-height:46px; font-size:13px; color:#111111; text-align:center; font-weight:bold; background:rgba(74, 211, 255, 0.95); border:2px solid #ffffff; border-radius:50%; box-shadow:0 3px 12px rgba(0,0,0,0.35);"></div>', anchor: new naver.maps.Point(23, 23) }
+            { content: '<div class="pure-naver-cluster" style="cursor:pointer; width:44px; height:44px; line-height:42px; font-size:12px; color:#111111; text-align:center; font-weight:bold; background:rgba(74, 211, 255, 0.95); border:1px solid #ffffff; border-radius:50%; box-shadow:0 3px 10px rgba(0,0,0,0.25); box-sizing:border-box;"></div>', anchor: new naver.maps.Point(22, 22) }
         ],
         stylingFunction: function(clusterMarker, count) {
             var el = clusterMarker.getElement(); 
             if (el) { 
-                var bd = el.querySelector(".cluster-badge"); 
+                var bd = el.querySelector(".pure-naver-cluster"); 
                 if (bd) bd.innerText = count; 
             }
         }
     });
+
+    // ⚡ [순정 클러스터 클릭 반응 연동]: 줌 14 이상에서 뭉친 알약 누르면 경계면 계산해서 스마트 줌인
+    naver.maps.Event.addListener(markerClustering, "clusterclick", function(cluster) {
+        var clusterMarkers = cluster.getClusterMember();
+        if (!clusterMarkers || clusterMarkers.length === 0) return;
+
+        var bounds = new naver.maps.LatLngBounds();
+        clusterMarkers.forEach(function(m) {
+            bounds.extend(m.getPosition());
+        });
+
+        map.panToBounds(bounds);
+        setTimeout(function() {
+            map.setZoom(map.getZoom() + 1); 
+        }, 150);
+    });
 }
 // =========================================================================
-// 🎯 개별 매물 카드 선택 및 중심 가이드라인 원 동적 렌더링 엔진 [7번 블록]
+// 🎯 개별 매물 카드 선택 및 중심 가이드라인 원 동적 렌더링 엔진 [8번 블록]
 // =========================================================================
 function selectProperty(index, marker) {
     var targetItem = document.getElementById("item-" + index);
     var targetDetail = document.getElementById("detail-" + index);
     var panel = document.getElementById("right-stats-panel");
 
-    // 토글 처리 (활성화된 상태를 다시 누를 때 뷰포트 고정 가드 장착)
     if (targetItem && targetItem.classList.contains("active")) {
         targetItem.classList.remove("active");
         if (targetDetail) targetDetail.style.display = "none";
@@ -394,7 +468,6 @@ function selectProperty(index, marker) {
     marker.setMap(map);
     if (currentBoundaryCircle) currentBoundaryCircle.setMap(null);
     
-    // 매물 정중앙 앞마당에 15m 반경 정밀 붉은색 테두리 타깃원 장착
     currentBoundaryCircle = new naver.maps.Circle({
         map: map, 
         center: marker.getPosition(), 
@@ -408,7 +481,6 @@ function selectProperty(index, marker) {
     var targetPos = marker.getPosition();
     var currentZoom = map.getZoom();
 
-    // 스마트 하이브리드 시야 락 엔진 기동
     if (currentZoom < 16) {
         map.morph(targetPos, 16);
     } else {
@@ -420,7 +492,7 @@ function selectProperty(index, marker) {
     }
 }
 // =========================================================================
-// 📊 국토부 5개년 실거래가 데이터 연동 및 우측 패널 표 드로잉 엔진 [8번 블록]
+// 📊 국토부 5개년 실거래가 데이터 연동 및 우측 패널 표 드로잉 엔진 [9번 블록]
 // =========================================================================
 function loadTradeStatsPanel(index) {
     var prop = properties[index];
@@ -428,8 +500,8 @@ function loadTradeStatsPanel(index) {
     if (!prop || !panel) return;
 
     var yParts = prop.yongdo.split("/");
-    var mYongdo = (yParts && yParts[0] ? yParts[0].trim() : "").replace("지역", "") + "지역"; 
-    var mJimok = (yParts && yParts[1] ? yParts[1].trim() : "");       
+    var mYongdo = (yParts && yParts ? yParts.trim() : "").replace("지역", "") + "지역"; 
+    var mJimok = (yParts && yParts ? yParts.trim() : "");       
 
     var tableHtml = '';
     var noticeText = '최근 5개년 토지 [매매] 실거래가 (평, 평당가)'; 
@@ -491,7 +563,7 @@ function loadTradeStatsPanel(index) {
     panel.classList.add("active");
 }
 // =========================================================================
-// 🎛️ 사이드바 접기 및 대분류 / 거래유형 필터 UI 상태 포획 엔진 [9번 블록]
+// 📁 사이드바 토글 및 GPS, 지적도 리스너 최종 동기화 마감 [10번 최종 블록]
 // =========================================================================
 function toggleSidebar() {
     var sidebar = document.getElementById("sidebar");
@@ -574,9 +646,7 @@ function expandMobilePanel(event) {
         if (panel) panel.classList.toggle("expanded"); 
     }
 }
-// =========================================================================
-// 🧭 실시간 GPS 내 위치 추적 및 지도 이동 idle 동기화 리스너 마감 [10번 최종 블록]
-// =========================================================================
+
 var watchPositionId = null;
 var myLocationMarker = null;
 
