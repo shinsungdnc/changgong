@@ -5,7 +5,6 @@
 
 // 💡 전역 인터페이스 상태 장부 구조 고정 (연산 교란 차단 가드)
 var markers = []; 
-var townStaticBadges = [];
 var markerClustering = null; 
 var currentBoundaryCircle = null;
 var filterTimeout = null;       // 디바운싱(연산 과부하 방지)용 타이머
