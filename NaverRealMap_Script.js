@@ -210,10 +210,10 @@ function executeFilteringPipeline() {
     // 📊 [2부 스펙] 초경량 광역 모드 스위칭 장벽 (지도 줌 12 ~ 13레벨)
     // ---------------------------------------------------------------------
     if (currentZoom < 14) {
-        // 💡 부모 컨트롤 패널 상자 자체를 암전 격리하여 초기 로딩 병목을 완벽히 차단합니다.
-        var listPanel = document.getElementById("property-list-panel");
-        if (listPanel) listPanel.style.display = "none";
-        if (listContainer) listContainer.innerHTML = ""; 
+        if (listContainer) { 
+            listContainer.style.display = "none"; 
+            listContainer.innerHTML = ""; // 목록창 완전 소멸
+        }
         
         // 순수 정적 배지 가동 전 클러스터러 완벽 청소
         if (markerClustering !== null) { 
@@ -238,11 +238,9 @@ function executeFilteringPipeline() {
         townStaticBadges.forEach(function(badge) { if (badge && badge.getMap() !== null) badge.setMap(null); });
     }
 
-    var listPanel = document.getElementById("property-list-panel");
-    if (listPanel) listPanel.style.display = "flex";
     if (listContainer) listContainer.style.display = "block";
     var listHtmlBuffer = [];
-    
+
     markers.forEach(function(marker, i) {
         var prop = properties[i];
         if (!prop) return;
@@ -756,25 +754,39 @@ function updateDetailSelectorOptions() {
 // 📡 7단계 생명주기 최종 결합: 지도 인스턴스 정지 감지 센서 및 휠 가드 바인딩
 // =========================================================================
 document.addEventListener("DOMContentLoaded", function() {
-    if (typeof naver !== 'undefined' && map) {
-        if (typeof window.initMapPipeline === 'function') window.initMapPipeline();
-        
-        // 🎯 순서 완치: 파일 전 구간 상하 6단 분기 호이스팅 순서 정렬이 칼각 완결되어 안전 점화 개시!
-        initMap();
-        
-        naver.maps.Event.addListener(map, "idle", function() {
-            if (!isMorphMoving) applyFilters();
-            var currentZoom = map.getZoom();
-            if (currentBoundaryCircle && currentBoundaryCircle.getMap()) {
-                currentBoundaryCircle.setMap(map);
-                var dynamicRadius = (currentZoom === 18) ? 8 : (currentZoom === 17) ? 15 : 20;
-                currentBoundaryCircle.setRadius(dynamicRadius);
+    if (typeof naver !== 'undefined') {
+        // 네이버 지도 핵심 및 서브 모듈(geocoder, visualization 등)이 100% 로드 완료될 때까지 대기
+        naver.maps.onJSContentLoaded = function() {
+            if (!map) return; // 상위 map 객체 안착 확인
+            
+            try {
+                // 1. 파이프라인 기동 (지적도 드로잉)
+                if (typeof window.initMapPipeline === 'function') window.initMapPipeline();
+                
+                // 2. 최후방 마커 엔진 장부 충전 및 실행
+                initMap();
+                
+                // 3. 시야 감지 센서 레이어 최종 바인딩
+                naver.maps.Event.addListener(map, "idle", function() {
+                    if (!isMorphMoving) applyFilters();
+                    var currentZoom = map.getZoom();
+                    if (currentBoundaryCircle && currentBoundaryCircle.getMap()) {
+                        currentBoundaryCircle.setMap(map);
+                        var dynamicRadius = (currentZoom === 18) ? 8 : (currentZoom === 17) ? 15 : 20;
+                        currentBoundaryCircle.setRadius(dynamicRadius);
+                    }
+                });
+                
+                naver.maps.Event.addListener(map, "zoom_changed", function() { 
+                    if (filterTimeout) clearTimeout(filterTimeout); 
+                    filterTimeout = setTimeout(executeFilteringPipeline, 150); 
+                });
+                
+                console.log("🎉 [차세대 엔진] 네이버 모든 모듈 안착 및 마커 드로잉 대성공!");
+            } catch (loadErr) {
+                console.warn("⚠️ 초기 로딩 가드 작동:", loadErr);
             }
-        });
-        naver.maps.Event.addListener(map, "zoom_changed", function() { 
-            if (filterTimeout) clearTimeout(filterTimeout); 
-            filterTimeout = setTimeout(executeFilteringPipeline, 150); 
-        });
+        };
     }
 });
 // =========================================================================
