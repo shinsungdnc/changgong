@@ -340,7 +340,10 @@ function executeFilteringPipeline() {
                 // [교정 사양 1] NaverRealMap_Script.js - 목록 카드 디자인 포장 구역 핀포인트 교체
                 // =========================================================================
                 // 💡 Main.py가 미리 구워준 정예 배지 필드를 자바스크립트는 그대로 받아서 출력만 합니다.
-                var badgeText = prop.deal_badge_text || "매매";
+                var badgeText = (prop.price && prop.price.indexOf("전세") !== -1) ? "전세" : 
+                                ((prop.price && prop.price.indexOf("월세") !== -1) ? "월세" : 
+                                ((prop.price && prop.price.indexOf("단기") !== -1) ? "단기" : "매매"));
+                
                 var priceText = prop.price_display_text || "0";
                 var ledgerText = prop.category === "공장" ? prop.factory_ledger_clean : (prop.category === "주택" ? prop.house_ledger_clean : prop.yongdo);
 
@@ -379,7 +382,9 @@ function executeFilteringPipeline() {
     
     // 🎯 [네이버 런타임 충돌 패치 2]: 마커 DOM 연산이 완전히 가라앉은 0.01초 뒤에 클러스터를 갱신하도록 양보 이송
     setTimeout(function() {
-        updateClustering(vis); 
+        if (typeof updateClustering === 'function') {
+            updateClustering(vis); 
+        }
     }, 10);
 }
 
@@ -398,7 +403,7 @@ function updateClustering(vis) {
 
     if (!vis || vis.length === 0) return;
     var currentZoom = map.getZoom();
-    if (currentZoom < 14) return; 
+    if (currentZoom < 12) return; 
 
     var dynamicVis = vis.filter(function(marker) {
         var idx = marker.get("p_index");
