@@ -137,11 +137,13 @@ function toggleCadastral() {
 // =========================================================================
 // 📡 2단계 [메모리 안착 (★핵심)]: 초기 마커 뼈대만 초고속 메모리 적재 (연산 부하 '0'화)
 // =========================================================================
+// =========================================================================
+// 📡 [NaverRealMap_Script.js - initMap 완치 판본 코드]
+// =========================================================================
 function initMap() {
     var townSelector = document.getElementById("town-selector");
     
-    // 🎯 [기획 2단계 반영]: 초기 진입 시 데이터 전체를 훑는 과부하 루프를 물리적으로 전면 차단
-    // 백엔드가 이미 공급해 준 townList 데이터만 단순 드롭다운 메뉴에 매핑하여 로딩 병목을 완전히 격파합니다.
+    // 백엔드가 완벽하게 공급해 준 townList 마스터 데이터를 셀렉터 기본 기둥으로 즉시 바인딩
     if (townSelector && townList && townList.length > 0) {
         var optHtml = ["<option value='전체'>📍 지역 선택 (전체)</option>"];
         townList.forEach(function(t) {
@@ -152,7 +154,7 @@ function initMap() {
 
     markers = [];
     
-    // 개별 마커를 네이버 지도 캔버스 위에 무단 등록(setMap)하지 않고, 가벼운 순수 객체 형태로만 적재
+    // 백엔드 properties 대륙에서 들어온 원시 매물 객체들을 순수 마커 인스턴스로 바인딩
     properties.forEach(function(prop, index) {
         var latlng = new naver.maps.LatLng(prop.lat, prop.lng);
         
@@ -169,13 +171,13 @@ function initMap() {
             icon: { content: markerHtml, anchor: new naver.maps.Point(0, 0) } 
         });
         
-        // 하강 필터 파이프라인이 읽어 내릴 메타데이터 영구 낙인
+        // 하강 필터 파이프라인이 즉시 가독할 수 있도록 고유 메타 배지 주입
         marker.set("category", prop.category); 
         marker.set("detail_type", prop.detail_type); 
         marker.set("town", prop.town); 
         marker.set("p_index", index); 
         
-        // [자석식 Sticky 클릭 UX 결합]: 마커를 직접 터치/클릭했을 때 상세페이지 연동 이벤트 미리 바인딩
+        // 자석식 Sticky 클릭 이벤트를 원본 마커에 링크 결합
         naver.maps.Event.addListener(marker, "click", function() { 
             if (typeof selectProperty === 'function') selectProperty(index, marker); 
         });
@@ -183,8 +185,14 @@ function initMap() {
         markers.push(marker);
     });
 
-    // 메모리 적재 즉시 단방향 하강 필터 시스템 가동
-    applyFilters();
+    // 🎯 [완치 핵심 가드]: 지도가 처음 켜질 때 네이버 맵 캔버스 영역(Bounds) 연산이 
+    // 브라우저 런타임에 안착할 수 있도록 0.2초의 물리적 유예 타이밍을 준 뒤 파이프라인을 기동합니다.
+    setTimeout(function() {
+        if (typeof updateTownSelectorOptions === 'function') {
+            updateTownSelectorOptions(true); // 백엔드 사전 집계 데이터 우선 리프레시
+        }
+        applyFilters();
+    }, 200);
 }
 
 // 🎛️ 디바운싱 필터 밸브 조절 (지도가 마우스 드래그나 휠 스케일링 중일 때는 연산 완전 차단)
