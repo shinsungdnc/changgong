@@ -184,45 +184,6 @@ function initMap() {
         markers.push(marker);
     });
 
-    if (window.townList && window.townList.length > 0) {
-        var townCounter = {};
-        properties.forEach(function(p) {
-            if (p.town) townCounter[p.town] = (townCounter[p.town] || 0) + 1;
-        });
-
-        window.townList.forEach(function(townName) {
-            var sumLat = 0, sumLng = 0, count = 0;
-            properties.forEach(function(p) {
-                if (p.town === townName) {
-                    sumLat += p.lat; sumLng += p.lng; count++;
-                }
-            });
-
-            if (count > 0) {
-                var badgeLatLng = new naver.maps.LatLng(sumLat / count, sumLng / count);
-                var badgeHtml = [
-                    '<div style="position: absolute; transform: translate(-50%, -50%); background: #2b5c8f; color: #ffffff; border: 2px solid #ffffff; padding: 6px 14px; border-radius: 20px; font-weight: 800; font-size: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); white-space: nowrap; cursor: pointer; text-align: center; z-index: 100;">',
-                    '  📍 ' + townName + ' <span style="color: #4ad3ff; margin-left: 2px;">' + count + '건</span>',
-                    '</div>'
-                ].join('');
-
-                var townBadgeMarker = new naver.maps.Marker({
-                    position: badgeLatLng,
-                    map: window.map,
-                    icon: { content: badgeHtml, anchor: new naver.maps.Point(0, 0) }
-                });
-
-                naver.maps.Event.addListener(townBadgeMarker, "click", function() {
-                    var townSelector = document.getElementById("town-selector");
-                    if (townSelector) townSelector.value = townName;
-                    if (typeof changeTown === 'function') changeTown(townName);
-                });
-
-                window.townStaticBadges.push(townBadgeMarker);
-            }
-        });
-    }
-    
     // 메모리 적재 즉시 단방향 하강 필터 시스템 가동
     applyFilters();
 }
