@@ -202,6 +202,7 @@ function executeFilteringPipeline() {
     var currentZoom = map.getZoom();
     var currentBounds = map.getBounds();
     var listContainer = document.getElementById("property-list");
+    var listPanel = document.getElementById("property-list-panel");
 
     // [예외 안전 가드]: 스마트 줌인(morph) 카메라가 이동하는 중에는 시야 필터 연산을 일시 정지
     if (isMorphMoving) return;
@@ -210,8 +211,8 @@ function executeFilteringPipeline() {
     // 📊 [2부 스펙] 초경량 광역 모드 스위칭 장벽 (지도 줌 12 ~ 13레벨)
     // ---------------------------------------------------------------------
     if (currentZoom < 14) {
+        if (listPanel) listPanel.style.display = "none"; // ◀ [신설] 광역뷰일 때 부모 박스를 숨겨 지도 확보
         if (listContainer) { 
-            listContainer.style.display = "none"; 
             listContainer.innerHTML = ""; // 목록창 완전 소멸
         }
         
@@ -238,6 +239,7 @@ function executeFilteringPipeline() {
         townStaticBadges.forEach(function(badge) { if (badge && badge.getMap() !== null) badge.setMap(null); });
     }
 
+    if (listPanel) listPanel.style.display = "flex";
     if (listContainer) listContainer.style.display = "block";
     var listHtmlBuffer = [];
 
@@ -300,7 +302,7 @@ function executeFilteringPipeline() {
     
     if (listContainer) listContainer.innerHTML = listHtmlBuffer.join('');
     
-    updateTownSelectorOptions();
+    updateTownSelectorOptions(false);
     updateDetailSelectorOptions();
     
     // 🎯 [네이버 런타임 충돌 패치 2]: 마커 DOM 연산이 완전히 가라앉은 0.01초 뒤에 클러스터를 갱신하도록 양보 이송
@@ -658,57 +660,51 @@ function drawTradeTableAndListeners(prop, panel, townBook, noticeText) {
     }
 }
 
-// 📐 [지연 가동 전격 결합]: 정밀 모드(줌 14 이상) 진입 시에만 단 1회 실시간 옵션들을 새로 고치는 가드 엔진
-var hasPopulatedSelectors = false;
-function updateTownSelectorOptions() {
+// 📐 [이원화 하이브리드 엔진]: 광역 모드(백엔드 사전 카운트)와 정밀 모드(화면 내 마커 실시간 카운트)를 스마트 스위칭
+function updateTownSelectorOptions(isGlobalMode) {
     var townSelector = document.getElementById("town-selector");
     var riSelector = document.getElementById("ri-selector");
     if (!townSelector || !riSelector) return;
-    if (hasPopulatedSelectors) return; 
-    hasPopulatedSelectors = true;
 
-    var savedTown = currentTown; var savedRi = currentRi;
-    var totalCount = 0; var townCounts = {}; var riCounts = {};
-    
-    properties.forEach(function(p) {
-        var mCat = (currentCategories.indexOf(p.category) !== -1);
-        var mDet = (currentCategories.length === 0 || currentDetail.indexOf(p.detail_type) !== -1);
-        var mDeal = false; currentDealTypes.forEach(function(type) { if (p.price && p.price.indexOf(type) !== -1) mDeal = true; });
+    var savedTown = currentTown; 
+    var savedRi = currentRi;
+    var totalCount = 0; 
+    var townCounts = {};
 
-        if (mCat && mDet && mDeal) {
-            totalCount++; townCounts[p.town] = (townCounts[p.town] || 0) + 1;
-            if (p.town && p.name && p.name.indexOf(p.town) !== -1) {
-                var remainAddr = p.name.substring(p.name.indexOf(p.town) + p.town.length).trim();
-                var tokens = remainAddr.split(" ");
-                if (tokens.length > 0 && tokens[0].endsWith("리")) {
-                    var riName = tokens[0].trim();
-                    if (!riCounts[p.town]) riCounts[p.town] = {};
-                    riCounts[p.town][riName] = (riCounts[p.town][riName] || 0) + 1;
-                }
+    // ① 지도가 축소된 광역 상태일 때 ➡️ 백엔드가 계산해 준 전역 사전 데이터를 즉시 인용
+    if (isGlobalMode && typeof townCountsFromBackend !== 'undefined') {
+        townCounts = townCountsFromBackend;
+        Object.keys(townCounts).forEach(function(k) { totalCount += townCounts[k]; });
+    } 
+    // ② 지도가 확대된 정밀 상태일 때 ➡️ 네이버 지도 캔버스 위에 현재 "눈으로 보이는" 실시간 유효 마커만 스캔해서 합산
+    else {
+        markers.forEach(function(pMarker) {
+            if (pMarker.getMap() === map) { 
+                var tName = pMarker.get("town");
+                townCounts[tName] = (townCounts[tName] || 0) + 1;
+                totalCount++;
             }
-        }
-    });
+        });
+    }
 
     townSelector.innerHTML = "<option value='전체'>📍 지역 선택 (전체: " + totalCount + "개)</option>";
-    var activeTownList = (townList && townList.length > 0) ? townList : Object.keys(townCounts).sort();
-    activeTownList.forEach(function(t) {
+    
+    // 백엔드 파이썬이 공급해 준 고정 행정구역 정렬 순서 그대로 옵션 드롭다운 드로잉
+    townList.forEach(function(t) {
         var count = townCounts[t] || 0;
-        if (count > 0) {
-            var opt = document.createElement("option"); opt.value = t; opt.innerText = "📍 " + t + " (" + count + ")";
-            if (t === savedTown) opt.selected = true; townSelector.appendChild(opt);
-        }
+        var opt = document.createElement("option"); 
+        opt.value = t; 
+        opt.innerText = "📍 " + t + " (" + count + "개)";
+        if (t === savedTown) opt.selected = true; 
+        townSelector.appendChild(opt);
     });
 
     if (currentTown !== "전체" && (currentTown.endsWith("읍") || currentTown.endsWith("면"))) {
         riSelector.style.display = "block";
-        var targetTownRis = riCounts[currentTown] || {}; var sortedRis = Object.keys(targetTownRis).sort();
-        var townTotal = townCounts[currentTown] || 0;
-        riSelector.innerHTML = "<option value='전체'>📍 리 전체 (" + townTotal + ")</option>";
-        sortedRis.forEach(function(r) {
-            var opt = document.createElement("option"); opt.value = r; opt.innerText = r + " (" + (targetTownRis[r] || 0) + ")";
-            if (r === savedRi) opt.selected = true; riSelector.appendChild(opt);
-        });
-    } else { riSelector.style.display = "none"; currentRi = "전체"; }
+    } else { 
+        riSelector.style.display = "none"; 
+        currentRi = "전체"; 
+    }
 }
 
 // =========================================================================
