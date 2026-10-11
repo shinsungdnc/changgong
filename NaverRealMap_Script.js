@@ -797,8 +797,17 @@ document.addEventListener("DOMContentLoaded", function() {
                     if (filterTimeout) clearTimeout(filterTimeout); 
                     filterTimeout = setTimeout(executeFilteringPipeline, 150); 
                 });
-                
-                console.log("🎉 [차세대 엔진] 지도 주소 연결 성공 및 마커 표출 완료!");
+
+                // 💡 [최종 완치]: 데이터 본진이 브라우저 메모리에 완전히 도킹할 수 있도록 0.1초 양보 이송!
+                setTimeout(function() {
+                    hasPopulatedSelectors = false; // 가드 강제 개방
+                    initMap(); // 메모리 데이터 충전
+                    if (typeof executeFilteringPipeline === 'function') {
+                        executeFilteringPipeline(); // 화면 및 셀렉터 강제 출고
+                    }
+                    console.log("🎉 [차세대 엔진] 데이터 최종 도킹 및 마커 화면 출력 완벽 대성공!");
+                }, 100);
+
             } catch (loadErr) {
                 console.warn("⚠️ 초기 로딩 가드 작동:", loadErr);
             }
