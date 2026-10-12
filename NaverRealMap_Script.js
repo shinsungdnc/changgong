@@ -263,13 +263,18 @@ function initMap() {
             '    <span style="font-size:15px; font-weight:bold; color:' + badgeBg + ';">' + cleanPriceText + '</span>',
             '  </div>',
             '</div>',
-            // 🛠️ [상세정보 노출 차단 해제] 스타일 강제 오버라이딩 적용
+            // 🛠️ [상세정보 레이아웃 교정] 평공시가 우측에 도로접면 수평 밀착 정렬
             '<div class="property-detail" id="detail-' + index + '" style="display:none; margin-top:6px; padding-top:6px; border-top:1px dashed #dee2e6; font-size:12px; color:#333; line-height:1.5;">',
             '  <div style="display:flex; flex-direction:column; gap:2px; width:100%;">',
-            '    <div style="display:flex; width:100%;"><span style="font-weight:bold; color:#555; width:55px;">평 당 가</span><span>: ' + danDisplayHtml + '</span></div>',
-            '    <div style="display:flex; width:100%;"><span style="font-weight:bold; color:#555; width:55px;">평공시가</span><span>: ' + prop.gongsi_price + '</span></div>',
-            '    <div style="display:flex; width:100%;"><span style="font-weight:bold; color:#555; width:55px;">도로접면</span><span>: ' + prop.road + '</span></div>',
-            '    <div style="display:flex; width:100%;"><span style="font-weight:bold; color:#555; width:55px;">매물특징</span><span style="flex:1; word-break:break-all;">: ' + prop.feature + '</span></div>',
+            '    <div style="display:flex; width:100%;"><span style="font-weight:bold; color:#555; width:55px; flex-shrink:0;">평 당 가</span><span style="flex:1;">: ' + danDisplayHtml + '</span></div>',
+            
+            // 🔄 [교정 코어] 평공시가방과 도로접면방을 하나의 가로정렬(flex) 부모 박스로 동합
+            '    <div style="display:flex; width:100%; gap:10px;">',
+            '      <div style="flex:1; display:flex; overflow:hidden;"><span style="font-weight:bold; color:#555; width:55px; flex-shrink:0;">평공시가</span><span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">: ' + prop.gongsi_price + '</span></div>',
+            '      <div style="flex:1; display:flex; overflow:hidden;"><span style="font-weight:bold; color:#555; width:55px; flex-shrink:0;">도로접면</span><span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">: ' + prop.road + '</span></div>',
+            '    </div>',
+            
+            '    <div style="display:flex; width:100%; margin-top:1px;"><span style="font-weight:bold; color:#555; width:55px; flex-shrink:0;">매물특징</span><span style="flex:1; word-break:break-all;">: ' + prop.feature + '</span></div>',
             '  </div>',
             '  <div class="links-row">' + naverLandLink + naverMapLink + eumLandLink + '</div>',
             '</div>'
