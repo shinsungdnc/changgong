@@ -151,18 +151,40 @@ function updateDetailSelectorOptions() {
 // =========================================================================
 // 🚀 초기 지도 마커 인스턴스 빌드 및 좌측 매물 DOM 리스트 구성 [5번 블록]
 // =========================================================================
+// =========================================================================
+// 🚀 초기 지도 마커 인스턴스 빌드 및 좌측 매물 DOM 리스트 구성 [5번 블록 수정완결판]
+// =========================================================================
 function initMap() {
-    var listContainer = document.getElementById("property-list"); if (listContainer) listContainer.innerHTML = ""; 
-    markers = []; updateDetailSelectorOptions(); var listFragment = document.createDocumentFragment();
+    var listContainer = document.getElementById("property-list"); 
+    if (listContainer) listContainer.innerHTML = ""; 
+    markers = []; 
+    updateDetailSelectorOptions(); 
+    var listFragment = document.createDocumentFragment();
     
     properties.forEach(function(prop, index) {
         var latlng = new naver.maps.LatLng(prop.lat, prop.lng);
-        var markerHtml = ['<div class="m-box" style="position:absolute; transform:translate(-50%, -100%); margin-top:-65px; background-color:' + prop.bg + '; border:2px solid #00bfff; opacity:0.98; border-radius:6px; padding:5px 10px; font-weight:bold; font-size:11px; color:#111; white-space:nowrap; box-shadow:0 4px 15px rgba(0,0,0,0.25); text-align:center; line-height:1.3; cursor:pointer;">', ' ' + prop.marker_text + '<br>', ' <span style="font-size:12px; font-weight:bold; color:#E65100; display:inline-block; margin-top:1px;">' + prop.dan_text + '</span>', ' <div style="position:absolute; bottom:-55px; left:50%; transform:translateX(-50%); width:0; height:0; border-left:5px solid transparent; border-right:5px solid transparent; border-top:55px solid #00bfff; opacity:0.45; pointer-events:none;"></div>', '</div>'].join('');
-        var marker = new naver.maps.Marker({ position: latlng, icon: { content: markerHtml, anchor: new naver.maps.Point(0, 0) } });
-        marker.set("category", prop.category); marker.set("detail_type", prop.detail_type); marker.set("town", prop.town); marker.set("town_type", prop.town_type); marker.set("p_index", index); marker.set("isActive", true);
+        var markerHtml = [
+            '<div class="m-box" style="position:absolute; transform:translate(-50%, -100%); margin-top:-65px; background-color:' + prop.bg + '; border:2px solid #00bfff; opacity:0.98; border-radius:6px; padding:5px 10px; font-weight:bold; font-size:11px; color:#111; white-space:nowrap; box-shadow:0 4px 15px rgba(0,0,0,0.25); text-align:center; line-height:1.3; cursor:pointer;">', 
+            ' ' + prop.marker_text + '<br>', 
+            ' <span style="font-size:12px; font-weight:bold; color:#E65100; display:inline-block; margin-top:1px;">' + prop.dan_text + '</span>', 
+            ' <div style="position:absolute; bottom:-55px; left:50%; transform:translateX(-50%); width:0; height:0; border-left:5px solid transparent; border-right:5px solid transparent; border-top:55px solid #00bfff; opacity:0.45; pointer-events:none;"></div>', 
+            '</div>'
+        ].join('');
+        
+        var marker = new naver.maps.Marker({ 
+            position: latlng, 
+            icon: { content: markerHtml, anchor: new naver.maps.Point(0, 0) } 
+        });
+        
+        marker.set("category", prop.category); 
+        marker.set("detail_type", prop.detail_type); 
+        marker.set("town", prop.town); 
+        marker.set("town_type", prop.town_type); 
+        marker.set("p_index", index); 
+        marker.set("isActive", true);
         markers.push(marker);
 
-        // ✂️ [자바스크립트단 가위질 개혁] 백엔드 원본 유지, 프론트에서 글자/컴마 박멸
+        // ✂️ 거래 유형 및 가격 정밀 컬러 매칭 레이어
         var badgeText = (prop.price.indexOf("전세") !== -1) ? "전세" : (prop.price.indexOf("월세") !== -1) ? "월세" : (prop.price.indexOf("단기") !== -1) ? "단기" : "매매";
         var rawPrice = prop.price.replace(badgeText, "").replace(/,/g, "").trim();
         var cleanPriceText = "";
@@ -178,23 +200,6 @@ function initMap() {
             }
         }
 
-        // 🎯 [공정 2-1단계 격리 로직 부활] 공장 파싱 / 주택 대장 / 토지 용도지목 삼항 마스터 엔진
-        var dynamicLedgerText = (function() {
-            if (prop.category === "공장") {
-                try {
-                    var dongs = JSON.parse(prop.Building_List_JSON);
-                    if (dongs && dongs.length > 0) {
-                        return (dongs.structure || '-') + ' / ' + (dongs.use || '-') + ' / ' + (dongs.height || '-');
-                    }
-                } catch(e) {}
-                return '대장없음';
-            } else if (prop.category === "주택") {
-                return prop.house_ledger;
-            } else {
-                return prop.yongdo;
-            }
-        })();
-
         if (rawPrice.indexOf("/") !== -1) {
             var parts = rawPrice.split("/");
             cleanPriceText = convertToEokText(parts[0].trim()) + " / " + convertToEokText(parts[1].trim());
@@ -203,12 +208,73 @@ function initMap() {
         }
 
         var badgeBg = (prop.price.indexOf("전세") !== -1) ? "#1B5E20" : (prop.price.indexOf("월세") !== -1) ? "#ff6e40" : (prop.price.indexOf("단기") !== -1) ? "#4A148C" : "#2b5c8f";
-        var itemDiv = document.createElement("div"); itemDiv.className = "property-item " + (prop.category === "토지" ? "item-land" : prop.category === "주택" ? "item-house" : "item-factory"); itemDiv.id = "item-" + index;
-        itemDiv.innerHTML = ['<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;"><h4 style="margin:0; font-size:13px; font-weight:bold; line-height:1.3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:calc(100% - 65px);">' + (prop.detail_type ? '[' + prop.detail_type + '] ' : '') + prop.name + '</h4><div style="flex-shrink:0;"><span style="display:inline-block; padding:4px 10px; font-size:13px; font-weight:bold; color:#fff; background:' + badgeBg + '; border-radius:4px;">' + ((prop.price.indexOf("전세") !== -1) ? "전세" : (prop.price.indexOf("월세") !== -1) ? "월세" : (prop.price.indexOf("단기") !== -1) ? "단기" : "매매") + '</span></div></div><div style="display:flex; justify-content:space-between; align-items:center;"><div style="font-size:11px; color:#495057; line-height:1.4; flex:1;"><b>면적:</b> ' + prop.area + '<br><b>대장:</b> ' + dynamicLedgerText + '</div><div style="text-align:right;"><span style="font-size:15px; font-weight:bold; color:' + badgeBg + ';">' + cleanPriceText + '</span></div></div><div class="property-detail" id="detail-' + index + '"><div class="links-row"><a href="' + APP_CONFIG.urlNaverReal + prop.id + '" target="_blank" class="naver-land" onclick="event.stopPropagation();">네이버부동산</a><a href="' + APP_CONFIG.urlNaverMap + prop.name + '" target="_blank" class="naver-map" onclick="event.stopPropagation();">네이지도</a>' + ((prop.pnu && prop.pnu.trim() !== "") ? '<a href="' + APP_CONFIG.urlEumLand + prop.pnu.trim() + '&isNoScr=script&mode=search" target="_blank" class="eum-land" onclick="event.stopPropagation();">토지이음</a>' : '<a class="eum-none" onclick="event.stopPropagation();">미매칭</a>') + '</div></div>'].join('');
+        var itemDiv = document.createElement("div"); 
+        itemDiv.className = "property-item " + (prop.category === "토지" ? "item-land" : prop.category === "주택" ? "item-house" : "item-factory"); 
+        itemDiv.id = "item-" + index;
+
+        // 🏢 [대장 정보 복구] 자바스크립트 전용 대장 텍스트 동적 결합 엔진
+        var ledgerSummaryText = "-";
+        if (prop.category === "공장") {
+            try {
+                var dongs = JSON.parse(prop.Building_List_JSON);
+                if (dongs && dongs.length > 0) {
+                    ledgerSummaryText = (dongs[0].structure || '-') + ' / ' + (dongs[0].use || '-') + ' / ' + (dongs[0].height || '-');
+                } else {
+                    ledgerSummaryText = "대장없음";
+                }
+            } catch(e) {
+                ledgerSummaryText = "대장없음";
+            }
+        } else if (prop.category === "주택") {
+            ledgerSummaryText = prop.house_ledger || "대장없음";
+        } else {
+            ledgerSummaryText = prop.yongdo || "-";
+        }
+
+        // 평당가 대조용 레이아웃 정의
+        var danDisplayHtml = (prop.category === "토지") 
+            ? prop.py_price 
+            : '대지 ' + prop.py_price + ' / <span style="color:#2b5c8f; font-weight:bold;">연면적 ' + prop.year_price + '</span>';
+
+        // 아웃링크 동적 생성
+        var naverLandLink = '<a href="' + APP_CONFIG.urlNaverReal + prop.id + '" target="_blank" class="naver-land" onclick="event.stopPropagation();">네이버부동산</a>';
+        var naverMapLink  = '<a href="' + APP_CONFIG.urlNaverMap + prop.name + '" target="_blank" class="naver-map" onclick="event.stopPropagation();">네이버지도</a>';
+        var eumLandLink   = (prop.pnu && prop.pnu.trim() !== "") 
+            ? '<a href="' + APP_CONFIG.urlEumLand + prop.pnu.trim() + '&isNoScr=script&mode=search" target="_blank" class="eum-land" onclick="event.stopPropagation();">토지이음</a>' 
+            : '<a class="eum-none" onclick="event.stopPropagation();">미매칭</a>';
+
+        // 🛍️ 최종 카드 뼈대 드로잉
+        itemDiv.innerHTML = [
+            '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">',
+            '  <h4 style="margin:0; font-size:13px; font-weight:bold; line-height:1.3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:calc(100% - 65px);">' + (prop.detail_type ? '[' + prop.detail_type + '] ' : '') + prop.name + '</h4>',
+            '  <div style="flex-shrink:0;"><span style="display:inline-block; padding:4px 10px; font-size:13px; font-weight:bold; color:#fff; background:' + badgeBg + '; border-radius:4px;">' + badgeText + '</span></div>',
+            '</div>',
+            '<div style="display:flex; justify-content:space-between; align-items:center;">',
+            '  <div style="font-size:11px; color:#495057; line-height:1.4; flex:1; padding-right:10px;">',
+            '    <b>면적:</b> ' + prop.area + '<br>',
+            '    <b>대장:</b> ' + ledgerSummaryText + '',
+            '  </div>',
+            '  <div style="text-align:right; flex-shrink:0;">',
+            '    <span style="font-size:15px; font-weight:bold; color:' + badgeBg + ';">' + cleanPriceText + '</span>',
+            '  </div>',
+            '</div>',
+            // 🛠️ [상세정보 노출 차단 해제] 스타일 강제 오버라이딩 적용
+            '<div class="property-detail" id="detail-' + index + '" style="display:none; margin-top:6px; padding-top:6px; border-top:1px dashed #dee2e6; font-size:12px; color:#333; line-height:1.5;">',
+            '  <div style="display:flex; flex-direction:column; gap:2px; width:100%;">',
+            '    <div style="display:flex; width:100%;"><span style="font-weight:bold; color:#555; width:55px;">평 당 가</span><span>: ' + danDisplayHtml + '</span></div>',
+            '    <div style="display:flex; width:100%;"><span style="font-weight:bold; color:#555; width:55px;">평공시가</span><span>: ' + prop.gongsi_price + '</span></div>',
+            '    <div style="display:flex; width:100%;"><span style="font-weight:bold; color:#555; width:55px;">도로접면</span><span>: ' + prop.road + '</span></div>',
+            '    <div style="display:flex; width:100%;"><span style="font-weight:bold; color:#555; width:55px;">매물특징</span><span style="flex:1; word-break:break-all;">: ' + prop.feature + '</span></div>',
+            '  </div>',
+            '  <div class="links-row">' + naverLandLink + naverMapLink + eumLandLink + '</div>',
+            '</div>'
+        ].join('');
         
-        itemDiv.onclick = function() { selectProperty(index, marker); }; listFragment.appendChild(itemDiv);
+        itemDiv.onclick = function() { selectProperty(index, marker); }; 
+        listFragment.appendChild(itemDiv);
         naver.maps.Event.addListener(marker, "click", function() { selectProperty(index, marker); });
     });
+    
     if (listContainer) listContainer.appendChild(listFragment);
     setTimeout(function() { applyFilters(); }, 300);
 }
@@ -285,33 +351,63 @@ function updateClustering(validMarkers) {
 // =========================================================================
 // 🎯 개별 매물 카드 선택 및 중심 가이드라인 원 동적 렌더링 엔진 [8번 블록]
 // =========================================================================
+// =========================================================================
+// 🎯 개별 매물 카드 선택 및 중심 가이드라인 원 동적 렌더링 엔진 [8번 블록 수정완결판]
+// =========================================================================
 function selectProperty(index, marker) {
-    var targetItem = document.getElementById("item-" + index), targetDetail = document.getElementById("detail-" + index), panel = document.getElementById("right-stats-panel");
-    if (targetItem && targetItem.classList.contains("active")) {
-        targetItem.classList.remove("active"); if (targetDetail) targetDetail.style.display = "none";
+    var listContainer = document.getElementById("property-list");
+    var targetItem = document.getElementById("item-" + index);
+    var targetDetail = document.getElementById("detail-" + index); 
+    var panel = document.getElementById("right-stats-panel");
+    
+    if (!targetItem) return;
+
+    // 🔄 이미 선택된 활성화 카드를 다시 누르면 선택 해제 처리
+    if (targetItem.classList.contains("active")) {
+        targetItem.classList.remove("active"); 
+        if (targetDetail) targetDetail.style.display = "none";
         if (currentBoundaryCircle) { currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }
-        if (panel) panel.classList.remove("active"); return; 
+        if (panel) panel.classList.remove("active", "expanded"); 
+        return; 
     }
+
+    // 다른 카드들의 활성화 흔적을 일제히 청소
     document.querySelectorAll(".property-detail").forEach(function(el) { el.style.display = "none"; });
     document.querySelectorAll(".property-item").forEach(function(el) { el.classList.remove("active"); });
-    if (targetDetail) targetDetail.style.display = "block"; if (targetItem) targetItem.classList.add("active");
 
-    marker.setMap(map); if (currentBoundaryCircle) currentBoundaryCircle.setMap(null);
-    currentBoundaryCircle = new naver.maps.Circle({ map: map, center: marker.getPosition(), radius: 15, fillColor: "#00bfff", fillOpacity: 0.2, strokeColor: "#ff0000", strokeWeight: 2 });
-    var targetPos = marker.getPosition(); if (map.getZoom() < 16) { map.morph(targetPos, 16); } else { map.panTo(targetPos); }
+    // 현재 선택한 카드 상태 열기
+    if (targetDetail) targetDetail.style.display = "block"; 
+    targetItem.classList.add("active");
 
-    // 🎯 [이원화 특화형 차감 자석 엔진] 순서대로 줄서기는 유지하고 눈금만 정밀 이동
-    var listContainer = document.getElementById("property-list");
-    if (listContainer && targetItem) {
-        // 화면 절대 높이(targetItem.offsetTop)에서 머리 위 고정 필터 패널의 물리적 두께(listContainer.offsetTop)를 차감 계산
-        var perfectScrollTop = targetItem.offsetTop - listContainer.offsetTop;
-
+    // 🚀 [스크롤 속도 개선] 기존 순간 이동에서 부드러운 스크롤(smooth) 제어로 변경
+    if (listContainer) {
         listContainer.scrollTo({
-            top: perfectScrollTop >= 0 ? perfectScrollTop : 0,
+            top: targetItem.offsetTop - listContainer.offsetTop,
             behavior: "smooth"
         });
     }
 
+    // 🛠️ [최초 1회 마커 노출 방어막] 강제로 지도가 마커를 그리도록 즉시 세팅
+    marker.setMap(map); 
+    if (currentBoundaryCircle) currentBoundaryCircle.setMap(null);
+    
+    currentBoundaryCircle = new naver.maps.Circle({ 
+        map: map, 
+        center: marker.getPosition(), 
+        radius: 15, 
+        fillColor: "#00bfff", 
+        fillOpacity: 0.2, 
+        strokeColor: "#ff0000", 
+        strokeWeight: 2 
+    });
+    
+    var targetPos = marker.getPosition(); 
+    if (map.getZoom() < 16) { 
+        map.morph(targetPos, 16); 
+    } else { 
+        map.panTo(targetPos); 
+    }
+    
     if (typeof loadTradeStatsPanel === 'function') loadTradeStatsPanel(index);
 }
 // =========================================================================
