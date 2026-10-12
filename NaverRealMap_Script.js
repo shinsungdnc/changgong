@@ -300,12 +300,15 @@ function selectProperty(index, marker) {
     currentBoundaryCircle = new naver.maps.Circle({ map: map, center: marker.getPosition(), radius: 15, fillColor: "#00bfff", fillOpacity: 0.2, strokeColor: "#ff0000", strokeWeight: 2 });
     var targetPos = marker.getPosition(); if (map.getZoom() < 16) { map.morph(targetPos, 16); } else { map.panTo(targetPos); }
 
-    // 🎯 [이원화 전용 순서보존 자석 스크롤 엔진] 목록 순서는 사수하고 독립 목록창 스크롤바 눈금만 자석 이동
+    // 🎯 [이원화 특화형 차감 자석 엔진] 순서대로 줄서기는 유지하고 눈금만 정밀 이동
     var listContainer = document.getElementById("property-list");
     if (listContainer && targetItem) {
+        // 화면 절대 높이(targetItem.offsetTop)에서 머리 위 고정 필터 패널의 물리적 두께(listContainer.offsetTop)를 차감 계산
+        var perfectScrollTop = targetItem.offsetTop - listContainer.offsetTop;
+
         listContainer.scrollTo({
-            top: targetItem.offsetTop,
-            behavior: "smooth" // 찰떡처럼 부드럽게 상단 안착 효과
+            top: perfectScrollTop >= 0 ? perfectScrollTop : 0,
+            behavior: "smooth"
         });
     }
 
@@ -316,7 +319,9 @@ function selectProperty(index, marker) {
 // =========================================================================
 function loadTradeStatsPanel(index) {
     var prop = properties[index]; var panel = document.getElementById("right-stats-panel"); if (!prop || !panel) return;
-    var yParts = prop.yongdo.split("/"); var mYongdo = (yParts && yParts ? yParts.trim() : "").replace("지역", "") + "지역"; var mJimok = (yParts && yParts ? yParts.trim() : ""); 
+    var yParts = prop.yongdo.split("/"); 
+    // 🎯 [배열 인덱스 칼각 복구] yParts과 yParts로 정밀 지정하여 문법 마비 원천 봉쇄
+    var mYongdo = (yParts && yParts[0] ? yParts[0].trim() : "").replace("지역", "") + "지역"; var mJimok = (yParts && yParts[1] ? yParts[1].trim() : ""); 
     var tableHtml = '', noticeText = '최근 5개년 토지 [매매] 실거래가 (평, 평당가)', townBook = null;
 
     if (prop.category === "토지") {
@@ -345,7 +350,8 @@ function loadTradeStatsPanel(index) {
         tableHtml += (prop.category === "토지" || (prop.category === "주택" && (prop.detail_type.indexOf("단독") !== -1 || prop.detail_type.indexOf("다가구") !== -1))) ? '<p style="color:#999; text-align:center; margin-top:20px; font-size:11px;">해당 지역은 최근 [매매] 실거래 정보가 대조되지 않습니다.</p>' : '<div style="text-align:center; color:#555; padding:20px 10px; background:#f8f9fa; border:1px solid #e9ecef; border-radius:4px; margin-top:10px; font-size:11px; line-height:1.4;">🏡 <b>안내</b><br>' + ((prop.category === "주택") ? "연립/다세대" : "공장/창고") + ' 상품은 개별 특성이 강하여 본 지도에서 실거래가 요약을 제공하지 않습니다.</div>';
     }
     document.getElementById("stats-title").innerText = "📊 " + prop.town + " 실거래 분석";
-    document.getElementById("stats-content").innerHTML = ['<div style="background: rgba(0,0,0,0.03); padding:6px 10px; border-radius:4px; margin-bottom:6px; font-size:12px;">용도지역/지목 : <b>' + prop.yongdo + '</b></div><div style="margin-top:6px; border-top:1px dashed #ccc; padding-top:6px;"><p style="color:#2b5c8f; font-weight:bold; font-size:11px; margin:0 0 5px 0; border-left:3px solid #2b5c8f; padding-left:6px;">' + noticeText + '</p>', tableHtml, '</div>'].join('');
+    // 💻 소장님이 원하셨던 우측 브리핑룸 내부 타이틀 타이틀 명세서도 '대장'으로 완전 마감 완료
+    document.getElementById("stats-content").innerHTML = ['<div style="background: rgba(0,0,0,0.03); padding:6px 10px; border-radius:4px; margin-bottom:6px; font-size:12px;">대장 : <b>' + (prop.category === "토지" ? prop.yongdo : prop.house_ledger) + '</b></div><div style="margin-top:6px; border-top:1px dashed #ccc; padding-top:6px;"><p style="color:#2b5c8f; font-weight:bold; font-size:11px; margin:0 0 5px 0; border-left:3px solid #2b5c8f; padding-left:6px;">' + noticeText + '</p>', tableHtml, '</div>'].join('');
     panel.classList.add("active");
 }
 // =========================================================================
