@@ -162,9 +162,32 @@ function initMap() {
         marker.set("category", prop.category); marker.set("detail_type", prop.detail_type); marker.set("town", prop.town); marker.set("town_type", prop.town_type); marker.set("p_index", index); marker.set("isActive", true);
         markers.push(marker);
 
+        // ✂️ [자바스크립트단 가위질 개혁] 백엔드 원본 유지, 프론트에서 글자/컴마 박멸
+        var badgeText = (prop.price.indexOf("전세") !== -1) ? "전세" : (prop.price.indexOf("월세") !== -1) ? "월세" : (prop.price.indexOf("단기") !== -1) ? "단기" : "매매";
+        var rawPrice = prop.price.replace(badgeText, "").replace(/,/g, "").trim();
+        var cleanPriceText = "";
+
+        function convertToEokText(wonVal) {
+            var num = parseFloat(wonVal);
+            if (isNaN(num)) return wonVal;
+            if (num >= 10000) {
+                var eok = num / 10000;
+                return parseFloat(eok.toFixed(2)) + " 억";
+            } else {
+                return num.toLocaleString();
+            }
+        }
+
+        if (rawPrice.indexOf("/") !== -1) {
+            var parts = rawPrice.split("/");
+            cleanPriceText = convertToEokText(parts[0].trim()) + " / " + convertToEokText(parts[1].trim());
+        } else {
+            cleanPriceText = convertToEokText(rawPrice);
+        }
+
         var badgeBg = (prop.price.indexOf("전세") !== -1) ? "#1B5E20" : (prop.price.indexOf("월세") !== -1) ? "#ff6e40" : (prop.price.indexOf("단기") !== -1) ? "#4A148C" : "#2b5c8f";
         var itemDiv = document.createElement("div"); itemDiv.className = "property-item " + (prop.category === "토지" ? "item-land" : prop.category === "주택" ? "item-house" : "item-factory"); itemDiv.id = "item-" + index;
-        itemDiv.innerHTML = ['<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;"><h4 style="margin:0; font-size:13px; font-weight:bold; line-height:1.3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:calc(100% - 65px);">' + prop.name + '</h4><div style="flex-shrink:0;"><span style="display:inline-block; padding:4px 10px; font-size:13px; font-weight:bold; color:#fff; background:' + badgeBg + '; border-radius:4px;">' + ((prop.price.indexOf("전세") !== -1) ? "전세" : (prop.price.indexOf("월세") !== -1) ? "월세" : (prop.price.indexOf("단기") !== -1) ? "단기" : "매매") + '</span></div></div><div style="display:flex; justify-content:space-between; align-items:center;"><div style="font-size:11px; color:#495057; line-height:1.4; flex:1;"><b>면적:</b> ' + prop.area + '<br><b>용도/지목:</b> ' + prop.yongdo + '</div><div style="text-align:right;"><span style="font-size:15px; font-weight:bold; color:' + badgeBg + ';">' + prop.price + '</span></div></div><div class="property-detail" id="detail-' + index + '"><div class="links-row"><a href="' + APP_CONFIG.urlNaverReal + prop.id + '" target="_blank" class="naver-land" onclick="event.stopPropagation();">네이버부동산</a><a href="' + APP_CONFIG.urlNaverMap + prop.name + '" target="_blank" class="naver-map" onclick="event.stopPropagation();">네이지도</a>' + ((prop.pnu && prop.pnu.trim() !== "") ? '<a href="' + APP_CONFIG.urlEumLand + prop.pnu.trim() + '&isNoScr=script&mode=search" target="_blank" class="eum-land" onclick="event.stopPropagation();">토지이음</a>' : '<a class="eum-none" onclick="event.stopPropagation();">미매칭</a>') + '</div></div>'].join('');
+        itemDiv.innerHTML = ['<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;"><h4 style="margin:0; font-size:13px; font-weight:bold; line-height:1.3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:calc(100% - 65px);">' + prop.name + '</h4><div style="flex-shrink:0;"><span style="display:inline-block; padding:4px 10px; font-size:13px; font-weight:bold; color:#fff; background:' + badgeBg + '; border-radius:4px;">' + ((cleanPriceText.indexOf("전세") !== -1) ? "전세" : (cleanPriceText.indexOf("월세") !== -1) ? "월세" : (cleanPriceText.indexOf("단기") !== -1) ? "단기" : "매매") + '</span></div></div><div style="display:flex; justify-content:space-between; align-items:center;"><div style="font-size:11px; color:#495057; line-height:1.4; flex:1;"><b>면적:</b> ' + prop.area + '<br><b>용도/지목:</b> ' + prop.yongdo + '</div><div style="text-align:right;"><span style="font-size:15px; font-weight:bold; color:' + badgeBg + ';">' + prop.price + '</span></div></div><div class="property-detail" id="detail-' + index + '"><div class="links-row"><a href="' + APP_CONFIG.urlNaverReal + prop.id + '" target="_blank" class="naver-land" onclick="event.stopPropagation();">네이버부동산</a><a href="' + APP_CONFIG.urlNaverMap + prop.name + '" target="_blank" class="naver-map" onclick="event.stopPropagation();">네이지도</a>' + ((prop.pnu && prop.pnu.trim() !== "") ? '<a href="' + APP_CONFIG.urlEumLand + prop.pnu.trim() + '&isNoScr=script&mode=search" target="_blank" class="eum-land" onclick="event.stopPropagation();">토지이음</a>' : '<a class="eum-none" onclick="event.stopPropagation();">미매칭</a>') + '</div></div>'].join('');
         
         itemDiv.onclick = function() { selectProperty(index, marker); }; listFragment.appendChild(itemDiv);
         naver.maps.Event.addListener(marker, "click", function() { selectProperty(index, marker); });
