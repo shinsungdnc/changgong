@@ -444,7 +444,7 @@ function selectProperty(index, marker) {
 
     if (listContainer) {
         listContainer.scrollTo({
-            top: targetItem.offsetTop - listContainer.offsetTop -10,
+            top: targetItem.offsetTop - listContainer.offsetTop -4,
             behavior: "smooth"
         });
     }
