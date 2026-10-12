@@ -293,7 +293,7 @@ function initMap() {
     setTimeout(function() { applyFilters(); }, 300);
 }
 // =========================================================================
-// 🗺️ 실시간 필터링 및 명품 2단 가상 클러스터링 동기화 분기 엔진 [6번 블록 절대생존 가드판]
+// 🗺️ 실시간 필터링 및 명품 2단 가상 클러스터링 동기화 분기 엔진 [6번 블록 딜레이 박멸판]
 // =========================================================================
 function applyFilters() {
     var validMarkersForCluster = []; 
@@ -304,12 +304,18 @@ function applyFilters() {
     virtualTownMarkers.forEach(function(vm) { vm.setMap(null); }); 
     virtualTownMarkers = [];
 
+    // 1단계: 역산용 중심점 좌표 스캔 및 정제
+    var centerLatLng = map.getCenter();
+    var cLat = centerLatLng.lat();
+    var cLng = centerLatLng.lng();
+    var closestTown = "전체";
+    var minDistance = Infinity;
+
+    // 2단계: 전체 마커 사전 필터 상태 룹 (지도 배정은 하지 않고 활성화 배지만 체크)
     markers.forEach(function(marker, i) {
         var p = properties[i]; 
         if (!p) return;
         
-        // 🛡️ [절대 생존 가드 1단계] 현재 좌측 카드에서 선택되어 활성화된 VIP 마커인 경우, 
-        // 필터 조건 계산을 전면 건너뛰고 무조건 생존 플래그를 유지합니다.
         if (marker.get("isForcedVip") === true) {
             marker.set("isActive", true);
             var item = document.getElementById("item-" + i); 
@@ -329,10 +335,19 @@ function applyFilters() {
         
         var item = document.getElementById("item-" + i); 
         if (item) item.style.display = isFilterPassed ? "block" : "none";
-        marker.setMap(null); 
+        marker.setMap(null); // 우선 전체 해제하여 연산 충돌 차단
+        
+        // 줌 14 이상일 때 중심점 읍면동 계산용 최단거리 동네 역산 파싱
+        if (currentZoom >= 14 && isFilterPassed) {
+            var dist = ((p.lat - cLat) * (p.lat - cLat)) + ((p.lng - cLng) * (p.lng - cLng));
+            if (dist < minDistance) {
+                minDistance = dist;
+                closestTown = p.town;
+            }
+        }
     });
 
-    // 광역 시야(줌 14 미만) 처리 구역
+    // 3단계 [분기 A]: 광역 시야(줌 14 미만) - 초고속 읍면동 가상 배지만 렌더링
     if (currentZoom < 14) {
         if (listPanel) listPanel.style.display = "none";
         if (markerClustering !== null) { markerClustering.setMap(null); markerClustering = null; }
@@ -357,14 +372,13 @@ function applyFilters() {
         return;
     }
 
+    // 4단계 [분기 B]: 정밀 시야(줌 14 이상) - 화면 중심점 읍면동 & 시야 내 매물만 목록 노출 및 마커 바인딩
     if (listPanel) listPanel.style.display = "flex";
     
-    // 정밀 시야(줌 14 이상) 마커 노출 및 클러스터 타깃 분류 구역
     markers.forEach(function(marker, i) {
         var p = properties[i]; 
         if (!marker.get("isActive")) return;
         
-        // 🛡️ [절대 생존 가드 2단계] 선택된 VIP 마커는 클러스터 묶음 대상에서 영구 제외하고 강제로 무조건 노출시킵니다.
         if (marker.get("isForcedVip") === true) {
             marker.setMap(map);
             return;
@@ -374,12 +388,19 @@ function applyFilters() {
         var isInView = (currentBounds && currentBounds.hasLatLng(latLng));
         var isDetailScale = (p.town_type === "urban") ? (currentZoom >= 17) : (currentZoom >= 15);
         
-        if (isInView) { 
+        // 🛠️ [기획 연결고리 수복]: 목록창과 지도 마커 노출 대상을 전체가 아닌 '화면 중심점 동네(closestTown)' 매물로 격리 제한
+        var isMatchClosestTown = (closestTown === "전체" || p.town === closestTown);
+        var item = document.getElementById("item-" + i);
+        
+        if (isMatchClosestTown && isInView) {
+            if (item) item.style.display = "block"; // 중심점 동네 매물만 카드 노출
             if (isDetailScale) { 
                 marker.setMap(map); 
             } else { 
                 validMarkersForCluster.push(marker); 
-            } 
+            }
+        } else {
+            if (item) item.style.display = "none"; // 시야 밖이거나 타 동네면 카드를 소멸시켜 딜레이 제거
         }
     });
     
@@ -387,24 +408,41 @@ function applyFilters() {
     updateClustering(validMarkersForCluster);
 }
 // =========================================================================
-// 📊 줌 14레벨 이상 전용 네이버 순정 클러스터러 기동 및 클릭 연동 [7번 블록]
+// 📊 줌 14레벨 이상 전용 네이버 순정 클러스터러 기동 및 배지 확대 조율 [7번 블록]
 // =========================================================================
 function updateClustering(validMarkers) {
     if (markerClustering !== null) { markerClustering.setMap(null); markerClustering = null; }
     if (!validMarkers || validMarkers.length === 0) return;
 
     markerClustering = new MarkerClustering({
-        minClusterSize: 2, maxZoom: 16, map: map, markers: validMarkers, gridSize: 90, 
-        icons: [{ content: '<div class="pure-naver-cluster" style="cursor:pointer; width:44px; height:44px; line-height:42px; font-size:12px; color:#111111; text-align:center; font-weight:bold; background:rgba(74, 211, 255, 0.95); border:1px solid #ffffff; border-radius:50%; box-shadow:0 3px 10px rgba(0,0,0,0.25); box-sizing:border-box;"></div>', anchor: new naver.maps.Point(22, 22) }],
+        minClusterSize: 2, 
+        maxZoom: 16, 
+        map: map, 
+        markers: validMarkers, 
+        gridSize: 90, 
+        icons: [
+            // 🛠️ [가독성 수복]: 파란색 순정 클러스터 배지 사이즈를 기존 44px -> 56px로 큼직하게 대폭 확대
+            { 
+                content: '<div class="pure-naver-cluster" style="cursor:pointer; width:56px; height:56px; line-height:54px; font-size:15px; color:#111111; text-align:center; font-weight:800; background:rgba(74, 211, 255, 0.96); border:2px solid #ffffff; border-radius:50%; box-shadow:0 4px 12px rgba(0,0,0,0.3); box-sizing:border-box;"></div>', 
+                anchor: new naver.maps.Point(28, 28) 
+            }
+        ],
         stylingFunction: function(clusterMarker, count) {
-            var el = clusterMarker.getElement(); if (el) { var bd = el.querySelector(".pure-naver-cluster"); if (bd) bd.innerText = count; }
+            var el = clusterMarker.getElement(); 
+            if (el) { 
+                var bd = el.querySelector(".pure-naver-cluster"); 
+                if (bd) bd.innerText = count; 
+            }
         }
     });
 
     naver.maps.Event.addListener(markerClustering, "clusterclick", function(cluster) {
-        var clusterMarkers = cluster.getClusterMember(); if (!clusterMarkers || clusterMarkers.length === 0) return;
-        var bounds = new naver.maps.LatLngBounds(); clusterMarkers.forEach(function(m) { bounds.extend(m.getPosition()); });
-        map.panToBounds(bounds); setTimeout(function() { map.setZoom(map.getZoom() + 1); }, 150);
+        var clusterMarkers = cluster.getClusterMember(); 
+        if (!clusterMarkers || clusterMarkers.length === 0) return;
+        var bounds = new naver.maps.LatLngBounds(); 
+        clusterMarkers.forEach(function(m) { bounds.extend(m.getPosition()); });
+        map.panToBounds(bounds); 
+        setTimeout(function() { map.setZoom(map.getZoom() + 1); }, 150);
     });
 }
 // =========================================================================
