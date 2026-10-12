@@ -149,9 +149,6 @@ function updateDetailSelectorOptions() {
     });
 }
 // =========================================================================
-// 🚀 초기 지도 마커 인스턴스 빌드 및 좌측 매물 DOM 리스트 구성 [5번 블록]
-// =========================================================================
-// =========================================================================
 // 🚀 초기 지도 마커 인스턴스 빌드 및 좌측 매물 DOM 리스트 구성 [5번 블록 수정완결판]
 // =========================================================================
 function initMap() {
@@ -218,12 +215,14 @@ function initMap() {
             try {
                 var dongs = JSON.parse(prop.Building_List_JSON);
                 if (dongs && dongs.length > 0) {
-                    // dongs가 배열이므로 [0]번째 마스터 동의 키값을 명확히 끄집어냅니다.
                     var mainDong = dongs[0];
                     var strct = mainDong.structure || '-';
                     var mainUse = mainDong.use || '-';
-                    var approvedYr = mainDong.approved ? mainDong.approved.split('-')[0] + '년' : '-';
-                    ledgerSummaryText = strct + ' / ' + mainUse + ' / ' + approvedYr;
+                    
+                    // 🛠️ [기획 사양 변경]: 사용승인일 대신 높이(height) 변수를 결합합니다.
+                    var bHeight = mainDong.height || '-';
+                    
+                    ledgerSummaryText = strct + ' / ' + mainUse + ' / ' + bHeight;
                 } else {
                     ledgerSummaryText = "대장없음";
                 }
