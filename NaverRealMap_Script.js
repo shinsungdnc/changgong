@@ -293,53 +293,98 @@ function initMap() {
     setTimeout(function() { applyFilters(); }, 300);
 }
 // =========================================================================
-// 🗺️ 실시간 필터링 및 명품 2단 가상 클러스터링 동기화 분기 엔진 [6번 블록]
+// 🗺️ 실시간 필터링 및 명품 2단 가상 클러스터링 동기화 분기 엔진 [6번 블록 절대생존 가드판]
 // =========================================================================
 function applyFilters() {
-    var validMarkersForCluster = []; var currentZoom = map.getZoom(); var currentBounds = map.getBounds(); var listPanel = document.getElementById("property-list-panel");
-    virtualTownMarkers.forEach(function(vm) { vm.setMap(null); }); virtualTownMarkers = [];
+    var validMarkersForCluster = []; 
+    var currentZoom = map.getZoom(); 
+    var currentBounds = map.getBounds(); 
+    var listPanel = document.getElementById("property-list-panel");
+    
+    virtualTownMarkers.forEach(function(vm) { vm.setMap(null); }); 
+    virtualTownMarkers = [];
 
     markers.forEach(function(marker, i) {
-        var p = properties[i]; if (!p) return;
+        var p = properties[i]; 
+        if (!p) return;
+        
+        // 🛡️ [절대 생존 가드 1단계] 현재 좌측 카드에서 선택되어 활성화된 VIP 마커인 경우, 
+        // 필터 조건 계산을 전면 건너뛰고 무조건 생존 플래그를 유지합니다.
+        if (marker.get("isForcedVip") === true) {
+            marker.set("isActive", true);
+            var item = document.getElementById("item-" + i); 
+            if (item) item.style.display = "block";
+            return; 
+        }
+
         var mCat = (currentCategories.indexOf(marker.get("category")) !== -1);
         var mDet = (currentCategories.length === 0 || currentDetail.indexOf(marker.get("detail_type")) !== -1);
         var mTown = (currentTown === "전체" || marker.get("town") === currentTown);
         var mRi = (currentRi === "전체" || (p.name && p.name.indexOf(currentRi) !== -1));
-        var mDeal = false; currentDealTypes.forEach(function(t) { if (p.price && p.price.indexOf(t) !== -1) mDeal = true; });
+        var mDeal = false; 
+        currentDealTypes.forEach(function(t) { if (p.price && p.price.indexOf(t) !== -1) mDeal = true; });
 
-        var isFilterPassed = (mCat && mDet && mTown && mRi && mDeal); marker.set("isActive", isFilterPassed);
-        var item = document.getElementById("item-" + i); if (item) item.style.display = isFilterPassed ? "block" : "none";
+        var isFilterPassed = (mCat && mDet && mTown && mRi && mDeal); 
+        marker.set("isActive", isFilterPassed);
+        
+        var item = document.getElementById("item-" + i); 
+        if (item) item.style.display = isFilterPassed ? "block" : "none";
         marker.setMap(null); 
     });
 
+    // 광역 시야(줌 14 미만) 처리 구역
     if (currentZoom < 14) {
         if (listPanel) listPanel.style.display = "none";
         if (markerClustering !== null) { markerClustering.setMap(null); markerClustering = null; }
         var townStats = getActiveTownCenterStats();
 
         Object.keys(townStats).forEach(function(tName) {
-            var stat = townStats[tName]; if (stat.count === 0) return;
+            var stat = townStats[tName]; 
+            if (stat.count === 0) return;
             var townLatLng = new naver.maps.LatLng(stat.lat, stat.lng);
             var townClusterHtml = ['<div class="custom-town-cluster" style="cursor:pointer; pointer-events:auto !important; z-index:9999 !important; width:64px; height:64px; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(74, 211, 255, 0.95); border:1px solid #ffffff; border-radius:50%; box-shadow:0 3px 12px rgba(0,0,0,0.3); transform:translate(-50%, -50%); box-sizing:border-box; padding:2px;">', ' <div style="font-size:11px; font-weight:700; color:#111111; line-height:1.2; text-align:center; max-width:58px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; pointer-events:none;">' + tName.replace('오송읍', '오송').replace('조치원읍', '조치원') + '</div>', ' <div style="font-size:13px; font-weight:800; color:#111111; line-height:1.2; margin-top:2px; pointer-events:none;">' + stat.count + '</div>', '</div>'].join('');
             var vTownMarker = new naver.maps.Marker({ position: townLatLng, map: map, icon: { content: townClusterHtml, anchor: new naver.maps.Point(0, 0) }, clickable: true });
 
             naver.maps.Event.addListener(vTownMarker, "click", function() {
-                var targetZoom = (tName.indexOf('동') !== -1) ? 17 : 15; map.morph(townLatLng, targetZoom);
-                var townSelector = document.getElementById("town-selector"); if (townSelector) { townSelector.value = tName; currentTown = tName; currentRi = "전체"; }
+                var targetZoom = (tName.indexOf('동') !== -1) ? 17 : 15; 
+                map.morph(townLatLng, targetZoom);
+                var townSelector = document.getElementById("town-selector"); 
+                if (townSelector) { townSelector.value = tName; currentTown = tName; currentRi = "전체"; }
             });
             virtualTownMarkers.push(vTownMarker); 
         });
-        updateTownSelectorOptions(); return;
+        updateTownSelectorOptions(); 
+        return;
     }
 
     if (listPanel) listPanel.style.display = "flex";
+    
+    // 정밀 시야(줌 14 이상) 마커 노출 및 클러스터 타깃 분류 구역
     markers.forEach(function(marker, i) {
-        var p = properties[i]; if (!marker.get("isActive")) return;
-        var latLng = marker.getPosition(); var isInView = (currentBounds && currentBounds.hasLatLng(latLng));
+        var p = properties[i]; 
+        if (!marker.get("isActive")) return;
+        
+        // 🛡️ [절대 생존 가드 2단계] 선택된 VIP 마커는 클러스터 묶음 대상에서 영구 제외하고 강제로 무조건 노출시킵니다.
+        if (marker.get("isForcedVip") === true) {
+            marker.setMap(map);
+            return;
+        }
+
+        var latLng = marker.getPosition(); 
+        var isInView = (currentBounds && currentBounds.hasLatLng(latLng));
         var isDetailScale = (p.town_type === "urban") ? (currentZoom >= 17) : (currentZoom >= 15);
-        if (isInView) { if (isDetailScale) { marker.setMap(map); } else { validMarkersForCluster.push(marker); } }
+        
+        if (isInView) { 
+            if (isDetailScale) { 
+                marker.setMap(map); 
+            } else { 
+                validMarkersForCluster.push(marker); 
+            } 
+        }
     });
-    updateTownSelectorOptions(); updateClustering(validMarkersForCluster);
+    
+    updateTownSelectorOptions(); 
+    updateClustering(validMarkersForCluster);
 }
 // =========================================================================
 // 📊 줌 14레벨 이상 전용 네이버 순정 클러스터러 기동 및 클릭 연동 [7번 블록]
@@ -363,7 +408,7 @@ function updateClustering(validMarkers) {
     });
 }
 // =========================================================================
-// 🎯 개별 매물 카드 선택 및 중심 가이드라인 원 동적 렌더링 엔진 [8번 블록 수정완결판]
+// 🎯 개별 매물 카드 선택 및 중심 가이드라인 원 동적 렌더링 엔진 [8번 블록 절대생존 가드판]
 // =========================================================================
 function selectProperty(index, marker) {
     var listContainer = document.getElementById("property-list");
@@ -373,24 +418,30 @@ function selectProperty(index, marker) {
     
     if (!targetItem) return;
 
-    // 🔄 이미 선택된 활성화 카드를 다시 누르면 선택 해제 처리
+    // 🔄 선택된 카드를 다시 클릭하여 해제할 때의 처리
     if (targetItem.classList.contains("active")) {
         targetItem.classList.remove("active"); 
         if (targetDetail) targetDetail.style.display = "none";
         if (currentBoundaryCircle) { currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }
+        
+        // VIP 가드 해제 및 마커 숨김 처리 후 필터 상태 복원
+        marker.set("isForcedVip", false);
+        marker.setMap(null);
+        
         if (panel) panel.classList.remove("active", "expanded"); 
+        applyFilters();
         return; 
     }
 
-    // 다른 카드들의 활성화 흔적을 일제히 청소
+    // ① 기존에 찍혀있던 모든 마커의 VIP 절대 권한을 일제히 초기화 청소합니다.
+    markers.forEach(function(m) { m.set("isForcedVip", false); });
+
     document.querySelectorAll(".property-detail").forEach(function(el) { el.style.display = "none"; });
     document.querySelectorAll(".property-item").forEach(function(el) { el.classList.remove("active"); });
 
-    // 현재 선택한 카드 상태 열기
     if (targetDetail) targetDetail.style.display = "block"; 
     targetItem.classList.add("active");
 
-    // 🚀 [스크롤 속도 개선] 기존 순간 이동에서 부드러운 스크롤(smooth) 제어로 변경
     if (listContainer) {
         listContainer.scrollTo({
             top: targetItem.offsetTop - listContainer.offsetTop,
@@ -398,10 +449,11 @@ function selectProperty(index, marker) {
         });
     }
 
-    // 🛠️ [최초 1회 마커 노출 방어막] 강제로 지도가 마커를 그리도록 즉시 세팅
+    // 🛡️ [절대 생존 가드 3단계] 클릭된 마커에 최우선 생존 낙인을 고정 박제합니다.
+    marker.set("isForcedVip", true);
     marker.setMap(map); 
-    if (currentBoundaryCircle) currentBoundaryCircle.setMap(null);
     
+    if (currentBoundaryCircle) currentBoundaryCircle.setMap(null);
     currentBoundaryCircle = new naver.maps.Circle({ 
         map: map, 
         center: marker.getPosition(), 
