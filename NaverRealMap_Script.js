@@ -69,14 +69,19 @@ function updateTownSelectorOptions() {
         if ((currentCategories.indexOf(p.category) !== -1) && (currentCategories.length === 0 || currentDetail.indexOf(p.detail_type) !== -1)) {
             var mDeal = false;
             currentDealTypes.forEach(function(t) { if (p.price && p.price.indexOf(t) !== -1) mDeal = true; });
+            
             if (mDeal && p.town && p.name && p.name.indexOf(p.town) !== -1) {
+                // 읍면동 명칭 뒤편의 나머지 주소 문자열을 순수하게 추출
                 var remainAddr = p.name.substring(p.name.indexOf(p.town) + p.town.length).trim();
                 var tokens = remainAddr.split(" ");
                 
                 if (tokens.length > 0) {
-                    var lastToken = tokens[tokens.length - 1].trim();
-                    if (lastToken.lastIndexOf('리') === lastToken.length - 1 && lastToken.length > 0) {
-                        var riName = lastToken;
+                    // 🛠️ [버그 치료 코어]: 마지막 지번 숫자가 아닌, 첫 번째 토큰('리' 명칭)을 정확히 검사합니다.
+                    var targetToken = tokens[0].trim();
+                    
+                    // 끝 글자가 '리'로 끝나는 정예 행정구역 이름만 매칭 스캔
+                    if (targetToken.lastIndexOf('리') === targetToken.length - 1 && targetToken.length > 0) {
+                        var riName = targetToken;
                         if (!riCounts[p.town]) riCounts[p.town] = {};
                         riCounts[p.town][riName] = (riCounts[p.town][riName] || 0) + 1;
                     }
