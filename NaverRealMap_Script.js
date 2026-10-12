@@ -212,13 +212,18 @@ function initMap() {
         itemDiv.className = "property-item " + (prop.category === "토지" ? "item-land" : prop.category === "주택" ? "item-house" : "item-factory"); 
         itemDiv.id = "item-" + index;
 
-        // 🏢 [대장 정보 복구] 자바스크립트 전용 대장 텍스트 동적 결합 엔진
+        // 🏢 [대장 정보 정밀 복구] 자바스크립트 전용 대장 텍스트 동적 결합 엔진
         var ledgerSummaryText = "-";
         if (prop.category === "공장") {
             try {
                 var dongs = JSON.parse(prop.Building_List_JSON);
                 if (dongs && dongs.length > 0) {
-                    ledgerSummaryText = (dongs[0].structure || '-') + ' / ' + (dongs[0].use || '-') + ' / ' + (dongs[0].height || '-');
+                    // dongs가 배열이므로 [0]번째 마스터 동의 키값을 명확히 끄집어냅니다.
+                    var mainDong = dongs[0];
+                    var strct = mainDong.structure || '-';
+                    var mainUse = mainDong.use || '-';
+                    var approvedYr = mainDong.approved ? mainDong.approved.split('-')[0] + '년' : '-';
+                    ledgerSummaryText = strct + ' / ' + mainUse + ' / ' + approvedYr;
                 } else {
                     ledgerSummaryText = "대장없음";
                 }
@@ -349,9 +354,6 @@ function updateClustering(validMarkers) {
     });
 }
 // =========================================================================
-// 🎯 개별 매물 카드 선택 및 중심 가이드라인 원 동적 렌더링 엔진 [8번 블록]
-// =========================================================================
-// =========================================================================
 // 🎯 개별 매물 카드 선택 및 중심 가이드라인 원 동적 렌더링 엔진 [8번 블록 수정완결판]
 // =========================================================================
 function selectProperty(index, marker) {
@@ -411,13 +413,80 @@ function selectProperty(index, marker) {
     if (typeof loadTradeStatsPanel === 'function') loadTradeStatsPanel(index);
 }
 // =========================================================================
-// 📊 국토부 5개년 실거래가 데이터 연동 및 우측 패널 표 드로잉 엔진 [9번 블록]
+// 📊 국토부 실거래가 및 공장 건축물대장 동별 명세표 통합 드로잉 엔진 [9번 블록]
 // =========================================================================
 function loadTradeStatsPanel(index) {
-    var prop = properties[index]; var panel = document.getElementById("right-stats-panel"); if (!prop || !panel) return;
+    var prop = properties[index]; 
+    var panel = document.getElementById("right-stats-panel"); 
+    if (!prop || !panel) return;
+    
+    var statsTitle = document.getElementById("stats-title");
+    var statsContent = document.getElementById("stats-content");
+    
+    // 🏢 [분기 1] 선택된 매물이 '공장/창고' 카테고리일 때 -> 건축물대장 표제부 피벗 명세표 주입
+    if (prop.category === "공장") {
+        statsTitle.innerText = "🏢 [" + prop.town + "] 건축물대장 분석";
+        
+        var bList = []; 
+        try { 
+            bList = JSON.parse(prop.Building_List_JSON); 
+        } catch(e) { 
+            bList = []; 
+        }
+        
+        // 중복 동 이름 정제
+        var seen = new Set();
+        bList = bList.filter(function(item) {
+            if (!item || !item.dong) return false;
+            var dName = item.dong.trim();
+            return seen.has(dName) ? false : seen.add(dName);
+        });
+        
+        var tableHtml = ''; 
+        var noticeText = "건축물대장 동별 상세 명세표";
+        
+        if (bList && bList.length > 0) {
+            var specs = [
+                { key: 'dong', label: '동 명칭' },
+                { key: 'area_py', label: '연면적(평)' }, 
+                { key: 'ground_floors', label: '지상층수' },
+                { key: 'structure', label: '구조코드' },
+                { key: 'use', label: '주용도코드' },
+                { key: 'height', label: '높이(m)' },
+                { key: 'bcl_rt', label: '건폐율' }, 
+                { key: 'vlr_rt', label: '용적률' },
+                { key: 'parking', label: '옥외주차' }, 
+                { key: 'earthquake', label: '내진설계' }, 
+                { key: 'approved', label: '사용승인일' }
+            ];
+            
+            tableHtml = '<div style="width: 100%; overflow-x: auto; white-space: nowrap; margin-top: 5px; border: 1px solid #dee2e6; border-radius: 4px;"><table class="trade-table" style="width: 100%; border-collapse: collapse; background:#fff;">';
+            specs.forEach(function(sp) {
+                var rowBg = (sp.key === 'dong') ? 'background: #edf7ff; font-weight: bold;' : '';
+                tableHtml += '<tr><td style="background: #f8f9fa; font-weight: bold; color: #333; border: 1px solid #dee2e6; width: 95px; min-width: 95px; padding: 6px 4px; position: sticky; left: 0; z-index: 5;">' + sp.label + '</td>';
+                bList.forEach(function(dong) { 
+                    tableHtml += '<td style="padding: 6px 4px; border: 1px solid #dee2e6; min-width: 85px; ' + rowBg + '">' + ((dong[sp.key] !== undefined) ? dong[sp.key] : '-') + '</td>'; 
+                });
+                tableHtml += '</tr>';
+            });
+            tableHtml += '</table></div>';
+        } else {
+            tableHtml = '<div style="text-align:center; color:#555; padding:20px 10px; background:#f8f9fa; border:1px solid #e9ecef; border-radius:4px; margin-top:10px; font-size:11px;">🏢 <b>안내</b><br>연동된 실시간 건축물대장 장부가 존재하지 않습니다.</div>';
+        }
+        
+        statsContent.innerHTML = [
+            '<div style="background: rgba(0,0,0,0.03); padding:6px 10px; border-radius:4px; margin-bottom:6px; font-size:12px; line-height:1.4; text-align:left;">용도지역/지목/면적 : <b>' + prop.yongdo + '</b><br></div>',
+            '<div style="margin-top:6px; border-top:1px dashed #ccc; padding-top:6px;"><p style="color:#2b5c8f; font-weight:bold; font-size:11px; margin:0 0 5px 0; border-left:3px solid #2b5c8f; padding-left:6px;">' + noticeText + '</p>' + tableHtml + '</div>'
+        ].join('');
+        
+        panel.classList.add("active");
+        return;
+    }
+
+    // 🏡 [분기 2] 선택된 매물이 '토지' 또는 '주택'일 때 -> 기존 5개년 실거래가 요약 테이블 빌드
     var yParts = prop.yongdo.split("/"); 
-    // 🎯 [배열 인덱스 칼각 복구] yParts과 yParts로 정밀 지정하여 문법 마비 원천 봉쇄
-    var mYongdo = (yParts && yParts[0] ? yParts[0].trim() : "").replace("지역", "") + "지역"; var mJimok = (yParts && yParts[1] ? yParts[1].trim() : ""); 
+    var mYongdo = (yParts && yParts[0] ? yParts[0].trim() : "").replace("지역", "") + "지역"; 
+    var mJimok = (yParts && yParts[1] ? yParts[1].trim() : ""); 
     var tableHtml = '', noticeText = '최근 5개년 토지 [매매] 실거래가 (평, 평당가)', townBook = null;
 
     if (prop.category === "토지") {
@@ -438,16 +507,16 @@ function loadTradeStatsPanel(index) {
                 var yrTxt = isFirst ? yr : "";
                 var yrSty = isFirst ? 'style="font-weight:bold; color:#2b5c8f; border-bottom:none;"' : '';
                 isFirst = false;
-
                 tableHtml += '<tr><td ' + yrSty + '>' + yrTxt + '</td><td style="font-weight:bold; color:#ff6e40; max-width:90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="'+row.ri+'">'+row.ri+'</td><td>'+row.count+'</td><td>'+row.volume.toLocaleString()+'</td><td>'+row.min.toLocaleString()+'</td><td style="font-weight:bold; color:#2b5c8f;">'+row.avg.toLocaleString()+'</td><td style="font-weight:bold; color:#e65100;">'+row.max.toLocaleString()+'</td></tr>';
             });
-        }); tableHtml += '</table>';
+        }); 
+        tableHtml += '</table>';
     } else {
         tableHtml += (prop.category === "토지" || (prop.category === "주택" && (prop.detail_type.indexOf("단독") !== -1 || prop.detail_type.indexOf("다가구") !== -1))) ? '<p style="color:#999; text-align:center; margin-top:20px; font-size:11px;">해당 지역은 최근 [매매] 실거래 정보가 대조되지 않습니다.</p>' : '<div style="text-align:center; color:#555; padding:20px 10px; background:#f8f9fa; border:1px solid #e9ecef; border-radius:4px; margin-top:10px; font-size:11px; line-height:1.4;">🏡 <b>안내</b><br>' + ((prop.category === "주택") ? "연립/다세대" : "공장/창고") + ' 상품은 개별 특성이 강하여 본 지도에서 실거래가 요약을 제공하지 않습니다.</div>';
     }
-    document.getElementById("stats-title").innerText = "📊 " + prop.town + " 실거래 분석";
-    // 💻 소장님이 원하셨던 우측 브리핑룸 내부 타이틀 타이틀 명세서도 '대장'으로 완전 마감 완료
-    document.getElementById("stats-content").innerHTML = ['<div style="background: rgba(0,0,0,0.03); padding:6px 10px; border-radius:4px; margin-bottom:6px; font-size:12px;">대장 : <b>' + (prop.category === "토지" ? prop.yongdo : prop.house_ledger) + '</b></div><div style="margin-top:6px; border-top:1px dashed #ccc; padding-top:6px;"><p style="color:#2b5c8f; font-weight:bold; font-size:11px; margin:0 0 5px 0; border-left:3px solid #2b5c8f; padding-left:6px;">' + noticeText + '</p>', tableHtml, '</div>'].join('');
+    
+    statsTitle.innerText = "📊 " + prop.town + " 실거래 분석";
+    statsContent.innerHTML = ['<div style="background: rgba(0,0,0,0.03); padding:6px 10px; border-radius:4px; margin-bottom:6px; font-size:12px;">용도지역/지목 : <b>' + prop.yongdo + '</b></div><div style="margin-top:6px; border-top:1px dashed #ccc; padding-top:6px;"><p style="color:#2b5c8f; font-weight:bold; font-size:11px; margin:0 0 5px 0; border-left:3px solid #2b5c8f; padding-left:6px;">' + noticeText + '</p>', tableHtml, '</div>'].join('');
     panel.classList.add("active");
 }
 // =========================================================================
