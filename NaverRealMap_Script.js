@@ -771,7 +771,7 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 // =========================================================================
-// 📁 10번 최종 블록: 리셋 함수를 이 타이밍 가드 코드로 최종 교체하세요.
+// 📁 10번 최종 블록: 리셋 시 지적도 On 디폴트 사양 및 줌 12 회군을 완수한 완결판
 // =========================================================================
 function resetMapToDefault() {
     // 1. 가이드라인 원(Circle) 및 우측 상세 패널 장부 즉시 파괴
@@ -782,7 +782,7 @@ function resetMapToDefault() {
     // 2. 수동 닫힘 기억 장치도 첫 로딩 청정 상태(열림)로 해제
     isSidebarManuallyClosed = false;
 
-    // 3. 🌟[기획 핵심]: 겉과 속을 한 번에 최초 로딩 상태로 강제 회군!
+    // 3. 필터부 데이터 장부를 최초 상태("전체 선택")로 충전
     currentCategories = ["토지", "공장", "주택"];
     currentDealTypes = ["매매", "전세", "월세", "단기"];
     currentDetail = [];
@@ -792,7 +792,12 @@ function resetMapToDefault() {
     var townSelector = document.getElementById("town-selector"); if (townSelector) townSelector.value = "전체";
     var riSelector = document.getElementById("ri-selector"); if (riSelector) { riSelector.value = "전체"; riSelector.style.display = "none"; }
 
-    // 4. 순정 지도 정렬 엔진을 호출하여 지도를 최초 줌 레벨 12 위치로 무빙 지시
+    // 🌟 [지적도 디폴트 On 복구]: 지적도가 꺼져 있는 상태라면, 순정 토글 함수를 강제로 기동시켜 '레이어 On + 버튼 불빛 노랗게 On'을 동시 달성!
+    if (typeof cadastralLayer !== 'undefined' && cadastralLayer && !cadastralLayer.getMap()) {
+        toggleCadastral(); 
+    }
+
+    // 4. 자바스크립트 스레드 중단 현상이 원천 차단되었으므로, 최초 줌 레벨 12 위치로 막힘없이 이동 지시!
     if (typeof window.initMapPipeline === 'function') {
         window.initMapPipeline(); 
     } else {
@@ -800,9 +805,8 @@ function resetMapToDefault() {
         map.panTo(new naver.maps.LatLng(36.55, 127.25));
     }
 
-    // 5. 🌟[진짜 공장 초기화]: 지도가 목적지(줌 12)에 완벽히 정지한 타이밍(idle)에 순정 엔진 재가동!
+    // 5. 타이밍 가드: 지도가 목적지(줌 12)에 완벽히 정지한 타이밍(idle)에 매물 데이터 필터 결합!
     naver.maps.Event.once(map, "idle", function() {
-        // 처음 사이트 켜질 때 상단 소분류와 마커들을 청정하게 그려주던 마스터 함수 호출!
-        initMap(); 
+        applyFilters(); 
     });
 }
