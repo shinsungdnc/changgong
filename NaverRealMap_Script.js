@@ -835,10 +835,10 @@ function resetMapToDefault() {
         toggleCadastral();
     }
 
-    // 4. [줌 리셋 보장]: VIP 방어막 간섭이 완전 청소되었으므로, 최초 줌 12레벨 위치로 막힘없이 이동 지시!
-    var initialLatLng = new naver.maps.LatLng(36.55, 127.25);
-    map.setZoom(12);
-    map.panTo(initialLatLng);
+    // // 4. [줌 리셋 보장]: VIP 방어막 간섭이 완전 청소되었으므로, 최초 줌 12레벨 위치로 막힘없이 이동 지시!
+    // var initialLatLng = new naver.maps.LatLng(36.55, 127.25);
+    // map.setZoom(12);
+    // map.panTo(initialLatLng);
 
     // 5. 타이밍 가드: 지도가 목적지(줌 12)에 안전하게 안착해 멈춘 시점에 최종 12레벨 광역 필터 연산을 얹어 배지를 다시 뿜어냅니다!
     naver.maps.Event.once(map, "idle", function() {
