@@ -702,7 +702,7 @@ function toggleCadastral() {
 }
 function changeTown(town) {
     currentTown = town; currentRi = "전체"; var panel = document.getElementById("detail-selector"); if (panel) panel.style.display = "none";
-    if (town === "전체") { map.setZoom(12); applyFilters(); } 
+    if (town === "전체") { applyFilters(); } 
     else {
         var sumLat = 0, sumLng = 0, matchCount = 0; properties.forEach(function(p) { if (p.town === town) { sumLat += p.lat; sumLng += p.lng; matchCount++; } });
         if (matchCount > 0) { map.setZoom(town.endsWith('동') ? 17 : 15); map.panTo(new naver.maps.LatLng(sumLat / matchCount, sumLng / matchCount)); }
@@ -724,6 +724,15 @@ document.addEventListener("DOMContentLoaded", function() {
         naver.maps.Event.addListener(map, "idle", function() {
             var centerLatLng = map.getCenter();
             var currentZoom = map.getZoom();
+
+            // 💡줌 13 이하 광역 뷰로 나갈 때 수동 동네 필터를 자동으로 전체 리셋
+            if (currentZoom <= 13 && currentTown !== "전체") {
+                var townSelector = document.getElementById("town-selector");
+                currentTown = "전체";
+                currentRi = "전체";
+                if (townSelector) townSelector.value = "전체";
+                applyFilters(); // 필터 해제 상태를 화면에 즉시 새로고침 반영
+            }
             
             // 줌 14 이상 진입 시, 화면 중심점이 이동하여 지도가 멈추면 실시간으로 중심점 읍면동 매물 목록을 재구성
             if (currentZoom >= 14) {
