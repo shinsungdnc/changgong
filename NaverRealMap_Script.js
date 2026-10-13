@@ -379,9 +379,6 @@ function applyFilters() {
                 if (p.town === closestTown) {
                     listTargetProperties.push({ prop: p, index: i });
                 }
-            } else {
-                // 줌 14 미만일 때는 기본 데이터 수집 (필요에 따라 조절 가능)
-                listTargetProperties.push({ prop: p, index: i });
             }
         }
     });
@@ -417,9 +414,6 @@ function applyFilters() {
     }
 
     if (listPanel) listPanel.style.display = "flex";
-    
-    // [기획 반영 2 - 목록 업데이트] 걸러진 정예 중심점 읍면동 매물 카드를 메모리에서 꺼내 즉석 빌드
-    renderPropertyCards(listTargetProperties);
     
     // 정밀 시야(줌 14 이상) 마커 노출 및 클러스터 타깃 분류 구역
     markers.forEach(function(marker, i) {
