@@ -458,6 +458,7 @@ function updateClustering(validMarkers) {
         map: map, 
         markers: validMarkers, 
         gridSize: 150, 
+        disableClickZoom: false,
         icons: [
             // 🛠️ [가독성 수복]: 파란색 순정 클러스터 배지 사이즈를 기존 44px -> 50px로 큼직하게 대폭 확대
             { 
@@ -474,14 +475,14 @@ function updateClustering(validMarkers) {
         }
     });
 
-    naver.maps.Event.addListener(markerClustering, "clusterclick", function(cluster) {
-        var clusterMarkers = cluster.getClusterMember(); 
-        if (!clusterMarkers || clusterMarkers.length === 0) return;
-        var bounds = new naver.maps.LatLngBounds(); 
-        clusterMarkers.forEach(function(m) { bounds.extend(m.getPosition()); });
-        map.panToBounds(bounds); 
-        setTimeout(function() { map.setZoom(map.getZoom() + 1); }, 150);
-    });
+    // naver.maps.Event.addListener(markerClustering, "clusterclick", function(cluster) {
+    //     var clusterMarkers = cluster.getClusterMember(); 
+    //     if (!clusterMarkers || clusterMarkers.length === 0) return;
+    //     var bounds = new naver.maps.LatLngBounds(); 
+    //     clusterMarkers.forEach(function(m) { bounds.extend(m.getPosition()); });
+    //     map.panToBounds(bounds); 
+    //     setTimeout(function() { map.setZoom(map.getZoom() + 1); }, 150);
+    // });
 }
 // =========================================================================
 // 🎯 개별 매물 카드 선택 및 중심 가이드라인 원 동적 렌더링 엔진 [8번 블록 절대생존 가드판 - 안정화]
