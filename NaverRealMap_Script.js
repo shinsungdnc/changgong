@@ -779,69 +779,9 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 // =========================================================================
-// 📁 10번 최종 블록: 매물 선택 VIP 상태까지 깨끗하게 박멸하는 최종 마스터 완결판
+// 초기화 및 지도 상태를 기본값으로 되돌리는 함수
 // =========================================================================
 function resetMapToDefault() {
-    // 🌟 [추가 기획 - VIP 절대 권한 원천 파괴]: 
-    //     지도 위의 모든 마커를 돌면서 숨어있던 VIP 권한(isForcedVip)을 전면 취소하고 지도에서 숨김 처리!
-    markers.forEach(function(marker) {
-        marker.set("isForcedVip", false);
-        marker.setMap(null);
-    });
-
-    // 🌟 [추가 기획 - 카드 리스트 불빛 및 소분류 디테일 UI 리셋]:
-    //     선택되어 노랗게 불이 들어와 있던 매물 카드의 active 클래스와 열려있던 세부 디테일 창을 전부 파괴!
-    document.querySelectorAll(".property-detail").forEach(function(el) { el.style.display = "none"; });
-    document.querySelectorAll(".property-item").forEach(function(el) { el.classList.remove("active"); });
-
-    // 1. 가이드라인 원(Circle) 및 우측 상세 브리핑 분석 패널 장부 즉시 청소
-    if (currentBoundaryCircle) { currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }
-    var rightPanel = document.getElementById("right-stats-panel");
-    if (rightPanel) rightPanel.classList.remove("active", "expanded");
-
-    // 2. 목록창 수동 닫힘 기억 장치 해제 (첫 로딩처럼 노출 대기)
-    isSidebarManuallyClosed = false;
-
-    // 3. 행정구역 선택 드롭다운 상자 '전체' 상태로 원상복구
-    currentTown = "전체";
-    currentRi = "전체";
-    var townSelector = document.getElementById("town-selector"); if (townSelector) townSelector.value = "전체";
-    var riSelector = document.getElementById("ri-selector"); if (riSelector) { riSelector.value = "전체"; riSelector.style.display = "none"; }
-
-    // 🌟 [카테고리 버튼 순정 복구]: 꺼져 있는 카테고리가 있다면 순정 토글 함수를 원격 가동하여 On!
-    if (currentCategories.indexOf("토지") === -1) toggleCategory("토지");
-    if (currentCategories.indexOf("공장") === -1) toggleCategory("공장");
-    if (currentCategories.indexOf("주택") === -1) toggleCategory("주택");
-
-    // 🌟 [거래유형 버튼 순정 복구]: 꺼져 있는 거래방식이 있다면 순정 토글 함수를 원격 가동하여 On!
-    if (currentDealTypes.indexOf("매매") === -1) toggleDealType("매매");
-    if (currentDealTypes.indexOf("전세") === -1) toggleDealType("전세");
-    if (currentDealTypes.indexOf("월세") === -1) toggleDealType("월세");
-    if (currentDealTypes.indexOf("단기") === -1) toggleDealType("단기");
-
-    // 🌟 [소분류 내부 칩 & 장부 완전 리셋]: 순정 엔진을 호출하여 특정 것만 선택되어 있던 데이터를 최초 '전체 선택' 상태로 복구!
-    if (typeof updateDetailSelectorOptions === 'function') {
-        updateDetailSelectorOptions();
-    }
-
-    // 🌟 ['선택' 패널 원격 닫기]: 소분류 창을 첫 로딩처럼 깔끔하게 닫음 처리!
-    var detailPanel = document.getElementById("detail-selector");
-    if (detailPanel && (detailPanel.style.display === "flex" || detailPanel.style.display !== "none" && detailPanel.style.display !== "")) {
-        toggleDetailSelectorPanel();
-    }
-
-    // 🌟 [지적도 버튼 순정 복구]: 지적도가 꺼져 있는 상태라면 순정 토글을 실행시켜 레이어와 버튼 불빛을 동시 On!
-    if (typeof cadastralLayer !== 'undefined' && cadastralLayer && !cadastralLayer.getMap()) {
-        toggleCadastral();
-    }
-
-    // 4. [줌 리셋 보장]: VIP 방어막 간섭이 완전 청소되었으므로, 최초 줌 12레벨 위치로 막힘없이 이동 지시!
-    var initialLatLng = new naver.maps.LatLng(36.55, 127.25);
-    map.setZoom(12);
-    map.panTo(initialLatLng);
-
-    // 5. 타이밍 가드: 지도가 목적지(줌 12)에 안전하게 안착해 멈춘 시점에 최종 12레벨 광역 필터 연산을 얹어 배지를 다시 뿜어냅니다!
-    naver.maps.Event.once(map, "idle", function() {
-        applyFilters(); 
-    });
+    // 🌟 찰나의 딜레이를 잡겠다고 필터 로직을 망치는 대신, 100% 안전한 브라우저 순정 새로고침으로 공장 초기화!
+    location.reload();
 }
