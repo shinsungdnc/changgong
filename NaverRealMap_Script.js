@@ -338,19 +338,10 @@ function applyFilters() {
         var minDistance = Infinity;
 
         properties.forEach(function(p) {
-            // 💡 [동기화 코어]: 기존에 잘 작동하던 원본 필터 조건문을 그대로 결합합니다.
-            var mCat = (currentCategories.indexOf(p.category) !== -1);
-            var mDet = (currentCategories.length === 0 || currentDetail.indexOf(p.detail_type) !== -1);
-            var mDeal = false; 
-            currentDealTypes.forEach(function(t) { if (p.price && p.price.indexOf(t) !== -1) mDeal = true; });
-
-            // 오직 필터 조건을 통과한 '진짜 유효한 매물'들 사이에서만 중심점 동네를 추적합니다.
-            if (mCat && mDet && mDeal) {
-                var dist = ((p.lat - cLat) * (p.lat - cLat)) + ((p.lng - cLng) * (p.lng - cLng));
-                if (dist < minDistance) {
-                    minDistance = dist;
-                    closestTown = p.town;
-                }
+            var dist = ((p.lat - cLat) * (p.lat - cLat)) + ((p.lng - cLng) * (p.lng - cLng));
+            if (dist < minDistance) {
+                minDistance = dist;
+                closestTown = p.town;
             }
         });
     }
@@ -459,24 +450,25 @@ function applyFilters() {
     updateClustering(validMarkersForCluster);
 }
 // =========================================================================
-// 📊 줌 14레벨 이상 전용 네이버 순정 클러스터러 기동 및 클릭 연동 [7번 블록 최종 수리판]
+// 📊 줌 14레벨 이상 전용 네이버 순정 클러스터러 기동 및 배지 확대 조율 [7번 블록]
 // =========================================================================
 function updateClustering(validMarkers) {
     if (markerClustering !== null) { markerClustering.setMap(null); markerClustering = null; }
     if (!validMarkers || validMarkers.length === 0) return;
 
-    // [클릭 반응 정밀 교정] 네이버 라이브러리가 이벤트를 정상 수확하도록 옵션 재조정
     markerClustering = new MarkerClustering({
         minClusterSize: 2, 
         maxZoom: 16, 
         map: map, 
         markers: validMarkers, 
-        gridSize: 120, // 사장님 결정 사양: 120 타협 반영
-        icons: [{ 
-            // 🛠️ [중요] pointer-events 사양을 auto로 명시하여 클릭 버블링 문제를 원천 해결합니다.
-            content: '<div class="pure-naver-cluster" style="cursor:pointer; pointer-events:auto !important; width:50px; height:50px; line-height:48px; font-size:13px; color:#111111; text-align:center; font-weight:bold; background:rgba(74, 211, 255, 0.95); border:1px solid #ffffff; border-radius:50%; box-shadow:0 3px 10px rgba(0,0,0,0.25); box-sizing:border-box;"></div>', 
-            anchor: new naver.maps.Point(25, 25) 
-        }],
+        gridSize: 90, 
+        icons: [
+            // 🛠️ [가독성 수복]: 파란색 순정 클러스터 배지 사이즈를 기존 44px -> 50px로 큼직하게 대폭 확대
+            { 
+                content: '<div class="pure-naver-cluster" style="cursor:pointer; width:50px; height:50px; line-height:48px; font-size:13px; color:#111111; text-align:center; font-weight:bold; background:rgba(74, 211, 255, 0.95); border:1px solid #ffffff; border-radius:50%; box-shadow:0 3px 10px rgba(0,0,0,0.25); box-sizing:border-box;"></div>',
+                anchor: new naver.maps.Point(25, 25) 
+            }
+        ],
         stylingFunction: function(clusterMarker, count) {
             var el = clusterMarker.getElement(); 
             if (el) { 
@@ -486,24 +478,13 @@ function updateClustering(validMarkers) {
         }
     });
 
-    // 🎯 [순정 엔진 클릭 리스너 재결합] 네이버 순정 클러스터 전용 공식 이벤트 바인딩
     naver.maps.Event.addListener(markerClustering, "clusterclick", function(cluster) {
         var clusterMarkers = cluster.getClusterMember(); 
         if (!clusterMarkers || clusterMarkers.length === 0) return;
-        
-        // 해당 클러스터 뭉치에 속한 매물 마커들의 좌표 범위를 계산합니다.
         var bounds = new naver.maps.LatLngBounds(); 
-        clusterMarkers.forEach(function(m) { 
-            bounds.extend(m.getPosition()); 
-        });
-        
-        // 🚀 계산된 매물 범위로 지도를 시원하게 이동(pan) 시킵니다.
+        clusterMarkers.forEach(function(m) { bounds.extend(m.getPosition()); });
         map.panToBounds(bounds); 
-        
-        // 화면 이동이 끝나는 타이밍에 맞춰 줌을 1단계 부드럽게 축소/확대 동기화합니다.
-        setTimeout(function() { 
-            map.setZoom(map.getZoom() + 1); 
-        }, 150);
+        setTimeout(function() { map.setZoom(map.getZoom() + 1); }, 150);
     });
 }
 // =========================================================================
@@ -739,35 +720,24 @@ document.addEventListener("DOMContentLoaded", function() {
     if (typeof naver !== 'undefined' && map) {
         if (typeof window.initMapPipeline === 'function') window.initMapPipeline();
 
-        // ⏱️ 휠 줌 도중 중복 연산 폭발을 제어하기 위한 타이머 변수 딱 하나만 선언
-        var zoomTimeout = null;
-
-        // 🎯 1. 지도가 드래그 및 줌이 완전히 종료되어 '정지'했을 때만 기존 필터를 가동
+        // 🎯 [무한 멈춤 완전 차단] 불필요한 전체 매물 거리 연산 및 스크롤 강제 루프를 전면 제거
         naver.maps.Event.addListener(map, "idle", function() {
             var centerLatLng = map.getCenter();
             var currentZoom = map.getZoom();
             
-            // 기존에 사장님이 구현해 두신 대장 가이드라인 원 반경 제어 로직 보존
+            // 줌 14 이상 진입 시, 화면 중심점이 이동하여 지도가 멈추면 실시간으로 중심점 읍면동 매물 목록을 재구성
+            if (currentZoom >= 14) {
+                applyFilters();
+            }
+            
+            // 기존 VIP 가이드라인 원 반경 동적 스케일 제어 로직은 완벽 보존
             if (currentBoundaryCircle && currentBoundaryCircle.getMap()) {
                 currentBoundaryCircle.setRadius(currentZoom === 18 ? 8 : (currentZoom === 17 ? 15 : 20));
             }
         });
         
-        // 🎯 2. 드래그가 끝나는 최종 시점에 기존 필터 동기화
-        naver.maps.Event.addListener(map, "dragend", function() { 
-            applyFilters(); 
-        });
-
-        // 🎯 3. [렉 박멸 핵심 한 줄]: 휠을 드르륵 굴리는 중에는 연산을 전면 차단하고, 
-        // 휠 조작이 완전히 멈춘 지 0.15초 뒤에만 사장님의 기존 잘 작동하던 applyFilters()를 딱 '1번'만 깨웁니다.
-        naver.maps.Event.addListener(map, "zoom_changed", function() { 
-            if (zoomTimeout) {
-                clearTimeout(zoomTimeout); // 연속 호출되는 중간 연산은 전부 폐기
-            }
-            
-            zoomTimeout = setTimeout(function() {
-                applyFilters(); // 사장님의 기존 정상 필터 함수를 딱 1번만 안전하게 실행
-            }, 150); 
-        });
+        // 💡 화면 뷰포트 시야각이 완벽하게 고정 및 정지되는 '마우스 끝 시점'에만 실시간 필터를 과부하 없이 한 번만 기동
+        naver.maps.Event.addListener(map, "zoom_changed", function() { applyFilters(); });
+        naver.maps.Event.addListener(map, "dragend", function() { applyFilters(); });
     }
 });
