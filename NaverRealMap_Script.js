@@ -761,12 +761,17 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 });
 
-// 💡 [엔진 전면 초기화 - 완결판]: 최초 기동 함수(initMap)를 재호출하여 오차 없이 100% 원상복구
+// 📁 [엔진 전면 초기화 - 완결판]: 최초 기동 함수를 재호출하여 오차 없이 100% 원상복구
 function resetMapToDefault() {
-    // 1. 지도 시야를 최초 기획 사양(세종시 중심 좌표, 줌 12레벨)으로 복구
-    var initialLatLng = new naver.maps.LatLng(36.55, 127.25);
-    map.setZoom(12);
-    map.panTo(initialLatLng);
+    // 🌟 [기획 수정]: 하드코딩 좌표를 완전 제거하고, 초기 로딩 시의 순정 지도 정렬 엔진을 그대로 호출
+    if (typeof window.initMapPipeline === 'function') {
+        window.initMapPipeline(); 
+    }
+
+    // 1. 백엔드 장부 데이터를 최초 기획 상태("전체 선택")로 강제 복구
+    currentCategories = ["토지", "공장", "주택"];
+    currentDealTypes = ["매매", "전세", "월세", "단기"];
+    currentDetail = []; 
 
     // 2. 행정구역 선택 변수 정제
     currentTown = "전체";
@@ -783,10 +788,6 @@ function resetMapToDefault() {
     var rightPanel = document.getElementById("right-stats-panel");
     if (rightPanel) rightPanel.classList.remove("active", "expanded");
 
-    // 4. ⚡ [핵심 버그 완전 치료]: 최초 지도 기동 함수를 재호출하여 
-    //    모든 카테고리 배열, 거래방식 배열, 상세 소분류, 상단 버튼 디자인 불빛을 
-    //    지도가 처음 켜졌을 때의 청정 상태('전체 선택')로 오차 없이 완벽하게 복구시킵니다.
-    if (typeof initMap === 'function') {
-        initMap();
-    }
+    // 4. 초기화된 장부 데이터와 복구된 줌 레벨을 조합하여 필터 즉시 구동 (0.001초 만에 배지 복구)
+    applyFilters(); 
 }
