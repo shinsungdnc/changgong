@@ -412,7 +412,13 @@ function applyFilters() {
         return;
     }
 
-    if (listPanel) listPanel.style.display = "flex";
+    if (listPanel) {
+        if (isSidebarManuallyClosed) {
+            listPanel.style.display = "none";
+        } else {
+            listPanel.style.display = "flex";
+        }
+    }
     
     // 🛡️ [버그 해결의 핵심]: 선택된 VIP 매물이 없을 때만 목록창 카드를 새로 그립니다. (DOM 증발 차단)
     if (!hasActiveVip) {
@@ -663,10 +669,13 @@ function loadTradeStatsPanel(index) {
 // =========================================================================
 // 📁 사이드바, GPS, 지적편집도 및 과부하 박멸 idle 동기화 마감 [10번 최종 블록]
 // =========================================================================
+// 🌟 [당연한 기획]: 사용자가 목록창을 수동으로 닫았는지 기억하는 전역 스위치 (기본값은 열림)
+var isSidebarManuallyClosed = false;
+
 function toggleSidebar() {
     var listPanel = document.getElementById("property-list-panel"), statsPanel = document.getElementById("right-stats-panel"); if (!listPanel) return;
-    if (listPanel.style.display === "none" || listPanel.style.display === "") { listPanel.style.display = "flex"; if (document.querySelector(".property-item.active") && statsPanel) statsPanel.classList.add("active"); } 
-    else { listPanel.style.display = "none"; if (statsPanel) { statsPanel.classList.remove("active", "expanded"); } }
+    if (listPanel.style.display === "none" || listPanel.style.display === "") { listPanel.style.display = "flex"; isSidebarManuallyClosed = false; if (document.querySelector(".property-item.active") && statsPanel) statsPanel.classList.add("active"); } 
+    else { listPanel.style.display = "none"; isSidebarManuallyClosed = true; if (statsPanel) { statsPanel.classList.remove("active", "expanded"); } }
 }
 function toggleCategory(cat) {
     var btn = document.getElementById(cat === "토지" ? "btn-land" : cat === "공장" ? "btn-factory" : "btn-house"), activeClass = cat === "토지" ? "active-land" : cat === "공장" ? "active-factory" : "active-house";
@@ -796,6 +805,8 @@ function resetMapToDefault() {
         map.setZoom(12);
         map.panTo(new naver.maps.LatLng(36.55, 127.25));
     }
+    
+    isSidebarManuallyClosed = false
 
     // 🌟 [핵심 해결책]: 지도가 12레벨 목적지에 '완벽히 도착하여 멈춘 정지 타이밍(idle)'에 딱 한 번만 필터 연산 결합!
     // 한번만 실행되도록 naver.maps.Event.once 레이어를 걸어 타이밍 엇박자를 원천 차단합니다.
