@@ -399,8 +399,8 @@ function applyFilters() {
             naver.maps.Event.addListener(vTownMarker, "click", function() {
                 var targetZoom = tName.endsWith('동') ? 17 : 15;
                 map.morph(townLatLng, targetZoom);
-                // var townSelector = document.getElementById("town-selector"); 
-                // if (townSelector) { townSelector.value = tName; currentTown = tName; currentRi = "전체"; }
+                var townSelector = document.getElementById("town-selector"); 
+                if (townSelector) { townSelector.value = tName; currentTown = tName; currentRi = "전체"; }
             });
             virtualTownMarkers.push(vTownMarker); 
         });
