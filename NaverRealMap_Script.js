@@ -315,7 +315,7 @@ function renderPropertyCards(targetProperties) {
     listContainer.appendChild(listFragment);
 }
 // =========================================================================
-// 🗺️ 실시간 필터링 및 명품 2단 가상 클러스터링 동기화 분기 엔진 [6번 블록 최적화 완결판]
+// 🗺️ 실시간 필터링 및 명품 2단 가상 클러스터링 동기화 분기 엔진 [6번 블록 최적화 완결판 - 버그 수정]
 // =========================================================================
 function applyFilters() {
     var validMarkersForCluster = []; 
@@ -323,13 +323,15 @@ function applyFilters() {
     var currentBounds = map.getBounds(); 
     var listPanel = document.getElementById("property-list-panel");
     
-    // 새로 렌더링할 타깃 매물 데이터를 담을 배열 초기화
+    // 🛡️ [버그 방어막]: 현재 어떤 매물이 선택되어 VIP 상태라면, 지도가 움직여도 목록창(DOM)을 리셋하지 않고 그대로 유지합니다.
+    var hasActiveVip = markers.some(function(m) { return m.get("isForcedVip") === true; });
+
     var listTargetProperties = [];
 
     virtualTownMarkers.forEach(function(vm) { vm.setMap(null); }); 
     virtualTownMarkers = [];
 
-    // [기획 반영 2] 줌 14레벨 이상일 때 화면 중심점 기준 읍면동 탐색 연산
+    // 줌 14레벨 이상일 때 화면 중심점 기준 읍면동 탐색 연산
     var closestTown = "전체";
     if (currentZoom >= 14) {
         var centerLatLng = map.getCenter();
@@ -350,15 +352,14 @@ function applyFilters() {
         var p = properties[i]; 
         if (!p) return;
         
-        // 🛡️ [절대 생존 가드 1단계] 현재 좌측 카드에서 선택되어 활성화된 VIP 마커 사양 보존
+        // 🛡️ 현재 선택되어 활성화된 VIP 마커 사양 보존
         if (marker.get("isForcedVip") === true) {
             marker.set("isActive", true);
-            // VIP 매물은 목록창 렌더링 타깃에 무조건 우선 포함
             listTargetProperties.push({ prop: p, index: i });
             return; 
         }
 
-        // 기존 4단계 필터 식 완전 보존 (단 한 줄도 누락 없음)
+        // 기존 4단계 필터 식 완전 보존
         var mCat = (currentCategories.indexOf(marker.get("category")) !== -1);
         var mDet = (currentCategories.length === 0 || currentDetail.indexOf(marker.get("detail_type")) !== -1);
         var mTown = (currentTown === "전체" || marker.get("town") === currentTown);
@@ -369,24 +370,20 @@ function applyFilters() {
         var isFilterPassed = (mCat && mDet && mTown && mRi && mDeal); 
         marker.set("isActive", isFilterPassed);
         
-        // 지도에서 일단 마커 제거 (아래에서 In-View 조건으로 재배치)
         marker.setMap(null); 
 
-        // 필터를 통과한 매물들에 대한 줌 레벨별 목록 분기 연산
         if (isFilterPassed) {
             if (currentZoom >= 14) {
-                // [기획 반영 2 - 목록창] 화면 중심점 좌표의 읍면동 매물만 리스트에 수집
                 if (p.town === closestTown) {
                     listTargetProperties.push({ prop: p, index: i });
                 }
             } else {
-                // 줌 14 미만일 때는 기본 데이터 수집 (필요에 따라 조절 가능)
                 listTargetProperties.push({ prop: p, index: i });
             }
         }
     });
 
-    // 광역 시야(줌 14 미만) 처리 구역 (기존 순정 로직 100% 보존)
+    // 광역 시야(줌 14 미만) 처리 구역
     if (currentZoom < 14) {
         if (listPanel) listPanel.style.display = "none";
         if (markerClustering !== null) { markerClustering.setMap(null); markerClustering = null; }
@@ -408,7 +405,6 @@ function applyFilters() {
             virtualTownMarkers.push(vTownMarker); 
         });
         
-        // 줌 14 미만일 때는 목록창 초기화 (0개 유지 및 비노출)
         var listContainer = document.getElementById("property-list");
         if (listContainer) listContainer.innerHTML = "";
         
@@ -418,22 +414,22 @@ function applyFilters() {
 
     if (listPanel) listPanel.style.display = "flex";
     
-    // [기획 반영 2 - 목록 업데이트] 걸러진 정예 중심점 읍면동 매물 카드를 메모리에서 꺼내 즉석 빌드
-    renderPropertyCards(listTargetProperties);
+    // 🛡️ [버그 해결의 핵심]: 선택된 VIP 매물이 없을 때만 목록창 카드를 새로 그립니다. (DOM 증발 차단)
+    if (!hasActiveVip) {
+        renderPropertyCards(listTargetProperties);
+    }
     
     // 정밀 시야(줌 14 이상) 마커 노출 및 클러스터 타깃 분류 구역
     markers.forEach(function(marker, i) {
         var p = properties[i]; 
         if (!marker.get("isActive")) return;
         
-        // 🛡️ [절대 생존 가드 2단계] 선택된 VIP 마커 권한 보존
         if (marker.get("isForcedVip") === true) {
             marker.setMap(map);
             return;
         }
 
         var latLng = marker.getPosition(); 
-        // [기획 반영 2 - 우측 지도] 오직 현재 화면 내(In-View)에 좌표가 있을 때만 노출 타깃팅
         var isInView = (currentBounds && currentBounds.hasLatLng(latLng));
         var isDetailScale = (p.town_type === "urban") ? (currentZoom >= 17) : (currentZoom >= 15);
         
@@ -488,7 +484,7 @@ function updateClustering(validMarkers) {
     });
 }
 // =========================================================================
-// 🎯 개별 매물 카드 선택 및 중심 가이드라인 원 동적 렌더링 엔진 [8번 블록 절대생존 가드판]
+// 🎯 개별 매물 카드 선택 및 중심 가이드라인 원 동적 렌더링 엔진 [8번 블록 절대생존 가드판 - 안정화]
 // =========================================================================
 function selectProperty(index, marker) {
     var listContainer = document.getElementById("property-list");
@@ -504,12 +500,13 @@ function selectProperty(index, marker) {
         if (targetDetail) targetDetail.style.display = "none";
         if (currentBoundaryCircle) { currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }
         
-        // VIP 가드 해제 및 마커 숨김 처리 후 필터 상태 복원
         marker.set("isForcedVip", false);
         marker.setMap(null);
         
         if (panel) panel.classList.remove("active", "expanded"); 
-        applyFilters();
+        
+        // VIP 해제 후 한 템포 쉬고 필터 적용하여 원상 복구
+        setTimeout(function() { applyFilters(); }, 50);
         return; 
     }
 
@@ -519,17 +516,18 @@ function selectProperty(index, marker) {
     document.querySelectorAll(".property-detail").forEach(function(el) { el.style.display = "none"; });
     document.querySelectorAll(".property-item").forEach(function(el) { el.classList.remove("active"); });
 
+    // ② UI를 먼저 안전하게 활성화하여 노출합니다.
     if (targetDetail) targetDetail.style.display = "block"; 
     targetItem.classList.add("active");
 
     if (listContainer) {
         listContainer.scrollTo({
-            top: targetItem.offsetTop - listContainer.offsetTop -4,
+            top: targetItem.offsetTop - listContainer.offsetTop - 4,
             behavior: "smooth"
         });
     }
 
-    // 🛡️ [절대 생존 가드 3단계] 클릭된 마커에 최우선 생존 낙인을 고정 박제합니다.
+    // 🛡️ [절대 생존 가드]: 카메라가 이동하기 전에 생존 낙인을 먼저 박아야 idle 리셋을 방어합니다.
     marker.set("isForcedVip", true);
     marker.setMap(map); 
     
@@ -544,6 +542,7 @@ function selectProperty(index, marker) {
         strokeWeight: 2 
     });
     
+    // ③ 모든 상태가 안전하게 고정된 후 지도를 이동시킵니다.
     var targetPos = marker.getPosition(); 
     if (map.getZoom() < 16) { 
         map.morph(targetPos, 16); 
