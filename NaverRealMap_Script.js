@@ -736,7 +736,17 @@ document.addEventListener("DOMContentLoaded", function() {
         });
         
         // 💡 화면 뷰포트 시야각이 완벽하게 고정 및 정지되는 '마우스 끝 시점'에만 실시간 필터를 과부하 없이 한 번만 기동
-        naver.maps.Event.addListener(map, "zoom_changed", function() { applyFilters(); });
+        // 💡 [739번 라인 대체]: 줌 인/아웃 연속 무빙 시 렉을 없애주는 디바운스 가드
+        var zoomTimer = null;
+        naver.maps.Event.addListener(map, "zoom_changed", function() {
+            if (zoomTimer !== null) {
+                clearTimeout(zoomTimer);
+            }
+            zoomTimer = setTimeout(function() {
+                applyFilters();
+                zoomTimer = null;
+            }, 200); // 0.2초 동안 추가 휠 입력이 없으면 멈춘 것으로 판단하고 딱 1번 실행
+        });
         naver.maps.Event.addListener(map, "dragend", function() { applyFilters(); });
     }
 });
