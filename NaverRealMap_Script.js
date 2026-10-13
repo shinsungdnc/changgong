@@ -774,31 +774,25 @@ document.addEventListener("DOMContentLoaded", function() {
 // 📁 10번 최종 블록: 리셋 함수를 이 타이밍 가드 코드로 최종 교체하세요.
 // =========================================================================
 function resetMapToDefault() {
-    // 1. 가이드라인 원(Circle) 및 우측 상세 패널 장부 파괴
+    // 1. 가이드라인 원(Circle) 및 우측 상세 패널 장부 즉시 파괴
     if (currentBoundaryCircle) { currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }
     var rightPanel = document.getElementById("right-stats-panel");
     if (rightPanel) rightPanel.classList.remove("active", "expanded");
 
-    // 2. [선제 청소]: 지도 위에 화석처럼 고립되어 남아있던 모든 개별 마커 인스턴스 완전 제거
-    markers.forEach(function(marker) {
-        marker.set("isForcedVip", false);
-        marker.setMap(null);
-    });
+    // 2. 수동 닫힘 기억 장치도 첫 로딩 청정 상태(열림)로 해제
+    isSidebarManuallyClosed = false;
 
-    // 3. 백엔드 필터 장부 데이터를 최초 청정 상태("전체 선택")로 충전 완료
+    // 3. 🌟[기획 핵심]: 겉과 속을 한 번에 최초 로딩 상태로 강제 회군!
     currentCategories = ["토지", "공장", "주택"];
     currentDealTypes = ["매매", "전세", "월세", "단기"];
-    currentDetail = []; 
+    currentDetail = [];
     currentTown = "전체";
     currentRi = "전체";
     
-    var townSelector = document.getElementById("town-selector");
-    if (townSelector) townSelector.value = "전체";
-    
-    var riSelector = document.getElementById("ri-selector");
-    if (riSelector) { riSelector.value = "전체"; riSelector.style.display = "none"; }
+    var townSelector = document.getElementById("town-selector"); if (townSelector) townSelector.value = "전체";
+    var riSelector = document.getElementById("ri-selector"); if (riSelector) { riSelector.value = "전체"; riSelector.style.display = "none"; }
 
-    // 4. [타이밍 가드]: 순정 엔진을 가동하여 지도를 최초 줌 레벨 12 위치로 무빙 지시
+    // 4. 순정 지도 정렬 엔진을 호출하여 지도를 최초 줌 레벨 12 위치로 무빙 지시
     if (typeof window.initMapPipeline === 'function') {
         window.initMapPipeline(); 
     } else {
@@ -806,21 +800,9 @@ function resetMapToDefault() {
         map.panTo(new naver.maps.LatLng(36.55, 127.25));
     }
 
-    isSidebarManuallyClosed = false; 
-
-    // 🌟 [필터 로직 완전 복구]: 실제 UI 버튼들과 스타일 클래스 명칭을 100% 일치시켜 강제 온(On) 처리!
-    var btnLand = document.getElementById("btn-land"); if (btnLand) btnLand.classList.add("active-land");
-    var btnFactory = document.getElementById("btn-factory"); if (btnFactory) btnFactory.classList.add("active-factory");
-    var btnHouse = document.getElementById("btn-house"); if (btnHouse) btnHouse.classList.add("active-house");
-
-    var btnMaemae = document.getElementById("btn-maemae"); if (btnMaemae) btnMaemae.classList.add("active-maemae");
-    var btnJeonse = document.getElementById("btn-jeonse"); if (btnJeonse) btnJeonse.classList.add("active-jeonse");
-    var btnWolse = document.getElementById("btn-wolse"); if (btnWolse) btnWolse.classList.add("active-wolse");
-    var btnDangi = document.getElementById("btn-dangi"); if (btnDangi) btnDangi.classList.add("active-dangi");
-
-    // 🌟 [핵심 해결책]: 지도가 12레벨 목적지에 '완벽히 도착하여 멈춘 정지 타이밍(idle)'에 딱 한 번만 필터 연산 결합!
-    // 한번만 실행되도록 naver.maps.Event.once 레이어를 걸어 타이밍 엇박자를 원천 차단합니다.
+    // 5. 🌟[진짜 공장 초기화]: 지도가 목적지(줌 12)에 완벽히 정지한 타이밍(idle)에 순정 엔진 재가동!
     naver.maps.Event.once(map, "idle", function() {
-        applyFilters(); 
+        // 처음 사이트 켜질 때 상단 소분류와 마커들을 청정하게 그려주던 마스터 함수 호출!
+        initMap(); 
     });
 }
