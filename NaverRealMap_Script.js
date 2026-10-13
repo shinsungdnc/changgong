@@ -682,8 +682,8 @@ var isSidebarManuallyClosed = false;
 
 function toggleSidebar() {
     var listPanel = document.getElementById("property-list-panel"), statsPanel = document.getElementById("right-stats-panel"), detailPanel = document.getElementById("detail-selector"); if (!listPanel) return;
-    if (listPanel.style.display === "none" || listPanel.style.display === "") { listPanel.style.display = "flex"; if (detailPanel) detailPanel.style.display = "flex"; isSidebarManuallyClosed = false; if (document.querySelector(".property-item.active") && statsPanel) statsPanel.classList.add("active"); } 
-    else { listPanel.style.display = "none"; if (detailPanel) detailPanel.style.display = "none"; isSidebarManuallyClosed = true; if (statsPanel) { statsPanel.classList.remove("active", "expanded"); } }
+    if (listPanel.style.display === "none" || listPanel.style.display === "") { listPanel.style.display = "flex"; if (detailPanel && (detailPanel.style.display === "none" || detailPanel.style.display === "")) toggleDetailSelectorPanel(); isSidebarManuallyClosed = false; if (document.querySelector(".property-item.active") && statsPanel) statsPanel.classList.add("active"); } 
+    else { listPanel.style.display = "none"; if (detailPanel && detailPanel.style.display !== "none" && detailPanel.style.display !== "") toggleDetailSelectorPanel(); isSidebarManuallyClosed = true; if (statsPanel) { statsPanel.classList.remove("active", "expanded"); } }
 }
 function toggleCategory(cat) {
     var btn = document.getElementById(cat === "토지" ? "btn-land" : cat === "공장" ? "btn-factory" : "btn-house"), activeClass = cat === "토지" ? "active-land" : cat === "공장" ? "active-factory" : "active-house";
