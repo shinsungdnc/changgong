@@ -47,44 +47,39 @@ function getActiveTownCenterStats() {
     return stats;
 }
 // =========================================================================
-// 🎛️ 하이브리드 카운트 엔진 (지역 선택 드롭다운 매물수 실시간 필터 동기화) [3번 블록 - 선택 반영 버그 완치판]
+// 🎛️ 하이브리드 카운트 엔진 (지역 선택 드롭다운 매물수 실시간 필터 동기화) [3번 블록]
 // =========================================================================
 function updateTownSelectorOptions() {
     var townSelector = document.getElementById("town-selector");
     var riSelector = document.getElementById("ri-selector");
-    var detailPanel = document.getElementById("detail-selector"); // 🛠️ 선택(소분류) 패널 가져오기
     if (!townSelector || !riSelector) return;
     
     var savedTown = currentTown, savedRi = currentRi, totalCount = 0;
     var townCounts = {}, riCounts = {};
+    var townStats = getActiveTownCenterStats();
     
-    // 🛠️ [버그 치료 핵심 로직]: 
-    // 만약 '선택' 패널이 화면에 안 보인다면(닫힌 상태), 소분류 필터(currentDetail) 장부를 무시하고 
-    // 대분류를 기준으로만 카운트하도록 필터 조건을 실시간 동기화합니다.
-    var isDetailPanelActive = (detailPanel && detailPanel.style.display !== "none" && detailPanel.style.display !== "");
-    
-    // 원본 함수가 쓰던 stats 스캔 방식을 확장하여 정밀 집계 실행
+    Object.keys(townStats).forEach(function(tName) {
+        if (townStats[tName].count > 0) {
+            townCounts[tName] = townStats[tName].count;
+            totalCount += townStats[tName].count;
+        }
+    });
+
     properties.forEach(function(p) {
-        var mCat = (currentCategories.indexOf(p.category) !== -1);
-        
-        // 🛠️ 선택 버튼이 꺼져있을 때는 모든 소분류를 통과시키고, 켜져있을 때만 체크된 소분류만 매칭시킵니다.
-        var mDet = (!isDetailPanelActive || currentCategories.length === 0 || currentDetail.indexOf(p.detail_type) !== -1);
-        
-        var mDeal = false; 
-        currentDealTypes.forEach(function(t) { if (p.price && p.price.indexOf(t) !== -1) { mDeal = true; } });
-
-        if (mCat && mDet && mDeal) {
-            var tName = p.town;
-            if (!townCounts[tName]) townCounts[tName] = 0;
-            townCounts[tName]++;
-            totalCount++;
-
-            // 리(里) 단위 정밀 스캔 (기존 버그 치료 코어 100% 보존)
-            if (p.town && p.name && p.name.indexOf(p.town) !== -1) {
+        if ((currentCategories.indexOf(p.category) !== -1) && (currentCategories.length === 0 || currentDetail.indexOf(p.detail_type) !== -1)) {
+            var mDeal = false;
+            currentDealTypes.forEach(function(t) { if (p.price && p.price.indexOf(t) !== -1) mDeal = true; });
+            
+            if (mDeal && p.town && p.name && p.name.indexOf(p.town) !== -1) {
+                // 읍면동 명칭 뒤편의 나머지 주소 문자열을 순수하게 추출
                 var remainAddr = p.name.substring(p.name.indexOf(p.town) + p.town.length).trim();
                 var tokens = remainAddr.split(" ");
+                
                 if (tokens.length > 0) {
+                    // 🛠️ [버그 치료 코어]: 마지막 지번 숫자가 아닌, 첫 번째 토큰('리' 명칭)을 정확히 검사합니다.
                     var targetToken = tokens[0].trim();
+                    
+                    // 끝 글자가 '리'로 끝나는 정예 행정구역 이름만 매칭 스캔
                     if (targetToken.lastIndexOf('리') === targetToken.length - 1 && targetToken.length > 0) {
                         var riName = targetToken;
                         if (!riCounts[p.town]) riCounts[p.town] = {};
@@ -95,7 +90,6 @@ function updateTownSelectorOptions() {
         }
     });
 
-    // 드롭다운 옵션 다시 그리기 (기존 마크업 원본 유지)
     townSelector.innerHTML = "<option value='전체'>📍 지역 선택 (전체: " + totalCount + "개)</option>";
     townList.forEach(function(t) {
         var count = townCounts[t] || 0;
@@ -785,56 +779,9 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 // =========================================================================
-// 🎛️ [최종 백엔드 동기화 완결판] 현재 지도/지역/마커 절대 유지, 오직 필터만 원위치
+// 초기화 및 지도 상태를 기본값으로 되돌리는 함수
 // =========================================================================
-function resetFiltersOnly() {
-    // 1. 📂 매물종류(대분류) 데이터 배열 복구 및 백엔드 규격 ID 불빛 강제 점등
-    currentCategories = ["토지", "공장", "주택"];
-    
-    var btnLand = document.getElementById("btn-land"); if (btnLand) btnLand.classList.add("active-land");
-    var btnFactory = document.getElementById("btn-factory"); if (btnFactory) btnFactory.classList.add("active-factory");
-    var btnHouse = document.getElementById("btn-house"); if (btnHouse) btnHouse.classList.add("active-house");
-
-    // 2. 💰 구분(거래 유형) 데이터 배열 복구 및 버튼 불빛 강제 점등
-    currentDealTypes = ["매매", "전세", "월세", "단기"];
-    
-    var btnMaemae = document.getElementById("btn-maemae"); if (btnMaemae) btnMaemae.classList.add("active-maemae");
-    var btnJeonse = document.getElementById("btn-jeonse"); if (btnJeonse) btnJeonse.classList.add("active-jeonse");
-    var btnWolse = document.getElementById("btn-wolse"); if (btnWolse) btnWolse.classList.add("active-wolse");
-    var btnDangi = document.getElementById("btn-dangi"); if (btnDangi) btnDangi.classList.add("active-dangi");
-
-    // 3. ⚙️ '선택' 패널(소분류 칩) 장부 초기화 및 열려 있다면 화면에서 닫기
-    if (typeof updateDetailSelectorOptions === 'function') {
-        updateDetailSelectorOptions(); 
-    }
-    var detailPanel = document.getElementById("detail-selector");
-    if (detailPanel && detailPanel.style.display !== "none" && detailPanel.style.display !== "") {
-        detailPanel.style.display = "none";
-    }
-
-    // 4. 🗺️ 지적 버튼 강제 복구 (지적도가 꺼져 있다면 백엔드 인라인 스타일 규격 그대로 활성화)
-    if (typeof cadastralLayer !== 'undefined' && cadastralLayer && !cadastralLayer.getMap()) {
-        cadastralLayer.setMap(map);
-        var btnCadastral = document.getElementById("btn-cadastral");
-        if (btnCadastral) {
-            btnCadastral.style.setProperty("background", "#DCF65C", "important");
-            btnCadastral.style.setProperty("color", "#111111", "important");
-            btnCadastral.style.setProperty("border", "1px solid #99bd0e", "important");
-        }
-    }
-
-    // 5. 🛡️ [지역 사수 가드]: 리셋 연산 도중 현재 선택된 드롭다운 장부가 '전체'로 덮어씌워지는 현상 원천 차단
-    var townSelector = document.getElementById("town-selector");
-    if (townSelector && townSelector.value !== "전체") {
-        currentTown = townSelector.value;
-    }
-    var riSelector = document.getElementById("ri-selector");
-    if (riSelector && riSelector.style.display !== "none" && riSelector.value !== "전체") {
-        currentRi = riSelector.value;
-    }
-
-    // 6. ⚡ 갱신된 청정 필터 조건 데이터를 지도와 매물수에 즉시 주입 및 실시간 렌더링
-    if (typeof applyFilters === 'function') {
-        applyFilters();
-    }
+function resetMapToDefault() {
+    // 🌟 찰나의 딜레이를 잡겠다고 필터 로직을 망치는 대신, 100% 안전한 브라우저 순정 새로고침으로 공장 초기화!
+    location.reload();
 }
