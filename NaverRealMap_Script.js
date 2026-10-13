@@ -762,13 +762,14 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 // 💡 [엔진 전면 초기화]: 새로고침 없이 모든 필터 버튼과 지도 시야를 최초 상태(전체 선택)로 복구
+// 💡 [엔진 전면 초기화 - 오차 없는 완벽 방어막 버전]
 function resetMapToDefault() {
-    // 1. 지도 시야를 최초 기획 사양(세종시 중심 좌표, 줌 12레벨)으로 부드럽게 복구
+    // 1. 지도 시야를 최초 기획 사양(세종시 중심 좌표, 줌 12레벨)으로 복구
     var initialLatLng = new naver.maps.LatLng(36.55, 127.25);
     map.setZoom(12);
     map.panTo(initialLatLng);
 
-    // 2. 행정구역 변수 및 드롭다운 UI '전체'로 원상복구
+    // 2. 행정구역 드롭다운 및 선택 변수 전면 청정 초기화
     currentTown = "전체";
     currentRi = "전체";
     
@@ -778,29 +779,34 @@ function resetMapToDefault() {
     var riSelector = document.getElementById("ri-selector");
     if (riSelector) { riSelector.value = "전체"; riSelector.style.display = "none"; }
 
-    // 3. [모든 필터 원위치]: 카테고리 탭 마스터 배열을 최초의 '전체 활성화' 상태로 리셋
-    currentCategories = ["토지", "공장", "주택"];
-    document.getElementById("btn-land").classList.add("active-land");
-    document.getElementById("btn-factory").classList.add("active-factory");
-    document.getElementById("btn-house").classList.add("active-house");
+    // 3. 🛡️ [UI 충돌 방어]: 기존 카테고리 배열을 비우고, 안전하게 하드코딩 대신 
+    //    이미 검증된 상단 개별 토글 함수를 원격 호출하여 3대 장부를 전원 On 시킵니다.
+    currentCategories = [];
+    if (typeof toggleCategory === 'function') {
+        toggleCategory('토지');
+        toggleCategory('공장');
+        toggleCategory('주택');
+    }
 
-    // 4. [모든 거래유형 원위치]: 매매/전세/월세/단기 버튼 전원 On 복구
-    currentDealTypes = ["매매", "전세", "월세", "단기"];
-    document.getElementById("btn-maemae").classList.add("active-maemae");
-    document.getElementById("btn-jeonse").classList.add("active-jeonse");
-    document.getElementById("btn-wolse").classList.add("active-wolse");
-    document.getElementById("btn-dangi").classList.add("active-dangi");
+    // 4. 🛡️ 거래 방식 4대 스위치 배열도 깨끗이 비운 뒤, 순정 함수를 대리 실행해 전원 On 시킵니다.
+    currentDealTypes = [];
+    if (typeof toggleDealType === 'function') {
+        toggleDealType('매매');
+        toggleDealType('전세');
+        toggleDealType('월세');
+        toggleDealType('단기');
+    }
 
-    // 5. 상세 소분류 팝업 패널을 닫고 내부 체크 상태 초기화
+    // 5. 상세 소분류 패널 및 선택 내역 올클리어
     currentDetail = [];
     var detailPanel = document.getElementById("detail-selector");
     if (detailPanel) detailPanel.style.display = "none";
 
-    // 6. 융합 가이드라인 원(Circle) 제거 및 우측 브리핑 패널 닫기
+    // 6. 가이드라인 원(Circle) 및 우측 브리핑 패널 즉시 파괴
     if (currentBoundaryCircle) { currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }
     var rightPanel = document.getElementById("right-stats-panel");
     if (rightPanel) rightPanel.classList.remove("active", "expanded");
 
-    // 7. 청소 완료된 마스터 배열 상태를 바탕으로 화면 레이어 깨끗하게 새로고침
+    // 7. 모든 안전 장치가 끝난 청정 상태를 지도 레이어와 셀렉터 매물 수량에 즉시 동기화
     applyFilters();
 }
