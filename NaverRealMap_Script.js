@@ -761,23 +761,25 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 });
 
-// 📁 [엔진 전면 초기화 - 완결판]: 최초 기동 함수를 재호출하여 오차 없이 100% 원상복구
+// =========================================================================
+// 📁 10번 최종 블록: 리셋 함수를 이 타이밍 가드 코드로 최종 교체하세요.
+// =========================================================================
 function resetMapToDefault() {
-    // 1. 하드코딩 좌표를 완전 걷어내고, 초기 로딩 시의 순정 지도 정렬 엔진을 호출하여 줌 12로 복구
-    if (typeof window.initMapPipeline === 'function') {
-        window.initMapPipeline(); 
-    } else {
-        // 혹시 모를 예외 대비용 기본 세종 좌표 복구 스냅샷
-        map.setZoom(12);
-        map.panTo(new naver.maps.LatLng(36.55, 127.25));
-    }
+    // 1. 가이드라인 원(Circle) 및 우측 상세 패널 장부 파괴
+    if (currentBoundaryCircle) { currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }
+    var rightPanel = document.getElementById("right-stats-panel");
+    if (rightPanel) rightPanel.classList.remove("active", "expanded");
 
-    // 🌟 [메모리 데이터 차단 완전 해제]: 엔진이 메모리 데이터를 100% 읽어가도록 필터 장부 강제 충전!
+    // 2. [선제 청소]: 지도 위에 화석처럼 고립되어 남아있던 모든 개별 마커 인스턴스 완전 제거
+    markers.forEach(function(marker) {
+        marker.set("isForcedVip", false);
+        marker.setMap(null);
+    });
+
+    // 3. 백엔드 필터 장부 데이터를 최초 청정 상태("전체 선택")로 충전 완료
     currentCategories = ["토지", "공장", "주택"];
     currentDealTypes = ["매매", "전세", "월세", "단기"];
     currentDetail = []; 
-
-    // 2. 행정구역 드롭다운 선택상자 상태를 '전체' 청정 상태로 동기화
     currentTown = "전체";
     currentRi = "전체";
     
@@ -787,17 +789,17 @@ function resetMapToDefault() {
     var riSelector = document.getElementById("ri-selector");
     if (riSelector) { riSelector.value = "전체"; riSelector.style.display = "none"; }
 
-    // 3. 지도 위에 켜져 있던 가이드라인 원(Circle) 및 우측 상세 패널 즉시 청소
-    if (currentBoundaryCircle) { currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }
-    var rightPanel = document.getElementById("right-stats-panel");
-    if (rightPanel) rightPanel.classList.remove("active", "expanded");
+    // 4. [타이밍 가드]: 순정 엔진을 가동하여 지도를 최초 줌 레벨 12 위치로 무빙 지시
+    if (typeof window.initMapPipeline === 'function') {
+        window.initMapPipeline(); 
+    } else {
+        map.setZoom(12);
+        map.panTo(new naver.maps.LatLng(36.55, 127.25));
+    }
 
-    // 🌟 [화석 마커 강제 청소 추가]: 줌 인 상태에서 리셋했을 때 지도에 남아있던 유령 마커들을 깨끗이 화면에서 제거
-    markers.forEach(function(marker) {
-        marker.set("isForcedVip", false);
-        marker.setMap(null);
+    // 🌟 [핵심 해결책]: 지도가 12레벨 목적지에 '완벽히 도착하여 멈춘 정지 타이밍(idle)'에 딱 한 번만 필터 연산 결합!
+    // 한번만 실행되도록 naver.maps.Event.once 레이어를 걸어 타이밍 엇박자를 원천 차단합니다.
+    naver.maps.Event.once(map, "idle", function() {
+        applyFilters(); 
     });
-
-    // 4. 결합 연산 기동: '복구된 줌 12단계'와 '메모리 데이터'를 조합하여 광역 클러스터 배지 즉시 재생성!
-    applyFilters(); 
 }
