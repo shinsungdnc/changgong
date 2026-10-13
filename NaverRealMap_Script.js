@@ -461,7 +461,7 @@ function updateClustering(validMarkers) {
         maxZoom: 16, 
         map: map, 
         markers: validMarkers, 
-        gridSize: 120, 
+        gridSize: 150, 
         icons: [
             // 🛠️ [가독성 수복]: 파란색 순정 클러스터 배지 사이즈를 기존 44px -> 50px로 큼직하게 대폭 확대
             { 
