@@ -338,10 +338,19 @@ function applyFilters() {
         var minDistance = Infinity;
 
         properties.forEach(function(p) {
-            var dist = ((p.lat - cLat) * (p.lat - cLat)) + ((p.lng - cLng) * (p.lng - cLng));
-            if (dist < minDistance) {
-                minDistance = dist;
-                closestTown = p.town;
+            // 💡 [동기화 코어]: 기존에 잘 작동하던 원본 필터 조건문을 그대로 결합합니다.
+            var mCat = (currentCategories.indexOf(p.category) !== -1);
+            var mDet = (currentCategories.length === 0 || currentDetail.indexOf(p.detail_type) !== -1);
+            var mDeal = false; 
+            currentDealTypes.forEach(function(t) { if (p.price && p.price.indexOf(t) !== -1) mDeal = true; });
+
+            // 오직 필터 조건을 통과한 '진짜 유효한 매물'들 사이에서만 중심점 동네를 추적합니다.
+            if (mCat && mDet && mDeal) {
+                var dist = ((p.lat - cLat) * (p.lat - cLat)) + ((p.lng - cLng) * (p.lng - cLng));
+                if (dist < minDistance) {
+                    minDistance = dist;
+                    closestTown = p.town;
+                }
             }
         });
     }
@@ -379,6 +388,9 @@ function applyFilters() {
                 if (p.town === closestTown) {
                     listTargetProperties.push({ prop: p, index: i });
                 }
+            } else {
+                // 줌 14 미만일 때는 기본 데이터 수집 (필요에 따라 조절 가능)
+                listTargetProperties.push({ prop: p, index: i });
             }
         }
     });
@@ -414,6 +426,9 @@ function applyFilters() {
     }
 
     if (listPanel) listPanel.style.display = "flex";
+    
+    // [기획 반영 2 - 목록 업데이트] 걸러진 정예 중심점 읍면동 매물 카드를 메모리에서 꺼내 즉석 빌드
+    renderPropertyCards(listTargetProperties);
     
     // 정밀 시야(줌 14 이상) 마커 노출 및 클러스터 타깃 분류 구역
     markers.forEach(function(marker, i) {
