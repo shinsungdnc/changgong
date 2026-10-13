@@ -771,7 +771,7 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 // =========================================================================
-// 📁 10번 최종 블록: 소분류 내부 칩(체크박스) 초기화까지 완벽하게 마감한 최종 종결판
+// 📁 10번 최종 블록: 줌 리셋 실패 현상까지 완벽하게 박멸한 최종 종결판
 // =========================================================================
 function resetMapToDefault() {
     // 1. 가이드라인 원(Circle) 및 우측 상세 브리핑 패널 장부 파괴
@@ -799,32 +799,28 @@ function resetMapToDefault() {
     if (currentDealTypes.indexOf("월세") === -1) toggleDealType("월세");
     if (currentDealTypes.indexOf("단기") === -1) toggleDealType("단기");
 
-    // 🌟 [소분류 내부 칩 & 장부 완전 리셋]: 카테고리가 꽉 찬 상태에서 순정 엔진을 호출하여 
-    //    특정 것만 선택되어 있던 소분류 데이터와 체크박스UI를 최초 '전체 선택' 상태로 깨끗하게 공장 초기화!
-    if (typeof updateDetailSelectorOptions === 'function') {
-        updateDetailSelectorOptions();
-    }
-
-    // 🌟 ['선택' 패널 원격 닫기]: 소분류 칩들이 전체 선택으로 이쁘게 초기화된 후, 패널 창을 첫 로딩처럼 깔끔하게 닫음 처리!
-    var detailPanel = document.getElementById("detail-selector");
-    if (detailPanel && (detailPanel.style.display === "flex" || detailPanel.style.display !== "none" && detailPanel.style.display !== "")) {
-        toggleDetailSelectorPanel();
-    }
-
     // 🌟 [지적도 버튼 순정 복구]: 지적도가 꺼져 있는 상태라면 순정 토글을 실행시켜 레이어와 버튼 불빛을 동시 On!
     if (typeof cadastralLayer !== 'undefined' && cadastralLayer && !cadastralLayer.getMap()) {
         toggleCadastral();
     }
 
-    // 4. [줌 리셋 보장]: 코드 충돌이 완벽히 해결되었으므로 순정 엔진을 호출하여 최초 줌 12레벨로 회군 지시!
-    if (typeof window.initMapPipeline === 'function') {
-        window.initMapPipeline(); 
-    } else {
-        map.setZoom(12);
-        map.panTo(new naver.maps.LatLng(36.55, 127.25));
+    // 🌟 [소분류 내부 칩 & 장부 완전 리셋]: 순정 엔진을 호출하여 특정 것만 선택되어 있던 데이터를 최초 '전체 선택' 상태로 복구!
+    if (typeof updateDetailSelectorOptions === 'function') {
+        updateDetailSelectorOptions();
     }
 
-    // 5. 타이밍 가드: 지도가 목적지(줌 12)에 안전하게 안착해 멈춘 시점에 매물 연산 최종 결합!
+    // 🌟 ['선택' 패널 원격 닫기]: 소분류 창을 첫 로딩처럼 깔끔하게 닫음 처리!
+    var detailPanel = document.getElementById("detail-selector");
+    if (detailPanel && (detailPanel.style.display === "flex" || detailPanel.style.display !== "none" && detailPanel.style.display !== "")) {
+        toggleDetailSelectorPanel();
+    }
+
+    // 4. 🌟 [줌 리셋 연산 정상화]: 소분류 엔진의 조기 필터링 간섭을 차단하고, 최초 줌 12레벨 위치로 막힘없이 이동 지시!
+    var initialLatLng = new naver.maps.LatLng(36.55, 127.25);
+    map.setZoom(12);
+    map.panTo(initialLatLng);
+
+    // 5. 🌟 [타이밍 완벽 결합]: 지도가 목적지(줌 12)에 안전하게 안착해 멈춘 시점에 최종 12레벨 광역 필터 연산을 얹어 배지를 다시 뿜어냅니다!
     naver.maps.Event.once(map, "idle", function() {
         applyFilters(); 
     });
