@@ -785,23 +785,20 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 // =========================================================================
-// 🎛️ [정밀 타격] 현재 상태(지역/마커/지도) 유지, 오직 상단 필터 버튼들만 원위치
+// 🎛️ [완벽 수정판] 현재 지도/지역 철저히 유지, 오직 상단 필터 버튼들만 원위치
 // =========================================================================
 function resetFiltersOnly() {
-    // 1. 📂 매물종류(대분류 카테고리) 내부 데이터 및 UI 버튼 불빛 완벽 복구
-    currentCategories = ["토지", "공장", "주택"];
-    
-    var btnLand = document.getElementById("btn-land"); if (btnLand) btnLand.classList.add("active-land");
-    var btnFactory = document.getElementById("btn-factory"); if (btnFactory) btnFactory.classList.add("active-factory");
-    var btnHouse = document.getElementById("btn-house"); if (btnHouse) btnHouse.classList.add("active-house");
+    // 1. 📂 매물종류(대분류 카테고리) 순정 토글 연동 리셋
+    // 배열에 없는 항목이 있다면 순정 토글 함수를 원격 실행하여 불빛과 장부를 동시에 켭니다.
+    if (currentCategories.indexOf("토지") === -1) toggleCategory("토지");
+    if (currentCategories.indexOf("공장") === -1) toggleCategory("공장");
+    if (currentCategories.indexOf("주택") === -1) toggleCategory("주택");
 
-    // 2. 💰 구분(거래 유형) 내부 데이터 및 UI 버튼 불빛 완벽 복구
-    currentDealTypes = ["매매", "전세", "월세", "단기"];
-    
-    if (document.getElementById("btn-maemae")) document.getElementById("btn-maemae").classList.add("active-maemae");
-    if (document.getElementById("btn-jeonse")) document.getElementById("btn-jeonse").classList.add("active-jeonse");
-    if (document.getElementById("btn-wolse")) document.getElementById("btn-wolse").classList.add("active-wolse");
-    if (document.getElementById("btn-dangi")) document.getElementById("btn-dangi").classList.add("active-dangi");
+    // 2. 💰 구분(거래 유형) 순정 토글 연동 리셋
+    if (currentDealTypes.indexOf("매매") === -1) toggleDealType("매매");
+    if (currentDealTypes.indexOf("전세") === -1) toggleDealType("전세");
+    if (currentDealTypes.indexOf("월세") === -1) toggleDealType("월세");
+    if (currentDealTypes.indexOf("단기") === -1) toggleDealType("단기");
 
     // 3. ⚙️ '선택' 패널(소분류 칩) 완전 리셋 및 화면에서 닫기
     if (typeof updateDetailSelectorOptions === 'function') {
@@ -817,7 +814,19 @@ function resetFiltersOnly() {
         if (typeof toggleCadastral === 'function') toggleCadastral();
     }
 
-    // 5. ⚡ [동기화 핵심]: 현재 지도 줌/지역 상태를 유지한 채 필터링 레이어만 즉시 동적 갱신
+    // 5. 🛠️ [작동 불능 해결의 핵심 가드]: 지역 장부 강제 홀딩
+    // applyFilters()가 실행될 때 드롭다운 상자에 골라져 있는 값을 역추적하여 장부에 강제로 박아넣습니다.
+    // 이렇게 해야 카메라 idle 이벤트나 디바운스 타이머가 작동해도 현재 지역과 마커가 날아가지 않습니다.
+    var townSelector = document.getElementById("town-selector");
+    if (townSelector && townSelector.value !== "전체") {
+        currentTown = townSelector.value;
+    }
+    var riSelector = document.getElementById("ri-selector");
+    if (riSelector && riSelector.style.display !== "none" && riSelector.value !== "전체") {
+        currentRi = riSelector.value;
+    }
+
+    // 6. ⚡ 변경된 순정 장부 데이터를 지도와 리스트에 즉시 주입 및 갱신
     if (typeof applyFilters === 'function') {
         applyFilters();
     }
