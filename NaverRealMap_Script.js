@@ -726,7 +726,7 @@ document.addEventListener("DOMContentLoaded", function() {
             var currentZoom = map.getZoom();
 
             // 💡줌 13 이하 광역 뷰로 나갈 때 수동 동네 필터를 자동으로 전체 리셋
-            if (currentZoom <= 13 && currentTown !== "전체") {
+            if (currentZoom <= 14 && currentTown !== "전체") {
                 var townSelector = document.getElementById("town-selector");
                 currentTown = "전체";
                 currentRi = "전체";
