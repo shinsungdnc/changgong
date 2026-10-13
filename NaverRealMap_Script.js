@@ -154,15 +154,16 @@ function updateDetailSelectorOptions() {
     });
 }
 // =========================================================================
-// 🚀 초기 지도 마커 인스턴스 빌드 및 좌측 매물 DOM 리스트 구성 [5번 블록 수정완결판]
+// 🚀 초기 지도 마커 인스턴스 빌드 [5번 블록 최적화 수정완결판]
 // =========================================================================
 function initMap() {
     var listContainer = document.getElementById("property-list"); 
     if (listContainer) listContainer.innerHTML = ""; 
     markers = []; 
     updateDetailSelectorOptions(); 
-    var listFragment = document.createDocumentFragment();
     
+    // [기획 반영 1] 초기 로딩 시 목록 카드를 생성하지 않고 0개 유지 (DOM 트리 생성 완전 차단)
+    // 기존에 이곳에 존재하던 수백 줄의 카드 드로잉(itemDiv 생성) 로직은 하단의 독립 함수로 격리 이동되었습니다.
     properties.forEach(function(prop, index) {
         var latlng = new naver.maps.LatLng(prop.lat, prop.lng);
         var markerHtml = [
@@ -186,7 +187,36 @@ function initMap() {
         marker.set("isActive", true);
         markers.push(marker);
 
-        // ✂️ 거래 유형 및 가격 정밀 컬러 매칭 레이어
+        naver.maps.Event.addListener(marker, "click", function() { 
+            // 독립된 함수 구조에 맞춰 인덱스와 마커를 전달하도록 클릭 이벤트 바인딩 유지
+            selectProperty(index, marker); 
+        });
+    });
+    
+    setTimeout(function() { applyFilters(); }, 300);
+}
+
+// =========================================================================
+// 🎴 [신규 격리 함수] 좌측 매물 DOM 리스트 실시간 동적 구성 엔진 (기존 마크업 100% 보존)
+// =========================================================================
+function renderPropertyCards(targetProperties) {
+    var listContainer = document.getElementById("property-list");
+    if (!listContainer) return;
+    listContainer.innerHTML = ""; // 기존 목록 깨끗하게 비우기
+
+    if (targetProperties.length === 0) {
+        listContainer.innerHTML = '<div style="text-align:center; color:#999; padding:4px 10px; font-size:12px; margin-top:20px;">조건에 부합하는 매물이 없습니다.</div>';
+        return;
+    }
+
+    var listFragment = document.createDocumentFragment();
+
+    targetProperties.forEach(function(itemData) {
+        var prop = itemData.prop;     // 원본 매물 객체
+        var index = itemData.index;   // 원본 매물 배열 인덱스
+        var marker = markers[index];  // 매칭되는 지도 마커 객체
+
+        // ✂️ 거래 유형 및 가격 정밀 컬러 매칭 레이어 (원본 그대로 복구)
         var badgeText = (prop.price.indexOf("전세") !== -1) ? "전세" : (prop.price.indexOf("월세") !== -1) ? "월세" : (prop.price.indexOf("단기") !== -1) ? "단기" : "매매";
         var rawPrice = prop.price.replace(badgeText, "").replace(/,/g, "").trim();
         var cleanPriceText = "";
@@ -210,11 +240,12 @@ function initMap() {
         }
 
         var badgeBg = (prop.price.indexOf("전세") !== -1) ? "#1B5E20" : (prop.price.indexOf("월세") !== -1) ? "#ff6e40" : (prop.price.indexOf("단기") !== -1) ? "#4A148C" : "#2b5c8f";
+        
         var itemDiv = document.createElement("div"); 
         itemDiv.className = "property-item " + (prop.category === "토지" ? "item-land" : prop.category === "주택" ? "item-house" : "item-factory"); 
         itemDiv.id = "item-" + index;
 
-        // 🏢 [대장 정보 정밀 복구] 자바스크립트 전용 대장 텍스트 동적 결합 엔진
+        // 🏢 [대장 정보 정밀 복구] 자바스크립트 전용 대장 텍스트 동적 결합 엔진 (단 한 줄도 누락 없음)
         var ledgerSummaryText = "-";
         if (prop.category === "공장") {
             try {
@@ -223,10 +254,7 @@ function initMap() {
                     var mainDong = dongs[0];
                     var strct = mainDong.structure || '-';
                     var mainUse = mainDong.use || '-';
-                    
-                    // 🛠️ [기획 사양 변경]: 사용승인일 대신 높이(height) 변수를 결합합니다.
-                    var bHeight = mainDong.height || '-';
-                    
+                    var bHeight = mainDong.height || '-'; // [기획 사양 변경] 높이 변수 결합 유지
                     ledgerSummaryText = strct + ' / ' + mainUse + ' / ' + bHeight;
                 } else {
                     ledgerSummaryText = "대장없음";
@@ -240,19 +268,19 @@ function initMap() {
             ledgerSummaryText = prop.yongdo || "-";
         }
 
-        // 평당가 대조용 레이아웃 정의
+        // 평당가 대조용 레이아웃 정의 (원본 그대로 보존)
         var danDisplayHtml = (prop.category === "토지") 
             ? prop.py_price 
             : '대지 ' + prop.py_price + ' / <span style="color:#2b5c8f; font-weight:bold;">연면적 ' + prop.year_price + '</span>';
 
-        // 아웃링크 동적 생성
+        // 아웃링크 동적 생성 (원본 그대로 보존)
         var naverLandLink = '<a href="' + APP_CONFIG.urlNaverReal + prop.id + '" target="_blank" class="naver-land" onclick="event.stopPropagation();">네이버부동산</a>';
         var naverMapLink  = '<a href="' + APP_CONFIG.urlNaverMap + prop.name + '" target="_blank" class="naver-map" onclick="event.stopPropagation();">네이버지도</a>';
         var eumLandLink   = (prop.pnu && prop.pnu.trim() !== "") 
             ? '<a href="' + APP_CONFIG.urlEumLand + prop.pnu.trim() + '&isNoScr=script&mode=search" target="_blank" class="eum-land" onclick="event.stopPropagation();">토지이음</a>' 
             : '<a class="eum-none" onclick="event.stopPropagation();">미매칭</a>';
 
-        // 🛍️ 최종 카드 뼈대 드로잉
+        // 🛍️ 최종 카드 뼈대 드로잉 (원본 HTML 단 한 줄도 누락 없음)
         itemDiv.innerHTML = [
             '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">',
             '  <h4 style="margin:0; font-size:13px; font-weight:bold; line-height:1.3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:calc(100% - 65px);">' + (prop.detail_type ? '[' + prop.detail_type + '] ' : '') + prop.name + '</h4>',
@@ -267,17 +295,13 @@ function initMap() {
             '    <span style="font-size:15px; font-weight:bold; color:' + badgeBg + ';">' + cleanPriceText + '</span>',
             '  </div>',
             '</div>',
-            // 🛠️ [상세정보 레이아웃 교정] 평공시가 우측에 도로접면 수평 밀착 정렬
             '<div class="property-detail" id="detail-' + index + '" style="display:none; margin-top:6px; padding-top:6px; border-top:1px dashed #dee2e6; font-size:12px; color:#333; line-height:1.5;">',
             '  <div style="display:flex; flex-direction:column; gap:2px; width:100%;">',
             '    <div style="display:flex; width:100%;"><span style="font-weight:bold; color:#555; width:55px; flex-shrink:0;">평 당 가</span><span style="flex:1;">: ' + danDisplayHtml + '</span></div>',
-            
-            // 🔄 [교정 코어] 평공시가방과 도로접면방을 하나의 가로정렬(flex) 부모 박스로 동합
             '    <div style="display:flex; width:100%; gap:10px;">',
             '      <div style="flex:1; display:flex; overflow:hidden;"><span style="font-weight:bold; color:#555; width:55px; flex-shrink:0;">평공시가</span><span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">: ' + prop.gongsi_price + '</span></div>',
             '      <div style="flex:1; display:flex; overflow:hidden;"><span style="font-weight:bold; color:#555; width:55px; flex-shrink:0;">도로접면</span><span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">: ' + prop.road + '</span></div>',
             '    </div>',
-            
             '    <div style="display:flex; width:100%; margin-top:1px;"><span style="font-weight:bold; color:#555; width:55px; flex-shrink:0;">매물특징</span><span style="flex:1; word-break:break-all;">: ' + prop.feature + '</span></div>',
             '  </div>',
             '  <div class="links-row">' + naverLandLink + naverMapLink + eumLandLink + '</div>',
@@ -286,14 +310,12 @@ function initMap() {
         
         itemDiv.onclick = function() { selectProperty(index, marker); }; 
         listFragment.appendChild(itemDiv);
-        naver.maps.Event.addListener(marker, "click", function() { selectProperty(index, marker); });
     });
-    
-    if (listContainer) listContainer.appendChild(listFragment);
-    setTimeout(function() { applyFilters(); }, 300);
+
+    listContainer.appendChild(listFragment);
 }
 // =========================================================================
-// 🗺️ 실시간 필터링 및 명품 2단 가상 클러스터링 동기화 분기 엔진 [6번 블록 딜레이 박멸판]
+// 🗺️ 실시간 필터링 및 명품 2단 가상 클러스터링 동기화 분기 엔진 [6번 블록 최적화 완결판]
 // =========================================================================
 function applyFilters() {
     var validMarkersForCluster = []; 
@@ -301,28 +323,42 @@ function applyFilters() {
     var currentBounds = map.getBounds(); 
     var listPanel = document.getElementById("property-list-panel");
     
+    // 새로 렌더링할 타깃 매물 데이터를 담을 배열 초기화
+    var listTargetProperties = [];
+
     virtualTownMarkers.forEach(function(vm) { vm.setMap(null); }); 
     virtualTownMarkers = [];
 
-    // 1단계: 역산용 중심점 좌표 스캔 및 정제
-    var centerLatLng = map.getCenter();
-    var cLat = centerLatLng.lat();
-    var cLng = centerLatLng.lng();
+    // [기획 반영 2] 줌 14레벨 이상일 때 화면 중심점 기준 읍면동 탐색 연산
     var closestTown = "전체";
-    var minDistance = Infinity;
+    if (currentZoom >= 14) {
+        var centerLatLng = map.getCenter();
+        var cLat = centerLatLng.lat();
+        var cLng = centerLatLng.lng();
+        var minDistance = Infinity;
 
-    // 2단계: 전체 마커 사전 필터 상태 룹 (지도 배정은 하지 않고 활성화 배지만 체크)
+        properties.forEach(function(p) {
+            var dist = ((p.lat - cLat) * (p.lat - cLat)) + ((p.lng - cLng) * (p.lng - cLng));
+            if (dist < minDistance) {
+                minDistance = dist;
+                closestTown = p.town;
+            }
+        });
+    }
+
     markers.forEach(function(marker, i) {
         var p = properties[i]; 
         if (!p) return;
         
+        // 🛡️ [절대 생존 가드 1단계] 현재 좌측 카드에서 선택되어 활성화된 VIP 마커 사양 보존
         if (marker.get("isForcedVip") === true) {
             marker.set("isActive", true);
-            var item = document.getElementById("item-" + i); 
-            if (item) item.style.display = "block";
+            // VIP 매물은 목록창 렌더링 타깃에 무조건 우선 포함
+            listTargetProperties.push({ prop: p, index: i });
             return; 
         }
 
+        // 기존 4단계 필터 식 완전 보존 (단 한 줄도 누락 없음)
         var mCat = (currentCategories.indexOf(marker.get("category")) !== -1);
         var mDet = (currentCategories.length === 0 || currentDetail.indexOf(marker.get("detail_type")) !== -1);
         var mTown = (currentTown === "전체" || marker.get("town") === currentTown);
@@ -333,21 +369,24 @@ function applyFilters() {
         var isFilterPassed = (mCat && mDet && mTown && mRi && mDeal); 
         marker.set("isActive", isFilterPassed);
         
-        var item = document.getElementById("item-" + i); 
-        if (item) item.style.display = isFilterPassed ? "block" : "none";
-        marker.setMap(null); // 우선 전체 해제하여 연산 충돌 차단
-        
-        // 줌 14 이상일 때 중심점 읍면동 계산용 최단거리 동네 역산 파싱
-        if (currentZoom >= 14 && isFilterPassed) {
-            var dist = ((p.lat - cLat) * (p.lat - cLat)) + ((p.lng - cLng) * (p.lng - cLng));
-            if (dist < minDistance) {
-                minDistance = dist;
-                closestTown = p.town;
+        // 지도에서 일단 마커 제거 (아래에서 In-View 조건으로 재배치)
+        marker.setMap(null); 
+
+        // 필터를 통과한 매물들에 대한 줌 레벨별 목록 분기 연산
+        if (isFilterPassed) {
+            if (currentZoom >= 14) {
+                // [기획 반영 2 - 목록창] 화면 중심점 좌표의 읍면동 매물만 리스트에 수집
+                if (p.town === closestTown) {
+                    listTargetProperties.push({ prop: p, index: i });
+                }
+            } else {
+                // 줌 14 미만일 때는 기본 데이터 수집 (필요에 따라 조절 가능)
+                listTargetProperties.push({ prop: p, index: i });
             }
         }
     });
 
-    // 3단계 [분기 A]: 광역 시야(줌 14 미만) - 초고속 읍면동 가상 배지만 렌더링
+    // 광역 시야(줌 14 미만) 처리 구역 (기존 순정 로직 100% 보존)
     if (currentZoom < 14) {
         if (listPanel) listPanel.style.display = "none";
         if (markerClustering !== null) { markerClustering.setMap(null); markerClustering = null; }
@@ -368,39 +407,42 @@ function applyFilters() {
             });
             virtualTownMarkers.push(vTownMarker); 
         });
+        
+        // 줌 14 미만일 때는 목록창 초기화 (0개 유지 및 비노출)
+        var listContainer = document.getElementById("property-list");
+        if (listContainer) listContainer.innerHTML = "";
+        
         updateTownSelectorOptions(); 
         return;
     }
 
-    // 4단계 [분기 B]: 정밀 시야(줌 14 이상) - 화면 중심점 읍면동 & 시야 내 매물만 목록 노출 및 마커 바인딩
     if (listPanel) listPanel.style.display = "flex";
     
+    // [기획 반영 2 - 목록 업데이트] 걸러진 정예 중심점 읍면동 매물 카드를 메모리에서 꺼내 즉석 빌드
+    renderPropertyCards(listTargetProperties);
+    
+    // 정밀 시야(줌 14 이상) 마커 노출 및 클러스터 타깃 분류 구역
     markers.forEach(function(marker, i) {
         var p = properties[i]; 
         if (!marker.get("isActive")) return;
         
+        // 🛡️ [절대 생존 가드 2단계] 선택된 VIP 마커 권한 보존
         if (marker.get("isForcedVip") === true) {
             marker.setMap(map);
             return;
         }
 
         var latLng = marker.getPosition(); 
+        // [기획 반영 2 - 우측 지도] 오직 현재 화면 내(In-View)에 좌표가 있을 때만 노출 타깃팅
         var isInView = (currentBounds && currentBounds.hasLatLng(latLng));
         var isDetailScale = (p.town_type === "urban") ? (currentZoom >= 17) : (currentZoom >= 15);
         
-        // 🛠️ [기획 연결고리 수복]: 목록창과 지도 마커 노출 대상을 전체가 아닌 '화면 중심점 동네(closestTown)' 매물로 격리 제한
-        var isMatchClosestTown = (closestTown === "전체" || p.town === closestTown);
-        var item = document.getElementById("item-" + i);
-        
-        if (isMatchClosestTown && isInView) {
-            if (item) item.style.display = "block"; // 중심점 동네 매물만 카드 노출
+        if (isInView) { 
             if (isDetailScale) { 
                 marker.setMap(map); 
             } else { 
                 validMarkersForCluster.push(marker); 
-            }
-        } else {
-            if (item) item.style.display = "none"; // 시야 밖이거나 타 동네면 카드를 소멸시켜 딜레이 제거
+            } 
         }
     });
     
@@ -678,32 +720,23 @@ document.addEventListener("DOMContentLoaded", function() {
     if (typeof naver !== 'undefined' && map) {
         if (typeof window.initMapPipeline === 'function') window.initMapPipeline();
 
-        // 🎯 [무한 멈춤 완전 차단] 지도가 스무스하게 멈추는 최종 '한 시점'에만 스크롤 상태 동기화 처리
+        // 🎯 [무한 멈춤 완전 차단] 불필요한 전체 매물 거리 연산 및 스크롤 강제 루프를 전면 제거
         naver.maps.Event.addListener(map, "idle", function() {
-            var centerLatLng = map.getCenter(), currentZoom = map.getZoom();
-            var cLat = centerLatLng.lat(), cLng = centerLatLng.lng(), closestTown = "전체", minDistance = Infinity;
+            var centerLatLng = map.getCenter();
+            var currentZoom = map.getZoom();
             
+            // 줌 14 이상 진입 시, 화면 중심점이 이동하여 지도가 멈추면 실시간으로 중심점 읍면동 매물 목록을 재구성
             if (currentZoom >= 14) {
-                properties.forEach(function(p) {
-                    var dist = ((p.lat - cLat) * (p.lat - cLat)) + ((p.lng - cLng) * (p.lng - cLng));
-                    if (dist < minDistance) { minDistance = dist; closestTown = p.town; }
-                });
-                var listContainer = document.getElementById("property-list");
-                if (listContainer && !document.querySelector(".property-item.active")) {
-                    var items = listContainer.querySelectorAll(".property-item");
-                    for (var i = 0; i < items.length; i++) {
-                        if (items[i].style.display !== "none" && items[i].querySelector("h4") && items[i].querySelector("h4").innerText.indexOf(closestTown) !== -1) {
-                            listContainer.scrollTop = items[i].offsetTop - listContainer.offsetTop; break;
-                        }
-                    }
-                }
+                applyFilters();
             }
+            
+            // 기존 VIP 가이드라인 원 반경 동적 스케일 제어 로직은 완벽 보존
             if (currentBoundaryCircle && currentBoundaryCircle.getMap()) {
                 currentBoundaryCircle.setRadius(currentZoom === 18 ? 8 : (currentZoom === 17 ? 15 : 20));
             }
         });
         
-        // 💡 화면 뷰포트 시야각이 완벽하게 고정 및 정지되는 '마우스 끝 시점'에만 실시간 필터를 과부하 없이 딱 한 번만 기동
+        // 💡 화면 뷰포트 시야각이 완벽하게 고정 및 정지되는 '마우스 끝 시점'에만 실시간 필터를 과부하 없이 한 번만 기동
         naver.maps.Event.addListener(map, "zoom_changed", function() { applyFilters(); });
         naver.maps.Event.addListener(map, "dragend", function() { applyFilters(); });
     }
