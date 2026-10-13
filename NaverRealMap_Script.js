@@ -454,7 +454,7 @@ function updateClustering(validMarkers) {
 
     markerClustering = new MarkerClustering({
         minClusterSize: 2, 
-        maxZoom: 16, 
+        maxZoom: 17, 
         map: map, 
         markers: validMarkers, 
         gridSize: 150, 
