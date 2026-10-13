@@ -720,24 +720,40 @@ document.addEventListener("DOMContentLoaded", function() {
     if (typeof naver !== 'undefined' && map) {
         if (typeof window.initMapPipeline === 'function') window.initMapPipeline();
 
-        // 🎯 [무한 멈춤 완전 차단] 불필요한 전체 매물 거리 연산 및 스크롤 강제 루프를 전면 제거
+        // ⏱️ 연속적인 줌 변경 이벤트를 제어하기 위한 타이머 변수
+        var zoomTimeout = null;
+
+        // 🎯 1. 지도가 드래그 후 완전히 멈췄을 때 최적화 실행
         naver.maps.Event.addListener(map, "idle", function() {
             var centerLatLng = map.getCenter();
             var currentZoom = map.getZoom();
             
-            // 줌 14 이상 진입 시, 화면 중심점이 이동하여 지도가 멈추면 실시간으로 중심점 읍면동 매물 목록을 재구성
+            // 줌 14 이상일 때만 화면 중심점 기준 필터링 작동
             if (currentZoom >= 14) {
                 applyFilters();
             }
             
-            // 기존 VIP 가이드라인 원 반경 동적 스케일 제어 로직은 완벽 보존
             if (currentBoundaryCircle && currentBoundaryCircle.getMap()) {
                 currentBoundaryCircle.setRadius(currentZoom === 18 ? 8 : (currentZoom === 17 ? 15 : 20));
             }
         });
         
-        // 💡 화면 뷰포트 시야각이 완벽하게 고정 및 정지되는 '마우스 끝 시점'에만 실시간 필터를 과부하 없이 한 번만 기동
-        naver.maps.Event.addListener(map, "zoom_changed", function() { applyFilters(); });
-        naver.maps.Event.addListener(map, "dragend", function() { applyFilters(); });
+        // 🎯 2. 드래그가 끝나는 최종 시점에 딱 1번 기동
+        naver.maps.Event.addListener(map, "dragend", function() { 
+            applyFilters(); 
+        });
+
+        // 🎯 3. [초강력 튜닝] 휠 줌 도중 발생하는 수십 번의 무한 중복 연산 완전 박멸
+        naver.maps.Event.addListener(map, "zoom_changed", function() { 
+            // 이전에 실행 대기 중이던 타이머가 있다면 즉시 취소하여 연산을 폭파시킵니다.
+            if (zoomTimeout) {
+                clearTimeout(zoomTimeout);
+            }
+            
+            // 휠 조작이 완전히 끝나고 0.15초 동안 아무 변화가 없을 때만 딱 한 번 필터를 가동합니다.
+            zoomTimeout = setTimeout(function() {
+                applyFilters();
+            }, 150); // 150ms 디바운스 딜레이 적용
+        });
     }
 });
