@@ -463,10 +463,10 @@ function updateClustering(validMarkers) {
         markers: validMarkers, 
         gridSize: 90, 
         icons: [
-            // 🛠️ [가독성 수복]: 파란색 순정 클러스터 배지 사이즈를 기존 44px -> 56px로 큼직하게 대폭 확대
+            // 🛠️ [가독성 수복]: 파란색 순정 클러스터 배지 사이즈를 기존 44px -> 50px로 큼직하게 대폭 확대
             { 
-                content: '<div class="pure-naver-cluster" style="cursor:pointer; width:56px; height:56px; line-height:54px; font-size:15px; color:#111111; text-align:center; font-weight:800; background:rgba(74, 211, 255, 0.96); border:2px solid #ffffff; border-radius:50%; box-shadow:0 4px 12px rgba(0,0,0,0.3); box-sizing:border-box;"></div>', 
-                anchor: new naver.maps.Point(28, 28) 
+                content: '<div class="pure-naver-cluster" style="cursor:pointer; width:50px; height:50px; line-height:48px; font-size:13px; color:#111111; text-align:center; font-weight:bold; background:rgba(74, 211, 255, 0.95); border:1px solid #ffffff; border-radius:50%; box-shadow:0 3px 10px rgba(0,0,0,0.25); box-sizing:border-box;"></div>',
+                anchor: new naver.maps.Point(25, 25) 
             }
         ],
         stylingFunction: function(clusterMarker, count) {
