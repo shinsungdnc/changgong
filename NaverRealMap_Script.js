@@ -785,38 +785,40 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 // =========================================================================
-// 🎛️ [완벽 수정판] 현재 지도/지역 철저히 유지, 오직 상단 필터 버튼들만 원위치
+// 🎛️ [최종 마스터 완결판] 리로드와 완벽히 분리된 순정 필터 전용 초기화 엔진
 // =========================================================================
 function resetFiltersOnly() {
-    // 1. 📂 매물종류(대분류 카테고리) 순정 토글 연동 리셋
-    // 배열에 없는 항목이 있다면 순정 토글 함수를 원격 실행하여 불빛과 장부를 동시에 켭니다.
+    // 1. 📂 매물종류 (대분류 카테고리) 순정 엔진 연동 복구 [10번 블록 함수 강제 역호출]
+    // 현재 꺼져 있어서 배열(currentCategories)에 없는 카테고리가 있다면 순정 토글을 실행해 켭니다.
     if (currentCategories.indexOf("토지") === -1) toggleCategory("토지");
     if (currentCategories.indexOf("공장") === -1) toggleCategory("공장");
     if (currentCategories.indexOf("주택") === -1) toggleCategory("주택");
 
-    // 2. 💰 구분(거래 유형) 순정 토글 연동 리셋
+    // 2. 💰 구분 (매매/전세/월세/단기 거래유형) 순정 엔진 연동 복구 [10번 블록 함수 강제 역호출]
+    // 현재 꺼져 있어서 배열(currentDealTypes)에 없는 거래 방식이 있다면 순정 토글을 실행해 켭니다.
     if (currentDealTypes.indexOf("매매") === -1) toggleDealType("매매");
     if (currentDealTypes.indexOf("전세") === -1) toggleDealType("전세");
     if (currentDealTypes.indexOf("월세") === -1) toggleDealType("월세");
     if (currentDealTypes.indexOf("단기") === -1) toggleDealType("단기");
 
-    // 3. ⚙️ '선택' 패널(소분류 칩) 완전 리셋 및 화면에서 닫기
+    // 3. ⚙️ 소분류 내부 칩 & 장부 완전 리셋 (최초 '전체 선택' 상태 복구)
     if (typeof updateDetailSelectorOptions === 'function') {
-        updateDetailSelectorOptions(); // 소분류 장부와 내부 칩들을 최초 '전체 선택'으로 초기화
-    }
-    var detailPanel = document.getElementById("detail-selector");
-    if (detailPanel && detailPanel.style.display !== "none" && detailPanel.style.display !== "") {
-        if (typeof toggleDetailSelectorPanel === 'function') toggleDetailSelectorPanel(); // 열려 있다면 닫음 처리
+        updateDetailSelectorOptions();
     }
 
-    // 4. 🗺️ 지적 버튼 순정 복구 (지적도가 꺼져 있다면 순정 토글을 기동하여 활성화)
+    // 4. 🛍️ 열려 있는 '소분류 선택 패널'이 있다면 첫 로딩처럼 깔끔하게 닫음 처리
+    var detailPanel = document.getElementById("detail-selector");
+    if (detailPanel && (detailPanel.style.display === "flex" || detailPanel.style.display !== "none" && detailPanel.style.display !== "")) {
+        if (typeof toggleDetailSelectorPanel === 'function') toggleDetailSelectorPanel();
+    }
+
+    // 5. 🗺️ 지적 버튼 순정 복구 (현재 지적도가 지도에서 꺼져 있는 상태라면 순정 토글을 기동하여 On)
     if (typeof cadastralLayer !== 'undefined' && cadastralLayer && !cadastralLayer.getMap()) {
         if (typeof toggleCadastral === 'function') toggleCadastral();
     }
 
-    // 5. 🛠️ [작동 불능 해결의 핵심 가드]: 지역 장부 강제 홀딩
-    // applyFilters()가 실행될 때 드롭다운 상자에 골라져 있는 값을 역추적하여 장부에 강제로 박아넣습니다.
-    // 이렇게 해야 카메라 idle 이벤트나 디바운스 타이머가 작동해도 현재 지역과 마커가 날아가지 않습니다.
+    // 6. 🛡️ [중요 - 지역 수호 가드]: applyFilters() 실행 전 현재 드롭다운에 고정된 지역 세팅 장부 방어
+    // 필터 연산이 돌면서 드롭다운 선택 값을 '전체'로 덮어쓰는 버그를 차단하기 위해 현재 선택 상태를 고정합니다.
     var townSelector = document.getElementById("town-selector");
     if (townSelector && townSelector.value !== "전체") {
         currentTown = townSelector.value;
@@ -826,7 +828,7 @@ function resetFiltersOnly() {
         currentRi = riSelector.value;
     }
 
-    // 6. ⚡ 변경된 순정 장부 데이터를 지도와 리스트에 즉시 주입 및 갱신
+    // 7. ⚡ 변경된 순정 장부 데이터를 지도 마커와 리스트에 즉시 반영 및 강제 동기화
     if (typeof applyFilters === 'function') {
         applyFilters();
     }
