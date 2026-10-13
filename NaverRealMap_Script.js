@@ -47,39 +47,44 @@ function getActiveTownCenterStats() {
     return stats;
 }
 // =========================================================================
-// 🎛️ 하이브리드 카운트 엔진 (지역 선택 드롭다운 매물수 실시간 필터 동기화) [3번 블록]
+// 🎛️ 하이브리드 카운트 엔진 (지역 선택 드롭다운 매물수 실시간 필터 동기화) [3번 블록 - 선택 반영 버그 완치판]
 // =========================================================================
 function updateTownSelectorOptions() {
     var townSelector = document.getElementById("town-selector");
     var riSelector = document.getElementById("ri-selector");
+    var detailPanel = document.getElementById("detail-selector"); // 🛠️ 선택(소분류) 패널 가져오기
     if (!townSelector || !riSelector) return;
     
     var savedTown = currentTown, savedRi = currentRi, totalCount = 0;
     var townCounts = {}, riCounts = {};
-    var townStats = getActiveTownCenterStats();
     
-    Object.keys(townStats).forEach(function(tName) {
-        if (townStats[tName].count > 0) {
-            townCounts[tName] = townStats[tName].count;
-            totalCount += townStats[tName].count;
-        }
-    });
-
+    // 🛠️ [버그 치료 핵심 로직]: 
+    // 만약 '선택' 패널이 화면에 안 보인다면(닫힌 상태), 소분류 필터(currentDetail) 장부를 무시하고 
+    // 대분류를 기준으로만 카운트하도록 필터 조건을 실시간 동기화합니다.
+    var isDetailPanelActive = (detailPanel && detailPanel.style.display !== "none" && detailPanel.style.display !== "");
+    
+    // 원본 함수가 쓰던 stats 스캔 방식을 확장하여 정밀 집계 실행
     properties.forEach(function(p) {
-        if ((currentCategories.indexOf(p.category) !== -1) && (currentCategories.length === 0 || currentDetail.indexOf(p.detail_type) !== -1)) {
-            var mDeal = false;
-            currentDealTypes.forEach(function(t) { if (p.price && p.price.indexOf(t) !== -1) mDeal = true; });
-            
-            if (mDeal && p.town && p.name && p.name.indexOf(p.town) !== -1) {
-                // 읍면동 명칭 뒤편의 나머지 주소 문자열을 순수하게 추출
+        var mCat = (currentCategories.indexOf(p.category) !== -1);
+        
+        // 🛠️ 선택 버튼이 꺼져있을 때는 모든 소분류를 통과시키고, 켜져있을 때만 체크된 소분류만 매칭시킵니다.
+        var mDet = (!isDetailPanelActive || currentCategories.length === 0 || currentDetail.indexOf(p.detail_type) !== -1);
+        
+        var mDeal = false; 
+        currentDealTypes.forEach(function(t) { if (p.price && p.price.indexOf(t) !== -1) { mDeal = true; } });
+
+        if (mCat && mDet && mDeal) {
+            var tName = p.town;
+            if (!townCounts[tName]) townCounts[tName] = 0;
+            townCounts[tName]++;
+            totalCount++;
+
+            // 리(里) 단위 정밀 스캔 (기존 버그 치료 코어 100% 보존)
+            if (p.town && p.name && p.name.indexOf(p.town) !== -1) {
                 var remainAddr = p.name.substring(p.name.indexOf(p.town) + p.town.length).trim();
                 var tokens = remainAddr.split(" ");
-                
                 if (tokens.length > 0) {
-                    // 🛠️ [버그 치료 코어]: 마지막 지번 숫자가 아닌, 첫 번째 토큰('리' 명칭)을 정확히 검사합니다.
                     var targetToken = tokens[0].trim();
-                    
-                    // 끝 글자가 '리'로 끝나는 정예 행정구역 이름만 매칭 스캔
                     if (targetToken.lastIndexOf('리') === targetToken.length - 1 && targetToken.length > 0) {
                         var riName = targetToken;
                         if (!riCounts[p.town]) riCounts[p.town] = {};
@@ -90,6 +95,7 @@ function updateTownSelectorOptions() {
         }
     });
 
+    // 드롭다운 옵션 다시 그리기 (기존 마크업 원본 유지)
     townSelector.innerHTML = "<option value='전체'>📍 지역 선택 (전체: " + totalCount + "개)</option>";
     townList.forEach(function(t) {
         var count = townCounts[t] || 0;
@@ -779,69 +785,40 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 // =========================================================================
-// 📁 10번 최종 블록: 매물 선택 VIP 상태까지 깨끗하게 박멸하는 최종 마스터 완결판
+// 🎛️ [정밀 타격] 현재 상태(지역/마커/지도) 유지, 오직 상단 필터 버튼들만 원위치
 // =========================================================================
-function resetMapToDefault() {
-    // 🌟 [추가 기획 - VIP 절대 권한 원천 파괴]: 
-    //     지도 위의 모든 마커를 돌면서 숨어있던 VIP 권한(isForcedVip)을 전면 취소하고 지도에서 숨김 처리!
-    markers.forEach(function(marker) {
-        marker.set("isForcedVip", false);
-        marker.setMap(null);
-    });
+function resetFiltersOnly() {
+    // 1. 📂 매물종류(대분류 카테고리) 내부 데이터 및 UI 버튼 불빛 완벽 복구
+    currentCategories = ["토지", "공장", "주택"];
+    
+    var btnLand = document.getElementById("btn-land"); if (btnLand) btnLand.classList.add("active-land");
+    var btnFactory = document.getElementById("btn-factory"); if (btnFactory) btnFactory.classList.add("active-factory");
+    var btnHouse = document.getElementById("btn-house"); if (btnHouse) btnHouse.classList.add("active-house");
 
-    // 🌟 [추가 기획 - 카드 리스트 불빛 및 소분류 디테일 UI 리셋]:
-    //     선택되어 노랗게 불이 들어와 있던 매물 카드의 active 클래스와 열려있던 세부 디테일 창을 전부 파괴!
-    document.querySelectorAll(".property-detail").forEach(function(el) { el.style.display = "none"; });
-    document.querySelectorAll(".property-item").forEach(function(el) { el.classList.remove("active"); });
+    // 2. 💰 구분(거래 유형) 내부 데이터 및 UI 버튼 불빛 완벽 복구
+    currentDealTypes = ["매매", "전세", "월세", "단기"];
+    
+    if (document.getElementById("btn-maemae")) document.getElementById("btn-maemae").classList.add("active-maemae");
+    if (document.getElementById("btn-jeonse")) document.getElementById("btn-jeonse").classList.add("active-jeonse");
+    if (document.getElementById("btn-wolse")) document.getElementById("btn-wolse").classList.add("active-wolse");
+    if (document.getElementById("btn-dangi")) document.getElementById("btn-dangi").classList.add("active-dangi");
 
-    // 1. 가이드라인 원(Circle) 및 우측 상세 브리핑 분석 패널 장부 즉시 청소
-    if (currentBoundaryCircle) { currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }
-    var rightPanel = document.getElementById("right-stats-panel");
-    if (rightPanel) rightPanel.classList.remove("active", "expanded");
-
-    // 2. 목록창 수동 닫힘 기억 장치 해제 (첫 로딩처럼 노출 대기)
-    isSidebarManuallyClosed = false;
-
-    // 3. 행정구역 선택 드롭다운 상자 '전체' 상태로 원상복구
-    currentTown = "전체";
-    currentRi = "전체";
-    var townSelector = document.getElementById("town-selector"); if (townSelector) townSelector.value = "전체";
-    var riSelector = document.getElementById("ri-selector"); if (riSelector) { riSelector.value = "전체"; riSelector.style.display = "none"; }
-
-    // 🌟 [카테고리 버튼 순정 복구]: 꺼져 있는 카테고리가 있다면 순정 토글 함수를 원격 가동하여 On!
-    if (currentCategories.indexOf("토지") === -1) toggleCategory("토지");
-    if (currentCategories.indexOf("공장") === -1) toggleCategory("공장");
-    if (currentCategories.indexOf("주택") === -1) toggleCategory("주택");
-
-    // 🌟 [거래유형 버튼 순정 복구]: 꺼져 있는 거래방식이 있다면 순정 토글 함수를 원격 가동하여 On!
-    if (currentDealTypes.indexOf("매매") === -1) toggleDealType("매매");
-    if (currentDealTypes.indexOf("전세") === -1) toggleDealType("전세");
-    if (currentDealTypes.indexOf("월세") === -1) toggleDealType("월세");
-    if (currentDealTypes.indexOf("단기") === -1) toggleDealType("단기");
-
-    // 🌟 [소분류 내부 칩 & 장부 완전 리셋]: 순정 엔진을 호출하여 특정 것만 선택되어 있던 데이터를 최초 '전체 선택' 상태로 복구!
+    // 3. ⚙️ '선택' 패널(소분류 칩) 완전 리셋 및 화면에서 닫기
     if (typeof updateDetailSelectorOptions === 'function') {
-        updateDetailSelectorOptions();
+        updateDetailSelectorOptions(); // 소분류 장부와 내부 칩들을 최초 '전체 선택'으로 초기화
     }
-
-    // 🌟 ['선택' 패널 원격 닫기]: 소분류 창을 첫 로딩처럼 깔끔하게 닫음 처리!
     var detailPanel = document.getElementById("detail-selector");
-    if (detailPanel && (detailPanel.style.display === "flex" || detailPanel.style.display !== "none" && detailPanel.style.display !== "")) {
-        toggleDetailSelectorPanel();
+    if (detailPanel && detailPanel.style.display !== "none" && detailPanel.style.display !== "") {
+        if (typeof toggleDetailSelectorPanel === 'function') toggleDetailSelectorPanel(); // 열려 있다면 닫음 처리
     }
 
-    // 🌟 [지적도 버튼 순정 복구]: 지적도가 꺼져 있는 상태라면 순정 토글을 실행시켜 레이어와 버튼 불빛을 동시 On!
+    // 4. 🗺️ 지적 버튼 순정 복구 (지적도가 꺼져 있다면 순정 토글을 기동하여 활성화)
     if (typeof cadastralLayer !== 'undefined' && cadastralLayer && !cadastralLayer.getMap()) {
-        toggleCadastral();
+        if (typeof toggleCadastral === 'function') toggleCadastral();
     }
 
-    // // 4. [줌 리셋 보장]: VIP 방어막 간섭이 완전 청소되었으므로, 최초 줌 12레벨 위치로 막힘없이 이동 지시!
-    // var initialLatLng = new naver.maps.LatLng(36.55, 127.25);
-    // map.setZoom(12);
-    // map.panTo(initialLatLng);
-
-    // 5. 타이밍 가드: 지도가 목적지(줌 12)에 안전하게 안착해 멈춘 시점에 최종 12레벨 광역 필터 연산을 얹어 배지를 다시 뿜어냅니다!
-    naver.maps.Event.once(map, "idle", function() {
-        applyFilters(); 
-    });
+    // 5. ⚡ [동기화 핵심]: 현재 지도 줌/지역 상태를 유지한 채 필터링 레이어만 즉시 동적 갱신
+    if (typeof applyFilters === 'function') {
+        applyFilters();
+    }
 }
