@@ -806,7 +806,17 @@ function resetMapToDefault() {
         map.panTo(new naver.maps.LatLng(36.55, 127.25));
     }
     
-    isSidebarManuallyClosed = false
+    isSidebarManuallyClosed = false; 
+
+    // 🌟 [디폴트 기획 구현]: 사용자가 해제해 두었던 모든 버튼들을 '전체 선택(On)' 상태로 강제 복구!
+    var btnLand = document.getElementById("btn-land"); if (btnLand) btnLand.classList.add("active-land");
+    var btnFactory = document.getElementById("btn-factory"); if (btnFactory) btnFactory.classList.add("active-factory");
+    var btnHouse = document.getElementById("btn-house"); if (btnHouse) btnHouse.classList.add("active-house");
+
+    var btnMaemae = document.getElementById("btn-maemae"); if (btnMaemae) btnMaemae.classList.add("active-maemae");
+    var btnJeonse = document.getElementById("btn-jeonse"); if (btnJeonse) btnJeonse.classList.add("active-jeonse");
+    var btnWolse = document.getElementById("btn-wolse"); if (btnWolse) btnWolse.classList.add("active-wolse");
+    var btnDangi = document.getElementById("btn-dangi"); if (btnDangi) btnDangi.classList.add("active-dangi");
 
     // 🌟 [핵심 해결책]: 지도가 12레벨 목적지에 '완벽히 도착하여 멈춘 정지 타이밍(idle)'에 딱 한 번만 필터 연산 결합!
     // 한번만 실행되도록 naver.maps.Event.once 레이어를 걸어 타이밍 엇박자를 원천 차단합니다.
