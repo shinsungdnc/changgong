@@ -491,13 +491,16 @@ function updateClustering(validMarkers) {
     // });
 }
 // =========================================================================
-// 🎯 개별 매물 카드 선택 및 중심 가이드라인 원 동적 렌더링 엔진 [8번 블록 절대생존 가드판 - 안정화]
+// 🎯 8번 블록: 개별 매물 마커 클릭 이벤트 엔진 수정
 // =========================================================================
 function selectProperty(index, marker) {
     var listContainer = document.getElementById("property-list");
     var targetItem = document.getElementById("item-" + index);
     var targetDetail = document.getElementById("detail-" + index); 
     var panel = document.getElementById("right-stats-panel");
+    
+    // 🌟 [추가 기획]: 마커 클릭 시 목록창을 제어하는 좌측 메인 패널 오브젝트 가져오기
+    var listPanel = document.getElementById("property-list-panel");
     
     if (!targetItem) return;
 
@@ -512,18 +515,23 @@ function selectProperty(index, marker) {
         
         if (panel) panel.classList.remove("active", "expanded"); 
         
-        // VIP 해제 후 한 템포 쉬고 필터 적용하여 원상 복구
         setTimeout(function() { applyFilters(); }, 50);
         return; 
     }
 
-    // ① 기존에 찍혀있던 모든 마커의 VIP 절대 권한을 일제히 초기화 청소합니다.
+    // ① 기존에 찍혀있던 모든 마커의 VIP 절대 권한 초기화 청소
     markers.forEach(function(m) { m.set("isForcedVip", false); });
 
     document.querySelectorAll(".property-detail").forEach(function(el) { el.style.display = "none"; });
     document.querySelectorAll(".property-item").forEach(function(el) { el.classList.remove("active"); });
 
-    // ② UI를 먼저 안전하게 활성화하여 노출합니다.
+    // 🌟 [마커 클릭 시 목록창 강제 수복]: 숨겨져 있던 목록창을 다시 열고, 수동 닫힘 장부 스위치를 완전히 해제!
+    if (listPanel) {
+        listPanel.style.display = "flex";
+        isSidebarManuallyClosed = false; 
+    }
+
+    // ② UI를 안전하게 활성화하여 노출
     if (targetDetail) targetDetail.style.display = "block"; 
     targetItem.classList.add("active");
 
@@ -534,7 +542,7 @@ function selectProperty(index, marker) {
         });
     }
 
-    // 🛡️ [절대 생존 가드]: 카메라가 이동하기 전에 생존 낙인을 먼저 박아야 idle 리셋을 방어합니다.
+    // ③ 카메라가 이동하기 전에 생존 낙인을 박아 idle 리셋 방어
     marker.set("isForcedVip", true);
     marker.setMap(map); 
     
@@ -549,7 +557,7 @@ function selectProperty(index, marker) {
         strokeWeight: 2 
     });
     
-    // ③ 모든 상태가 안전하게 고정된 후 지도를 이동시킵니다.
+    // ④ 모든 상태가 안전하게 고정된 후 지도를 이동
     var targetPos = marker.getPosition(); 
     if (map.getZoom() < 16) { 
         map.morph(targetPos, 16); 
