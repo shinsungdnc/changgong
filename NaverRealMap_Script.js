@@ -760,3 +760,47 @@ document.addEventListener("DOMContentLoaded", function() {
         naver.maps.Event.addListener(map, "dragend", function() { applyFilters(); });
     }
 });
+
+// 💡 [엔진 전면 초기화]: 새로고침 없이 모든 필터 버튼과 지도 시야를 최초 상태(전체 선택)로 복구
+function resetMapToDefault() {
+    // 1. 지도 시야를 최초 기획 사양(세종시 중심 좌표, 줌 12레벨)으로 부드럽게 복구
+    var initialLatLng = new naver.maps.LatLng(36.55, 127.25);
+    map.setZoom(12);
+    map.panTo(initialLatLng);
+
+    // 2. 행정구역 변수 및 드롭다운 UI '전체'로 원상복구
+    currentTown = "전체";
+    currentRi = "전체";
+    
+    var townSelector = document.getElementById("town-selector");
+    if (townSelector) townSelector.value = "전체";
+    
+    var riSelector = document.getElementById("ri-selector");
+    if (riSelector) { riSelector.value = "전체"; riSelector.style.display = "none"; }
+
+    // 3. [모든 필터 원위치]: 카테고리 탭 마스터 배열을 최초의 '전체 활성화' 상태로 리셋
+    currentCategories = ["토지", "공장", "주택"];
+    document.getElementById("btn-land").classList.add("active-land");
+    document.getElementById("btn-factory").classList.add("active-factory");
+    document.getElementById("btn-house").classList.add("active-house");
+
+    // 4. [모든 거래유형 원위치]: 매매/전세/월세/단기 버튼 전원 On 복구
+    currentDealTypes = ["매매", "전세", "월세", "단기"];
+    document.getElementById("btn-maemae").classList.add("active-maemae");
+    document.getElementById("btn-jeonse").classList.add("active-jeonse");
+    document.getElementById("btn-wolse").classList.add("active-wolse");
+    document.getElementById("btn-dangi").classList.add("active-dangi");
+
+    // 5. 상세 소분류 팝업 패널을 닫고 내부 체크 상태 초기화
+    currentDetail = [];
+    var detailPanel = document.getElementById("detail-selector");
+    if (detailPanel) detailPanel.style.display = "none";
+
+    // 6. 융합 가이드라인 원(Circle) 제거 및 우측 브리핑 패널 닫기
+    if (currentBoundaryCircle) { currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }
+    var rightPanel = document.getElementById("right-stats-panel");
+    if (rightPanel) rightPanel.classList.remove("active", "expanded");
+
+    // 7. 청소 완료된 마스터 배열 상태를 바탕으로 화면 레이어 깨끗하게 새로고침
+    applyFilters();
+}
