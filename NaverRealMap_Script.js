@@ -722,7 +722,7 @@ function changeTown(town) {
     if (town === "전체") { applyFilters(); } 
     else {
         var sumLat = 0, sumLng = 0, matchCount = 0; properties.forEach(function(p) { if (p.town === town) { sumLat += p.lat; sumLng += p.lng; matchCount++; } });
-        if (matchCount > 0) { map.setZoom(town.endsWith('동') ? 17 : 15); map.panTo(new naver.maps.LatLng(sumLat / matchCount, sumLng / matchCount)); }
+        if (matchCount > 0) { map.setZoom(town.endsWith('면') ? 15 : 17); map.panTo(new naver.maps.LatLng(sumLat / matchCount, sumLng / matchCount)); }
         applyFilters();
     }
 }
