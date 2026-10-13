@@ -771,33 +771,52 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 // =========================================================================
-// 📁 10번 최종 블록: 리셋 시 지적도 On 디폴트 사양 및 줌 12 회군을 완수한 완결판
+// 📁 10번 최종 블록: 소분류 내부 칩(체크박스) 초기화까지 완벽하게 마감한 최종 종결판
 // =========================================================================
 function resetMapToDefault() {
-    // 1. 가이드라인 원(Circle) 및 우측 상세 패널 장부 즉시 파괴
+    // 1. 가이드라인 원(Circle) 및 우측 상세 브리핑 패널 장부 파괴
     if (currentBoundaryCircle) { currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }
     var rightPanel = document.getElementById("right-stats-panel");
     if (rightPanel) rightPanel.classList.remove("active", "expanded");
 
-    // 2. 수동 닫힘 기억 장치도 첫 로딩 청정 상태(열림)로 해제
+    // 2. 목록창 수동 닫힘 기억 장치 해제 (첫 로딩처럼 노출 대기)
     isSidebarManuallyClosed = false;
 
-    // 3. 필터부 데이터 장부를 최초 상태("전체 선택")로 충전
-    currentCategories = ["토지", "공장", "주택"];
-    currentDealTypes = ["매매", "전세", "월세", "단기"];
-    currentDetail = [];
+    // 3. 행정구역 선택 드롭다운 상자 '전체' 상태로 원상복구
     currentTown = "전체";
     currentRi = "전체";
-    
     var townSelector = document.getElementById("town-selector"); if (townSelector) townSelector.value = "전체";
     var riSelector = document.getElementById("ri-selector"); if (riSelector) { riSelector.value = "전체"; riSelector.style.display = "none"; }
 
-    // 🌟 [지적도 디폴트 On 복구]: 지적도가 꺼져 있는 상태라면, 순정 토글 함수를 강제로 기동시켜 '레이어 On + 버튼 불빛 노랗게 On'을 동시 달성!
-    if (typeof cadastralLayer !== 'undefined' && cadastralLayer && !cadastralLayer.getMap()) {
-        toggleCadastral(); 
+    // 🌟 [카테고리 버튼 순정 복구]: 꺼져 있는 카테고리가 있다면 순정 토글 함수를 원격 가동하여 On!
+    if (currentCategories.indexOf("토지") === -1) toggleCategory("토지");
+    if (currentCategories.indexOf("공장") === -1) toggleCategory("공장");
+    if (currentCategories.indexOf("주택") === -1) toggleCategory("주택");
+
+    // 🌟 [거래유형 버튼 순정 복구]: 꺼져 있는 거래방식이 있다면 순정 토글 함수를 원격 가동하여 On!
+    if (currentDealTypes.indexOf("매매") === -1) toggleDealType("매매");
+    if (currentDealTypes.indexOf("전세") === -1) toggleDealType("전세");
+    if (currentDealTypes.indexOf("월세") === -1) toggleDealType("월세");
+    if (currentDealTypes.indexOf("단기") === -1) toggleDealType("단기");
+
+    // 🌟 [소분류 내부 칩 & 장부 완전 리셋]: 카테고리가 꽉 찬 상태에서 순정 엔진을 호출하여 
+    //    특정 것만 선택되어 있던 소분류 데이터와 체크박스UI를 최초 '전체 선택' 상태로 깨끗하게 공장 초기화!
+    if (typeof updateDetailSelectorOptions === 'function') {
+        updateDetailSelectorOptions();
     }
 
-    // 4. 자바스크립트 스레드 중단 현상이 원천 차단되었으므로, 최초 줌 레벨 12 위치로 막힘없이 이동 지시!
+    // 🌟 ['선택' 패널 원격 닫기]: 소분류 칩들이 전체 선택으로 이쁘게 초기화된 후, 패널 창을 첫 로딩처럼 깔끔하게 닫음 처리!
+    var detailPanel = document.getElementById("detail-selector");
+    if (detailPanel && (detailPanel.style.display === "flex" || detailPanel.style.display !== "none" && detailPanel.style.display !== "")) {
+        toggleDetailSelectorPanel();
+    }
+
+    // 🌟 [지적도 버튼 순정 복구]: 지적도가 꺼져 있는 상태라면 순정 토글을 실행시켜 레이어와 버튼 불빛을 동시 On!
+    if (typeof cadastralLayer !== 'undefined' && cadastralLayer && !cadastralLayer.getMap()) {
+        toggleCadastral();
+    }
+
+    // 4. [줌 리셋 보장]: 코드 충돌이 완벽히 해결되었으므로 순정 엔진을 호출하여 최초 줌 12레벨로 회군 지시!
     if (typeof window.initMapPipeline === 'function') {
         window.initMapPipeline(); 
     } else {
@@ -805,7 +824,7 @@ function resetMapToDefault() {
         map.panTo(new naver.maps.LatLng(36.55, 127.25));
     }
 
-    // 5. 타이밍 가드: 지도가 목적지(줌 12)에 완벽히 정지한 타이밍(idle)에 매물 데이터 필터 결합!
+    // 5. 타이밍 가드: 지도가 목적지(줌 12)에 안전하게 안착해 멈춘 시점에 매물 연산 최종 결합!
     naver.maps.Event.once(map, "idle", function() {
         applyFilters(); 
     });
