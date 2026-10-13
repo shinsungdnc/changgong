@@ -785,40 +785,45 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 // =========================================================================
-// 🎛️ [최종 마스터 완결판] 리로드와 완벽히 분리된 순정 필터 전용 초기화 엔진
+// 🎛️ [최종 백엔드 동기화 완결판] 현재 지도/지역/마커 절대 유지, 오직 필터만 원위치
 // =========================================================================
 function resetFiltersOnly() {
-    // 1. 📂 매물종류 (대분류 카테고리) 순정 엔진 연동 복구 [10번 블록 함수 강제 역호출]
-    // 현재 꺼져 있어서 배열(currentCategories)에 없는 카테고리가 있다면 순정 토글을 실행해 켭니다.
-    if (currentCategories.indexOf("토지") === -1) toggleCategory("토지");
-    if (currentCategories.indexOf("공장") === -1) toggleCategory("공장");
-    if (currentCategories.indexOf("주택") === -1) toggleCategory("주택");
+    // 1. 📂 매물종류(대분류) 데이터 배열 복구 및 백엔드 규격 ID 불빛 강제 점등
+    currentCategories = ["토지", "공장", "주택"];
+    
+    var btnLand = document.getElementById("btn-land"); if (btnLand) btnLand.classList.add("active-land");
+    var btnFactory = document.getElementById("btn-factory"); if (btnFactory) btnFactory.classList.add("active-factory");
+    var btnHouse = document.getElementById("btn-house"); if (btnHouse) btnHouse.classList.add("active-house");
 
-    // 2. 💰 구분 (매매/전세/월세/단기 거래유형) 순정 엔진 연동 복구 [10번 블록 함수 강제 역호출]
-    // 현재 꺼져 있어서 배열(currentDealTypes)에 없는 거래 방식이 있다면 순정 토글을 실행해 켭니다.
-    if (currentDealTypes.indexOf("매매") === -1) toggleDealType("매매");
-    if (currentDealTypes.indexOf("전세") === -1) toggleDealType("전세");
-    if (currentDealTypes.indexOf("월세") === -1) toggleDealType("월세");
-    if (currentDealTypes.indexOf("단기") === -1) toggleDealType("단기");
+    // 2. 💰 구분(거래 유형) 데이터 배열 복구 및 버튼 불빛 강제 점등
+    currentDealTypes = ["매매", "전세", "월세", "단기"];
+    
+    var btnMaemae = document.getElementById("btn-maemae"); if (btnMaemae) btnMaemae.classList.add("active-maemae");
+    var btnJeonse = document.getElementById("btn-jeonse"); if (btnJeonse) btnJeonse.classList.add("active-jeonse");
+    var btnWolse = document.getElementById("btn-wolse"); if (btnWolse) btnWolse.classList.add("active-wolse");
+    var btnDangi = document.getElementById("btn-dangi"); if (btnDangi) btnDangi.classList.add("active-dangi");
 
-    // 3. ⚙️ 소분류 내부 칩 & 장부 완전 리셋 (최초 '전체 선택' 상태 복구)
+    // 3. ⚙️ '선택' 패널(소분류 칩) 장부 초기화 및 열려 있다면 화면에서 닫기
     if (typeof updateDetailSelectorOptions === 'function') {
-        updateDetailSelectorOptions();
+        updateDetailSelectorOptions(); 
     }
-
-    // 4. 🛍️ 열려 있는 '소분류 선택 패널'이 있다면 첫 로딩처럼 깔끔하게 닫음 처리
     var detailPanel = document.getElementById("detail-selector");
-    if (detailPanel && (detailPanel.style.display === "flex" || detailPanel.style.display !== "none" && detailPanel.style.display !== "")) {
-        if (typeof toggleDetailSelectorPanel === 'function') toggleDetailSelectorPanel();
+    if (detailPanel && detailPanel.style.display !== "none" && detailPanel.style.display !== "") {
+        detailPanel.style.display = "none";
     }
 
-    // 5. 🗺️ 지적 버튼 순정 복구 (현재 지적도가 지도에서 꺼져 있는 상태라면 순정 토글을 기동하여 On)
+    // 4. 🗺️ 지적 버튼 강제 복구 (지적도가 꺼져 있다면 백엔드 인라인 스타일 규격 그대로 활성화)
     if (typeof cadastralLayer !== 'undefined' && cadastralLayer && !cadastralLayer.getMap()) {
-        if (typeof toggleCadastral === 'function') toggleCadastral();
+        cadastralLayer.setMap(map);
+        var btnCadastral = document.getElementById("btn-cadastral");
+        if (btnCadastral) {
+            btnCadastral.style.setProperty("background", "#DCF65C", "important");
+            btnCadastral.style.setProperty("color", "#111111", "important");
+            btnCadastral.style.setProperty("border", "1px solid #99bd0e", "important");
+        }
     }
 
-    // 6. 🛡️ [중요 - 지역 수호 가드]: applyFilters() 실행 전 현재 드롭다운에 고정된 지역 세팅 장부 방어
-    // 필터 연산이 돌면서 드롭다운 선택 값을 '전체'로 덮어쓰는 버그를 차단하기 위해 현재 선택 상태를 고정합니다.
+    // 5. 🛡️ [지역 사수 가드]: 리셋 연산 도중 현재 선택된 드롭다운 장부가 '전체'로 덮어씌워지는 현상 원천 차단
     var townSelector = document.getElementById("town-selector");
     if (townSelector && townSelector.value !== "전체") {
         currentTown = townSelector.value;
@@ -828,7 +833,7 @@ function resetFiltersOnly() {
         currentRi = riSelector.value;
     }
 
-    // 7. ⚡ 변경된 순정 장부 데이터를 지도 마커와 리스트에 즉시 반영 및 강제 동기화
+    // 6. ⚡ 갱신된 청정 필터 조건 데이터를 지도와 매물수에 즉시 주입 및 실시간 렌더링
     if (typeof applyFilters === 'function') {
         applyFilters();
     }
