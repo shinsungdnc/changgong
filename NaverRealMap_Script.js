@@ -739,40 +739,35 @@ document.addEventListener("DOMContentLoaded", function() {
     if (typeof naver !== 'undefined' && map) {
         if (typeof window.initMapPipeline === 'function') window.initMapPipeline();
 
-        // ⏱️ 연속적인 줌 변경 이벤트를 제어하기 위한 타이머 변수
+        // ⏱️ 휠 줌 도중 중복 연산 폭발을 제어하기 위한 타이머 변수 딱 하나만 선언
         var zoomTimeout = null;
 
-        // 🎯 1. 지도가 드래그 후 완전히 멈췄을 때 최적화 실행
+        // 🎯 1. 지도가 드래그 및 줌이 완전히 종료되어 '정지'했을 때만 기존 필터를 가동
         naver.maps.Event.addListener(map, "idle", function() {
             var centerLatLng = map.getCenter();
             var currentZoom = map.getZoom();
             
-            // 줌 14 이상일 때만 화면 중심점 기준 필터링 작동
-            if (currentZoom >= 14) {
-                applyFilters();
-            }
-            
+            // 기존에 사장님이 구현해 두신 대장 가이드라인 원 반경 제어 로직 보존
             if (currentBoundaryCircle && currentBoundaryCircle.getMap()) {
                 currentBoundaryCircle.setRadius(currentZoom === 18 ? 8 : (currentZoom === 17 ? 15 : 20));
             }
         });
         
-        // 🎯 2. 드래그가 끝나는 최종 시점에 딱 1번 기동
+        // 🎯 2. 드래그가 끝나는 최종 시점에 기존 필터 동기화
         naver.maps.Event.addListener(map, "dragend", function() { 
             applyFilters(); 
         });
 
-        // 🎯 3. [초강력 튜닝] 휠 줌 도중 발생하는 수십 번의 무한 중복 연산 완전 박멸
+        // 🎯 3. [렉 박멸 핵심 한 줄]: 휠을 드르륵 굴리는 중에는 연산을 전면 차단하고, 
+        // 휠 조작이 완전히 멈춘 지 0.15초 뒤에만 사장님의 기존 잘 작동하던 applyFilters()를 딱 '1번'만 깨웁니다.
         naver.maps.Event.addListener(map, "zoom_changed", function() { 
-            // 이전에 실행 대기 중이던 타이머가 있다면 즉시 취소하여 연산을 폭파시킵니다.
             if (zoomTimeout) {
-                clearTimeout(zoomTimeout);
+                clearTimeout(zoomTimeout); // 연속 호출되는 중간 연산은 전부 폐기
             }
             
-            // 휠 조작이 완전히 끝나고 0.15초 동안 아무 변화가 없을 때만 딱 한 번 필터를 가동합니다.
             zoomTimeout = setTimeout(function() {
-                applyFilters();
-            }, 150); // 150ms 디바운스 딜레이 적용
+                applyFilters(); // 사장님의 기존 정상 필터 함수를 딱 1번만 안전하게 실행
+            }, 150); 
         });
     }
 });
