@@ -397,7 +397,7 @@ function applyFilters() {
             var vTownMarker = new naver.maps.Marker({ position: townLatLng, map: map, icon: { content: townClusterHtml, anchor: new naver.maps.Point(0, 0) }, clickable: true });
 
             naver.maps.Event.addListener(vTownMarker, "click", function() {
-                var targetZoom = (tName.indexOf('동') !== -1) ? 17 : 15; 
+                var targetZoom = (tName.endsWith('동') !== -1) ? 17 : 15; 
                 map.morph(townLatLng, targetZoom);
                 var townSelector = document.getElementById("town-selector"); 
                 if (townSelector) { townSelector.value = tName; currentTown = tName; currentRi = "전체"; }
