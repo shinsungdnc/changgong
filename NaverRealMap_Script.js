@@ -761,15 +761,14 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 });
 
-// 💡 [엔진 전면 초기화]: 새로고침 없이 모든 필터 버튼과 지도 시야를 최초 상태(전체 선택)로 복구
-// 💡 [엔진 전면 초기화 - 오차 없는 완벽 방어막 버전]
+// 💡 [엔진 전면 초기화 - 완결판]: 최초 기동 함수(initMap)를 재호출하여 오차 없이 100% 원상복구
 function resetMapToDefault() {
     // 1. 지도 시야를 최초 기획 사양(세종시 중심 좌표, 줌 12레벨)으로 복구
     var initialLatLng = new naver.maps.LatLng(36.55, 127.25);
     map.setZoom(12);
     map.panTo(initialLatLng);
 
-    // 2. 행정구역 드롭다운 및 선택 변수 전면 청정 초기화
+    // 2. 행정구역 선택 변수 정제
     currentTown = "전체";
     currentRi = "전체";
     
@@ -779,34 +778,15 @@ function resetMapToDefault() {
     var riSelector = document.getElementById("ri-selector");
     if (riSelector) { riSelector.value = "전체"; riSelector.style.display = "none"; }
 
-    // 3. 🛡️ [UI 충돌 방어]: 기존 카테고리 배열을 비우고, 안전하게 하드코딩 대신 
-    //    이미 검증된 상단 개별 토글 함수를 원격 호출하여 3대 장부를 전원 On 시킵니다.
-    currentCategories = [];
-    if (typeof toggleCategory === 'function') {
-        toggleCategory('토지');
-        toggleCategory('공장');
-        toggleCategory('주택');
-    }
-
-    // 4. 🛡️ 거래 방식 4대 스위치 배열도 깨끗이 비운 뒤, 순정 함수를 대리 실행해 전원 On 시킵니다.
-    currentDealTypes = [];
-    if (typeof toggleDealType === 'function') {
-        toggleDealType('매매');
-        toggleDealType('전세');
-        toggleDealType('월세');
-        toggleDealType('단기');
-    }
-
-    // 5. 상세 소분류 패널 및 선택 내역 올클리어
-    currentDetail = [];
-    var detailPanel = document.getElementById("detail-selector");
-    if (detailPanel) detailPanel.style.display = "none";
-
-    // 6. 가이드라인 원(Circle) 및 우측 브리핑 패널 즉시 파괴
+    // 3. 가이드라인 원(Circle) 및 우측 브리핑 패널 즉시 파괴
     if (currentBoundaryCircle) { currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }
     var rightPanel = document.getElementById("right-stats-panel");
     if (rightPanel) rightPanel.classList.remove("active", "expanded");
 
-    // 7. 모든 안전 장치가 끝난 청정 상태를 지도 레이어와 셀렉터 매물 수량에 즉시 동기화
-    applyFilters();
+    // 4. ⚡ [핵심 버그 완전 치료]: 최초 지도 기동 함수를 재호출하여 
+    //    모든 카테고리 배열, 거래방식 배열, 상세 소분류, 상단 버튼 디자인 불빛을 
+    //    지도가 처음 켜졌을 때의 청정 상태('전체 선택')로 오차 없이 완벽하게 복구시킵니다.
+    if (typeof initMap === 'function') {
+        initMap();
+    }
 }
