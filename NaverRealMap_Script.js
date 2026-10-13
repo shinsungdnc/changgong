@@ -450,25 +450,24 @@ function applyFilters() {
     updateClustering(validMarkersForCluster);
 }
 // =========================================================================
-// 📊 줌 14레벨 이상 전용 네이버 순정 클러스터러 기동 및 배지 확대 조율 [7번 블록]
+// 📊 줌 14레벨 이상 전용 네이버 순정 클러스터러 기동 및 클릭 연동 [7번 블록 최종 수리판]
 // =========================================================================
 function updateClustering(validMarkers) {
     if (markerClustering !== null) { markerClustering.setMap(null); markerClustering = null; }
     if (!validMarkers || validMarkers.length === 0) return;
 
+    // [클릭 반응 정밀 교정] 네이버 라이브러리가 이벤트를 정상 수확하도록 옵션 재조정
     markerClustering = new MarkerClustering({
         minClusterSize: 2, 
         maxZoom: 16, 
         map: map, 
         markers: validMarkers, 
-        gridSize: 90, 
-        icons: [
-            // 🛠️ [가독성 수복]: 파란색 순정 클러스터 배지 사이즈를 기존 44px -> 50px로 큼직하게 대폭 확대
-            { 
-                content: '<div class="pure-naver-cluster" style="cursor:pointer; width:50px; height:50px; line-height:48px; font-size:13px; color:#111111; text-align:center; font-weight:bold; background:rgba(74, 211, 255, 0.95); border:1px solid #ffffff; border-radius:50%; box-shadow:0 3px 10px rgba(0,0,0,0.25); box-sizing:border-box;"></div>',
-                anchor: new naver.maps.Point(25, 25) 
-            }
-        ],
+        gridSize: 120, // 사장님 결정 사양: 120 타협 반영
+        icons: [{ 
+            // 🛠️ [중요] pointer-events 사양을 auto로 명시하여 클릭 버블링 문제를 원천 해결합니다.
+            content: '<div class="pure-naver-cluster" style="cursor:pointer; pointer-events:auto !important; width:50px; height:50px; line-height:48px; font-size:13px; color:#111111; text-align:center; font-weight:bold; background:rgba(74, 211, 255, 0.95); border:1px solid #ffffff; border-radius:50%; box-shadow:0 3px 10px rgba(0,0,0,0.25); box-sizing:border-box;"></div>', 
+            anchor: new naver.maps.Point(25, 25) 
+        }],
         stylingFunction: function(clusterMarker, count) {
             var el = clusterMarker.getElement(); 
             if (el) { 
@@ -478,13 +477,24 @@ function updateClustering(validMarkers) {
         }
     });
 
+    // 🎯 [순정 엔진 클릭 리스너 재결합] 네이버 순정 클러스터 전용 공식 이벤트 바인딩
     naver.maps.Event.addListener(markerClustering, "clusterclick", function(cluster) {
         var clusterMarkers = cluster.getClusterMember(); 
         if (!clusterMarkers || clusterMarkers.length === 0) return;
+        
+        // 해당 클러스터 뭉치에 속한 매물 마커들의 좌표 범위를 계산합니다.
         var bounds = new naver.maps.LatLngBounds(); 
-        clusterMarkers.forEach(function(m) { bounds.extend(m.getPosition()); });
+        clusterMarkers.forEach(function(m) { 
+            bounds.extend(m.getPosition()); 
+        });
+        
+        // 🚀 계산된 매물 범위로 지도를 시원하게 이동(pan) 시킵니다.
         map.panToBounds(bounds); 
-        setTimeout(function() { map.setZoom(map.getZoom() + 1); }, 150);
+        
+        // 화면 이동이 끝나는 타이밍에 맞춰 줌을 1단계 부드럽게 축소/확대 동기화합니다.
+        setTimeout(function() { 
+            map.setZoom(map.getZoom() + 1); 
+        }, 150);
     });
 }
 // =========================================================================
