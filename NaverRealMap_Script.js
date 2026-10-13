@@ -805,10 +805,10 @@ function resetMapToDefault() {
         map.setZoom(12);
         map.panTo(new naver.maps.LatLng(36.55, 127.25));
     }
-    
+
     isSidebarManuallyClosed = false; 
 
-    // 🌟 [디폴트 기획 구현]: 사용자가 해제해 두었던 모든 버튼들을 '전체 선택(On)' 상태로 강제 복구!
+    // 🌟 [필터 로직 완전 복구]: 실제 UI 버튼들과 스타일 클래스 명칭을 100% 일치시켜 강제 온(On) 처리!
     var btnLand = document.getElementById("btn-land"); if (btnLand) btnLand.classList.add("active-land");
     var btnFactory = document.getElementById("btn-factory"); if (btnFactory) btnFactory.classList.add("active-factory");
     var btnHouse = document.getElementById("btn-house"); if (btnHouse) btnHouse.classList.add("active-house");
