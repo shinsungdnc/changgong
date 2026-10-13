@@ -782,22 +782,22 @@ document.addEventListener("DOMContentLoaded", function() {
 // 📁 10번 최종 블록: 매물 선택 VIP 상태까지 깨끗하게 박멸하는 최종 마스터 완결판
 // =========================================================================
 function resetMapToDefault() {
-    // 🌟 [추가 기획 - VIP 절대 권한 원천 파괴]: 
-    //     지도 위의 모든 마커를 돌면서 숨어있던 VIP 권한(isForcedVip)을 전면 취소하고 지도에서 숨김 처리!
-    markers.forEach(function(marker) {
-        marker.set("isForcedVip", false);
-        marker.setMap(null);
-    });
+    // // 🌟 [추가 기획 - VIP 절대 권한 원천 파괴]: 
+    // //     지도 위의 모든 마커를 돌면서 숨어있던 VIP 권한(isForcedVip)을 전면 취소하고 지도에서 숨김 처리!
+    // markers.forEach(function(marker) {
+    //     marker.set("isForcedVip", false);
+    //     marker.setMap(null);
+    // });
 
-    // 🌟 [추가 기획 - 카드 리스트 불빛 및 소분류 디테일 UI 리셋]:
-    //     선택되어 노랗게 불이 들어와 있던 매물 카드의 active 클래스와 열려있던 세부 디테일 창을 전부 파괴!
-    document.querySelectorAll(".property-detail").forEach(function(el) { el.style.display = "none"; });
-    document.querySelectorAll(".property-item").forEach(function(el) { el.classList.remove("active"); });
+    // // 🌟 [추가 기획 - 카드 리스트 불빛 및 소분류 디테일 UI 리셋]:
+    // //     선택되어 노랗게 불이 들어와 있던 매물 카드의 active 클래스와 열려있던 세부 디테일 창을 전부 파괴!
+    // document.querySelectorAll(".property-detail").forEach(function(el) { el.style.display = "none"; });
+    // document.querySelectorAll(".property-item").forEach(function(el) { el.classList.remove("active"); });
 
-    // 1. 가이드라인 원(Circle) 및 우측 상세 브리핑 분석 패널 장부 즉시 청소
-    if (currentBoundaryCircle) { currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }
-    var rightPanel = document.getElementById("right-stats-panel");
-    if (rightPanel) rightPanel.classList.remove("active", "expanded");
+    // // 1. 가이드라인 원(Circle) 및 우측 상세 브리핑 분석 패널 장부 즉시 청소
+    // if (currentBoundaryCircle) { currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }
+    // var rightPanel = document.getElementById("right-stats-panel");
+    // if (rightPanel) rightPanel.classList.remove("active", "expanded");
 
     // 2. 목록창 수동 닫힘 기억 장치 해제 (첫 로딩처럼 노출 대기)
     isSidebarManuallyClosed = false;
