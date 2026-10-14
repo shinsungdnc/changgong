@@ -734,6 +734,14 @@ function expandMobilePanel(e) { if (e.target.closest('.stats-close') || e.target
 var watchPositionId = null, myLocationMarker = null;
 function toggleMyLocation() {
     var btn = document.getElementById("mylocation-btn"); if (!btn) return;
+    // 🌟 [기획 보완 핵심 코어]: 모바일에서 내 위치를 누르면 엇박자 없이 즉시 2층 필터와 3층 목록창을 한방에 스르륵 숨깁니다!
+    if (window.innerWidth <= 768) {
+        var filterPanel = document.getElementById("sidebar-header");
+        var listPanel = document.getElementById("property-list-panel");
+        if (filterPanel) filterPanel.classList.add("slide-up");
+        if (listPanel) listPanel.classList.add("slide-left");
+        isSidebarManuallyClosed = true;
+    }
     if (watchPositionId !== null) { navigator.geolocation.clearWatch(watchPositionId); watchPositionId = null; btn.classList.remove("tracking"); if (myLocationMarker) { myLocationMarker.setMap(null); myLocationMarker = null; } alert("내 위치 추적이 종료되었습니다."); return; }
     if (!navigator.geolocation) { alert("이 기기는 위치 정보를 지원하지 않습니다."); return; }
     btn.classList.add("tracking");
