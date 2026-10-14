@@ -498,73 +498,46 @@ function selectProperty(index, marker) {
     var targetItem = document.getElementById("item-" + index);
     var targetDetail = document.getElementById("detail-" + index); 
     var panel = document.getElementById("right-stats-panel");
-    
-    // 🌟 [추가 기획]: 마커 클릭 시 목록창을 제어하는 좌측 메인 패널 오브젝트 가져오기
     var listPanel = document.getElementById("property-list-panel");
-    
+    var detailPanel = document.getElementById("detail-selector");
     if (!targetItem) return;
 
-    // 🔄 선택된 카드를 다시 클릭하여 해제할 때의 처리
     if (targetItem.classList.contains("active")) {
         targetItem.classList.remove("active"); 
         if (targetDetail) targetDetail.style.display = "none";
         if (currentBoundaryCircle) { currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }
-        
-        marker.set("isForcedVip", false);
-        marker.setMap(null);
-        
-        if (panel) panel.classList.remove("active", "expanded"); 
-        
-        setTimeout(function() { applyFilters(); }, 50);
-        return; 
+        marker.set("isForcedVip", false); marker.setMap(null);
+        if (panel) panel.classList.remove("active", "expanded", "slide-right-out"); 
+        setTimeout(function() { applyFilters(); }, 50); return; 
     }
 
-    // ① 기존에 찍혀있던 모든 마커의 VIP 절대 권한 초기화 청소
     markers.forEach(function(m) { m.set("isForcedVip", false); });
-
     document.querySelectorAll(".property-detail").forEach(function(el) { el.style.display = "none"; });
     document.querySelectorAll(".property-item").forEach(function(el) { el.classList.remove("active"); });
 
-    // 🌟 [마커 클릭 시 목록창 강제 수복]: 숨겨져 있던 목록창을 다시 열고, 수동 닫힘 장부 스위치를 완전히 해제!
-    if (listPanel) {
-        listPanel.style.display = "flex";
-        isSidebarManuallyClosed = false; 
-    }
+    if (listPanel) listPanel.style.display = "flex";
+    if (panel) panel.style.display = "flex";
+    
+    setTimeout(function() {
+        if (listPanel) listPanel.classList.remove("slide-left-out");
+        if (panel) panel.classList.remove("slide-right-out");
+        if (detailPanel) { detailPanel.classList.remove("slide-up-out"); if (detailPanel.style.display === "none" || detailPanel.style.display === "") toggleDetailSelectorPanel(); }
+    }, 10);
+    
+    isSidebarManuallyClosed = false;
 
-    // ② UI를 안전하게 활성화하여 노출
     if (targetDetail) targetDetail.style.display = "block"; 
     targetItem.classList.add("active");
 
-    if (listContainer) {
-        listContainer.scrollTo({
-            top: targetItem.offsetTop - listContainer.offsetTop - 4,
-            behavior: "smooth"
-        });
-    }
+    if (listContainer) { listContainer.scrollTo({ top: targetItem.offsetTop - listContainer.offsetTop - 4, behavior: "smooth" }); }
 
-    // ③ 카메라가 이동하기 전에 생존 낙인을 박아 idle 리셋 방어
-    marker.set("isForcedVip", true);
-    marker.setMap(map); 
-    
+    marker.set("isForcedVip", true); marker.setMap(map); 
     if (currentBoundaryCircle) currentBoundaryCircle.setMap(null);
-    currentBoundaryCircle = new naver.maps.Circle({ 
-        map: map, 
-        center: marker.getPosition(), 
-        radius: 15, 
-        fillColor: "#00bfff", 
-        fillOpacity: 0.2, 
-        strokeColor: "#ff0000", 
-        strokeWeight: 2 
-    });
+    currentBoundaryCircle = new naver.maps.Circle({ map: map, center: marker.getPosition(), radius: 15, fillColor: "#00bfff", fillOpacity: 0.2, strokeColor: "#ff0000", strokeWeight: 2 });
     
-    // ④ 모든 상태가 안전하게 고정된 후 지도를 이동
     var targetPos = marker.getPosition(); 
-    if (map.getZoom() < 16) { 
-        map.morph(targetPos, 16); 
-    } else { 
-        map.panTo(targetPos); 
-    }
-    
+    if (map.getZoom() < 16) { map.morph(targetPos, 16); } else { map.panTo(targetPos); }
+    if (panel) panel.classList.add("active");
     if (typeof loadTradeStatsPanel === 'function') loadTradeStatsPanel(index);
 }
 // =========================================================================
@@ -681,10 +654,24 @@ function loadTradeStatsPanel(index) {
 var isSidebarManuallyClosed = false;
 
 function toggleSidebar() {
-    var listPanel = document.getElementById("property-list-panel"), statsPanel = document.getElementById("right-stats-panel"); if (!listPanel) return;
-    if (listPanel.style.display === "none" || listPanel.style.display === "") { listPanel.style.display = "flex"; isSidebarManuallyClosed = false; if (document.querySelector(".property-item.active") && statsPanel) statsPanel.classList.add("active"); } 
-    else { listPanel.style.display = "none"; isSidebarManuallyClosed = true; if (statsPanel) { statsPanel.classList.remove("active", "expanded"); } }
+    var listPanel = document.getElementById("property-list-panel"), statsPanel = document.getElementById("right-stats-panel"), detailPanel = document.getElementById("detail-selector"); if (!listPanel) return;
+    var hasActiveVip = document.querySelector(".property-item.active") ? true : false;
+    if (listPanel.classList.contains("slide-left-out") || listPanel.style.display === "none" || listPanel.style.display === "") { 
+        listPanel.style.display = "flex"; if (hasActiveVip && statsPanel) statsPanel.style.display = "flex";
+        setTimeout(function() { 
+            listPanel.classList.remove("slide-left-out"); if (hasActiveVip && statsPanel) statsPanel.classList.remove("slide-right-out");
+            if (detailPanel) { detailPanel.classList.remove("slide-up-out"); if (detailPanel.style.display === "none" || detailPanel.style.display === "") toggleDetailSelectorPanel(); }
+        }, 10); isSidebarManuallyClosed = false; if (hasActiveVip && statsPanel) statsPanel.classList.add("active");
+    } else { 
+        listPanel.classList.add("slide-left-out"); if (hasActiveVip && statsPanel) statsPanel.classList.add("slide-right-out");
+        if (detailPanel && detailPanel.style.display !== "none" && detailPanel.style.display !== "") detailPanel.classList.add("slide-up-out");
+        setTimeout(function() { 
+            listPanel.style.display = "none"; if (hasActiveVip && statsPanel) { statsPanel.style.display = "none"; statsPanel.classList.remove("slide-right-out"); }
+            if (detailPanel && detailPanel.style.display !== "none" && detailPanel.style.display !== "") { toggleDetailSelectorPanel(); detailPanel.classList.remove("slide-up-out"); }
+        }, 300); isSidebarManuallyClosed = true;
+    }
 }
+
 function toggleCategory(cat) {
     var btn = document.getElementById(cat === "토지" ? "btn-land" : cat === "공장" ? "btn-factory" : "btn-house"), activeClass = cat === "토지" ? "active-land" : cat === "공장" ? "active-factory" : "active-house";
     var idx = currentCategories.indexOf(cat); if (idx > -1) { currentCategories.splice(idx, 1); if (btn) btn.classList.remove(activeClass); } else { currentCategories.push(cat); if (btn) btn.classList.add(activeClass); }
