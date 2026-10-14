@@ -413,10 +413,13 @@ function applyFilters() {
     }
 
     if (listPanel) {
-        if (isSidebarManuallyClosed) {
-            listPanel.style.display = "none";
+        if (window.innerWidth <= 768) { // 모바일 전용
         } else {
-            listPanel.style.display = "flex";
+            if (isSidebarManuallyClosed) {
+                listPanel.style.display = "none";
+            } else {
+                listPanel.style.display = "flex";
+            }
         }
     }
     
@@ -750,6 +753,7 @@ function toggleMyLocation() {
         var myHtml = '<div style="position:relative;width:20px;height:20px;"><div style="position:absolute;width:14px;height:14px;background:#00bfff;border:3px solid #fff;border-radius:50%;box-shadow:0 0 5px rgba(0,0,0,0.5);z-index:2;"></div><div style="position:absolute;width:20px;height:20px;background:rgba(0,191,255,0.4);border-radius:50%;animation:pulse 2s infinite;z-index:1;"></div></div>';
         if (!myLocationMarker) { myLocationMarker = new naver.maps.Marker({ position: myLatLng, map: map, icon: { content: myHtml, anchor: new naver.maps.Point(10, 10) } }); map.setZoom(16); } else { myLocationMarker.setPosition(myLatLng); }
         map.panTo(myLatLng);
+        if (typeof applyFilters === 'function') applyFilters();
     }, function() { alert("GPS 권한을 확인해주세요."); btn.classList.remove("tracking"); watchPositionId = null; }, { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 });
 }
 function toggleCadastral() {
