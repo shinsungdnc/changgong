@@ -874,8 +874,8 @@ function resetMapToDefault() {
         toggleDetailSelectorPanel();
     }
 
-    // 🌟 [지적도 버튼 순정 복구]: 지적도가 꺼져 있는 상태라면 순정 토글을 실행시켜 레이어와 버튼 불빛을 동시 On!
-    if (typeof cadastralLayer !== 'undefined' && cadastralLayer && !cadastralLayer.getMap()) {
+    // 🌟 [지적도 버튼 순정 복구]: 초기 상태가 '꺼짐'이므로 지적도가 켜져 있다면 순정 토글을 실행시켜 완전히 끕니다!
+    if (typeof cadastralLayer !== 'undefined' && cadastralLayer && cadastralLayer.getMap()) {
         toggleCadastral();
     }
 
