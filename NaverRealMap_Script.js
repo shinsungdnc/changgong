@@ -657,19 +657,36 @@ var isSidebarManuallyClosed = false;
 function toggleSidebar() {
     var listPanel = document.getElementById("property-list-panel"), statsPanel = document.getElementById("right-stats-panel"), detailPanel = document.getElementById("detail-selector"); if (!listPanel) return;
     var hasActiveVip = document.querySelector(".property-item.active") ? true : false;
+    
     if (listPanel.classList.contains("slide-left-out") || listPanel.style.display === "none" || listPanel.style.display === "") { 
-        listPanel.style.display = "flex"; if (hasActiveVip && statsPanel) statsPanel.style.display = "flex";
-        // 💡 [동시 기동 가드] 레이아웃이 잡히는 즉시 0.01초 만에 낙인 클래스들을 동시에 지워 삼방향에서 촤라락 동시에 밀려 들어옵니다.
+        // 1. [동시 수복 레이아웃] 세 패널의 display 속성을 완전히 동시에 flex 상태로 선언합니다.
+        listPanel.style.display = "flex"; 
+        if (detailPanel) detailPanel.style.display = "flex";
+        if (hasActiveVip && statsPanel) statsPanel.style.display = "flex";
+        
+        // 2. 브라우저가 레이아웃을 인지할 시간을 준 뒤, 낙인 클래스들을 정확히 동시에 세척합니다.
         setTimeout(function() { 
-            listPanel.classList.remove("slide-left-out"); if (detailPanel) detailPanel.classList.remove("slide-up-out"); if (hasActiveVip && statsPanel) statsPanel.classList.remove("slide-right-out");
-        }, 10); isSidebarManuallyClosed = false; if (hasActiveVip && statsPanel) statsPanel.classList.add("active");
+            listPanel.classList.remove("slide-left-out");
+            if (detailPanel) detailPanel.classList.remove("slide-up-out");
+            if (hasActiveVip && statsPanel) statsPanel.classList.remove("slide-right-out");
+        }, 20);
+        isSidebarManuallyClosed = false;
+        if (hasActiveVip && statsPanel) statsPanel.classList.add("active");
     } else { 
-        // 💡 [칼박자 전멸] 순정 함수를 부르지 않고 detailPanel(소분류) 이름 그대로 직접 낙인을 찍어 세 패널이 동시에 스르륵 탈출합니다.
-        listPanel.classList.add("slide-left-out"); if (detailPanel) detailPanel.classList.add("slide-up-out"); if (hasActiveVip && statsPanel) statsPanel.classList.add("slide-right-out");
-        // 0.3초 애니메이션이 완전히 끝난 시점에 백그라운드 디스플레이만 안전하게 off 해줍니다.
+        // 3. [동시 탈출 마스터] 브라우저 리페인팅 타이밍을 맞추기 위해 세 패널에 동시에 애니메이션 낙인을 찍습니다.
+        listPanel.classList.add("slide-left-out"); 
+        if (detailPanel) detailPanel.classList.add("slide-up-out"); 
+        if (hasActiveVip && statsPanel) statsPanel.classList.add("slide-right-out");
+        
+        // 4. [동시 지연 소멸] 0.3초 무빙 애니메이션이 완벽하게 끝날 때까지 기다린 후 display를 동시에 마감합니다.
         setTimeout(function() { 
-            listPanel.style.display = "none"; if (hasActiveVip && statsPanel) { statsPanel.style.display = "none"; statsPanel.classList.remove("slide-right-out"); }
-        }, 300); isSidebarManuallyClosed = true;
+            listPanel.style.display = "none";
+            if (hasActiveVip && statsPanel) { 
+                statsPanel.style.display = "none"; 
+                statsPanel.classList.remove("slide-right-out", "active"); 
+            }
+        }, 300);
+        isSidebarManuallyClosed = true;
     }
 }
 function toggleCategory(cat) {
