@@ -924,17 +924,17 @@ function toggleRoadViewMode() {
 }
 
 function openPanorama(latlng) {
-    if (typeof naver.maps.Panorama === 'undefined') {
-        console.error("네이버 거리뷰 서브모듈이 로드되지 않았습니다. 백엔드 HTML의 maps.js 주소를 점검하세요.");
-        return;
-    }
-
     var container = document.getElementById("pano-container");
     if (!container) return;
 
     container.style.display = "block"; // 전체화면 거리뷰 방 열기
+    
+    // ⭕ [이동 버그 원천 차단] 거리뷰가 열리면 지도의 클릭 감지 장치를 즉시 해제합니다.
+    if (mapClickEventListener) {
+        naver.maps.Event.removeListener(mapClickEventListener);
+        mapClickEventListener = null;
+    }
 
-    // 전역 장부(pano)가 비어있으면 네이버 엔진 최초 생성, 있으면 좌표만 리로드하여 이동
     if (!pano) {
         pano = new naver.maps.Panorama("panorama", {
             position: latlng,
