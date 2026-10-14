@@ -954,3 +954,59 @@ function closeRoadView() {
         toggleRoadViewMode();
     }
 }
+// =========================================================================
+// 🧭 [나침반 연동] 거리뷰 - 미니맵 실시간 방향 추적 및 동기화 스캔 장치
+// =========================================================================
+var panoMinimap = null;
+var minimapMarker = null;
+
+function initPanoMinimap(latlng) {
+    // ① 미니맵 전용 지도 객체 최초 생성
+    if (!panoMinimap) {
+        panoMinimap = new naver.maps.Map('pano-minimap', {
+            center: latlng,
+            zoom: 16,
+            mapTypeId: naver.maps.MapTypeId.NORMAL,
+            logoControl: false,
+            scaleControl: false,
+            zoomControl: false,
+            mapTypeControl: false
+        });
+
+        // ② 내가 서 있는 위치와 방향을 나타낼 나침반 모양 아이콘 지정
+        minimapMarker = new naver.maps.Marker({
+            position: latlng,
+            map: panoMinimap,
+            icon: {
+                content: '<div style="width:30px; height:30px; background:url(\'https://icons8.com\') no-repeat center; background-size:contain; transition: transform 0.1s ease-out;"></div>',
+                anchor: new naver.maps.Point(15, 15)
+            }
+        });
+    } else {
+        panoMinimap.setCenter(latlng);
+        minimapMarker.setPosition(latlng);
+    }
+}
+
+// openPanorama 함수 마지막 구역 내부(pano 설정 끝난 직후)에 아래 이벤트 바인딩 로직을 추가해 주세요.
+// (거리뷰가 회전할 때마다 각도를 계산해 아이콘을 돌려주는 역할을 합니다.)
+function bindPanoEvents() {
+    if (!pano) return;
+
+    // 1. 고개 회전 시 나침반 각도 연동
+    naver.maps.Event.addListener(pano, 'pano_status_changed', function() {
+        var pov = pano.getPov();
+        var markerDiv = minimapMarker.getElement().querySelector('div');
+        if (markerDiv) {
+            // 네이버 파노라마 pan 각도를 마커 커스텀 div 회전값(CSS transform)으로 즉시 동기화
+            markerDiv.style.transform = 'rotate(' + pov.pan + 'deg)';
+        }
+    });
+
+    // 2. 거리뷰 내에서 화살표 눌러서 이동 시 미니맵 위치 동기화
+    naver.maps.Event.addListener(pano, 'position_changed', function() {
+        var newPos = pano.getPosition();
+        panoMinimap.setCenter(newPos);
+        minimapMarker.setPosition(newPos);
+    });
+}
