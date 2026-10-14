@@ -498,40 +498,48 @@ function selectProperty(index, marker) {
     var targetItem = document.getElementById("item-" + index);
     var targetDetail = document.getElementById("detail-" + index); 
     var panel = document.getElementById("right-stats-panel");
-    
-    // 🌟 [추가 기획]: 마커 클릭 시 목록창을 제어하는 좌측 메인 패널 오브젝트 가져오기
     var listPanel = document.getElementById("property-list-panel");
     
     if (!targetItem) return;
 
-    // 🔄 선택된 카드를 다시 클릭하여 해제할 때의 처리
+    // 📱 [모바일 버전 전용]: 열려있는 상세페이를 다시 터치했을 때의 [빼꼼 🔄 촤라락] 무한 순환 룰
+    if (window.innerWidth <= 768 && targetItem.classList.contains("active")) {
+        // 이미 촤라락 열려있는 상태라면 왼쪽 벽 너머로 살짝 밀어넣어 "빼꼼" 숨김 처리
+        if (!listPanel.classList.contains("slide-left-peekom")) {
+            listPanel.classList.add("slide-left-peekom"); 
+        } else {
+            // 빼꼼 숨어있던 상태라면 다시 원래의 완전 노출("촤라락") 상태로 복구
+            listPanel.classList.remove("slide-left-peekom"); 
+        }
+        return; // 토글 후 연산 종료
+    }
+
+    // 🔀 [모바일 교차 탐색 처리]: 다른 마커를 클릭하는 순간, 기존 빼꼼 상태를 파괴하고 "강제 촤라락" 수복 준비
+    if (window.innerWidth <= 768 && listPanel) {
+        listPanel.classList.remove("slide-left-peekom", "slide-left"); 
+    }
+
+    // 🔄 기존에 선택되어 있던 카드 불빛 및 디테일 창 정리 청소 (공통)
     if (targetItem.classList.contains("active")) {
         targetItem.classList.remove("active"); 
         if (targetDetail) targetDetail.style.display = "none";
         if (currentBoundaryCircle) { currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }
-        
         marker.set("isForcedVip", false);
         marker.setMap(null);
-        
         if (panel) panel.classList.remove("active", "expanded"); 
-        
         setTimeout(function() { applyFilters(); }, 50);
         return; 
     }
 
-    // ① 기존에 찍혀있던 모든 마커의 VIP 절대 권한 초기화 청소
     markers.forEach(function(m) { m.set("isForcedVip", false); });
-
     document.querySelectorAll(".property-detail").forEach(function(el) { el.style.display = "none"; });
     document.querySelectorAll(".property-item").forEach(function(el) { el.classList.remove("active"); });
 
-    // 🌟 [마커 클릭 시 목록창 강제 수복]: 숨겨져 있던 목록창을 다시 열고, 수동 닫힘 장부 스위치를 완전히 해제!
     if (listPanel) {
         listPanel.style.display = "flex";
         isSidebarManuallyClosed = false; 
     }
 
-    // ② UI를 안전하게 활성화하여 노출
     if (targetDetail) targetDetail.style.display = "block"; 
     targetItem.classList.add("active");
 
@@ -542,7 +550,6 @@ function selectProperty(index, marker) {
         });
     }
 
-    // ③ 카메라가 이동하기 전에 생존 낙인을 박아 idle 리셋 방어
     marker.set("isForcedVip", true);
     marker.setMap(map); 
     
@@ -557,7 +564,6 @@ function selectProperty(index, marker) {
         strokeWeight: 2 
     });
     
-    // ④ 모든 상태가 안전하게 고정된 후 지도를 이동
     var targetPos = marker.getPosition(); 
     if (map.getZoom() < 16) { 
         map.morph(targetPos, 16); 
@@ -565,6 +571,12 @@ function selectProperty(index, marker) {
         map.panTo(targetPos); 
     }
     
+    // 📱 [모바일 버전 전용]: 마커 최초 클릭 시 하단 실거래가는 언제나 헤더만 "빼꼼" 노출 상태 고정
+    if (window.innerWidth <= 768 && panel) {
+        panel.classList.remove("expanded"); // 혹시 열려있었다면 확장 해제
+        panel.classList.add("active");      // 빼꼼 상태 고정
+    }
+
     if (typeof loadTradeStatsPanel === 'function') loadTradeStatsPanel(index);
 }
 // =========================================================================
@@ -681,34 +693,35 @@ function loadTradeStatsPanel(index) {
 var isSidebarManuallyClosed = false;
 
 function toggleSidebar() {
-    // 💡 [기획 반영]: 2층 필터부(#sidebar-header) 엘리먼트 추적 코드를 새로 추가했습니다.
     var filterPanel = document.getElementById("sidebar-header"),
         listPanel = document.getElementById("property-list-panel"), 
         statsPanel = document.getElementById("right-stats-panel"); 
         
     if (!listPanel || !filterPanel) return;
 
-    // [숨김 -> 나타남]: 마스터 버튼을 눌러 세 가지를 동시에 원래대로 복구하는 타이밍
-    if (listPanel.style.display === "none" || listPanel.style.display === "") { 
-        filterPanel.style.display = "block"; // 2층 필터부 나타남
-        listPanel.style.display = "flex";    // 3층 목록창 나타남
+    // 📱 [모바일 버전 전용 트랙]: 숨김 상태에서 노출 상태로 역전 동작
+    if (window.innerWidth <= 768) {
+        if (filterPanel.classList.contains("slide-up")) {
+            filterPanel.classList.remove("slide-up");   // 2층 필터부 노출
+            listPanel.classList.remove("slide-left");   // 3층 목록창 노출
+        } else {
+            filterPanel.classList.add("slide-up");     // 2층 필터부 숨김
+            listPanel.classList.add("slide-left");     // 3층 목록창 숨김
+        }
+        return; // 모바일 제어 마감
+    }
+
+    // 💻 [기존 PC 버전 트랙]: 노출 상태에서 숨김 상태로 동작
+    if (listPanel.classList.contains("slide-left")) { 
+        filterPanel.classList.remove("slide-up");
+        listPanel.classList.remove("slide-left");
         isSidebarManuallyClosed = false; 
-        
-        // 💡 [기획 반영]: 마커 클릭으로 우측 실거래 패널이 열려있던 상태였다면 동시 복구
-        if (document.querySelector(".property-item.active") && statsPanel) {
-            statsPanel.classList.add("active");
-        } 
-    } 
-    // [보여짐 -> 숨김]: 마스터 버튼을 눌러 세 가지를 한방에 완전히 지우는 타이밍
-    else { 
-        filterPanel.style.display = "none";  // 2층 필터부 숨김 (기존 누락 항목 추가)
-        listPanel.style.display = "none";    // 3층 목록창 숨김
+        if (document.querySelector(".property-item.active") && statsPanel) statsPanel.classList.add("active");
+    } else { 
+        filterPanel.classList.add("slide-up");
+        listPanel.classList.add("slide-left");
         isSidebarManuallyClosed = true; 
-        
-        // 💡 [기획 반영]: 우측 실거래 패널까지 한방에 깨끗하게 숨김
-        if (statsPanel) { 
-            statsPanel.classList.remove("active", "expanded"); 
-        } 
+        if (statsPanel) statsPanel.classList.remove("active", "expanded");
     }
 }
 function toggleCategory(cat) {
