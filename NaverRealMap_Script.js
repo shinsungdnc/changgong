@@ -7,10 +7,11 @@ if (typeof townList === 'undefined') townList = [];
 if (typeof townCountsFromBackend === 'undefined') townCountsFromBackend = {};
 if (typeof realTradeStats === 'undefined') realTradeStats = {};
 if (typeof APP_CONFIG === 'undefined') {
-    var APP_CONFIG = { urlNaverReal: 'https://naver.com', urlNaverMap: 'https://naver.com', urlEumLand: 'http://eum.go.kr' };
+    var APP_CONFIG = { urlNaverReal: 'https://naver.com', urlNaverMap: 'https://naver.com', urlEumLand: 'http://eum.go.kr',  };
 }
 
 var markers = [];
+var pano = null;
 var currentCategories = ["토지", "공장", "주택"];
 var currentDetail = []; 
 var currentTown = "전체";
@@ -888,4 +889,63 @@ function resetMapToDefault() {
     naver.maps.Event.once(map, "idle", function() {
         applyFilters(); 
     });
+}
+// =========================================================================
+// 🎥 [기획 완결] 네이버 순정 방식 독립 거리뷰 제어 및 지도 클릭 스캔 엔진
+// =========================================================================
+var isRoadViewMode = false;
+var mapClickEventListener = null;
+
+function toggleRoadViewMode() {
+    var btn = document.getElementById("roadview-btn");
+    if (!btn) return;
+
+    isRoadViewMode = !isRoadViewMode;
+
+    if (isRoadViewMode) {
+        // ① 거리뷰 모드 On: 버튼 활성화 불빛을 켜고 마우스 커서를 조준경으로 변경
+        btn.classList.add("active");
+        map.setCursor("crosshair");
+        
+        // ② 지도 클릭 이벤트 리스너 바인딩 (사용자가 찍은 도로 좌표 수확 장치)
+        mapClickEventListener = naver.maps.Event.addListener(map, 'click', function(e) {
+            var clickedLatLng = e.coord; // 마우스로 콕 찍은 위치의 위경도 좌표
+            openPanorama(clickedLatLng);
+        });
+    } else {
+        // ③ 거리뷰 모드 Off: 일반 마우스 상태로 원상복구 및 스캔 장치 해제
+        btn.classList.remove("active");
+        map.setCursor("url(" + APP_CONFIG.urlNaverCursor + "), default");
+        if (mapClickEventListener) {
+            naver.maps.Event.removeListener(mapClickEventListener);
+            mapClickEventListener = null;
+        }
+    }
+}
+
+function openPanorama(latlng) {
+    var container = document.getElementById("pano-container");
+    if (!container) return;
+
+    container.style.display = "block"; // 전체화면 거리뷰 방 열기
+
+    // 전역 장부(pano)가 비어있으면 네이버 엔진 최초 생성, 있으면 좌표만 리로드하여 이동
+    if (!pano) {
+        pano = new naver.maps.Panorama("panorama", {
+            position: latlng,
+            pov: { pan: 170, tilt: 0, fov: 100 }
+        });
+    } else {
+        pano.setPosition(latlng);
+    }
+}
+
+function closeRoadView() {
+    var container = document.getElementById("pano-container");
+    if (container) container.style.display = "none"; // 거리뷰 창 닫기
+    
+    // 거리뷰를 닫고 나면 켜져 있던 거리뷰 모드(조준경 상태)를 자동으로 안전하게 완전히 꺼줍니다.
+    if (isRoadViewMode) {
+        toggleRoadViewMode();
+    }
 }
