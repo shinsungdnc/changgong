@@ -7,11 +7,10 @@ if (typeof townList === 'undefined') townList = [];
 if (typeof townCountsFromBackend === 'undefined') townCountsFromBackend = {};
 if (typeof realTradeStats === 'undefined') realTradeStats = {};
 if (typeof APP_CONFIG === 'undefined') {
-    var APP_CONFIG = { urlNaverReal: 'https://naver.com', urlNaverMap: 'https://naver.com', urlEumLand: 'http://eum.go.kr',  };
+    var APP_CONFIG = { urlNaverReal: 'https://naver.com', urlNaverMap: 'https://naver.com', urlEumLand: 'http://eum.go.kr' };
 }
 
 var markers = [];
-var pano = null;
 var currentCategories = ["토지", "공장", "주택"];
 var currentDetail = []; 
 var currentTown = "전체";
@@ -888,125 +887,5 @@ function resetMapToDefault() {
     // 5. 타이밍 가드: 지도가 목적지(줌 12)에 안전하게 안착해 멈춘 시점에 최종 12레벨 광역 필터 연산을 얹어 배지를 다시 뿜어냅니다!
     naver.maps.Event.once(map, "idle", function() {
         applyFilters(); 
-    });
-}
-// =========================================================================
-// 🎥 [기획 완결] 네이버 순정 방식 독립 거리뷰 제어 및 지도 클릭 스캔 엔진
-// =========================================================================
-var isRoadViewMode = false;
-var mapClickEventListener = null;
-
-function toggleRoadViewMode() {
-    var btn = document.getElementById("roadview-btn");
-    if (!btn) return;
-
-    isRoadViewMode = !isRoadViewMode;
-
-    if (isRoadViewMode) {
-        // ① 거리뷰 모드 On: 버튼 활성화 불빛을 켜고 마우스 커서를 조준경으로 변경
-        btn.classList.add("active");
-        map.setCursor("crosshair");
-        
-        // ② 지도 클릭 이벤트 리스너 바인딩 (사용자가 찍은 도로 좌표 수확 장치)
-        mapClickEventListener = naver.maps.Event.addListener(map, 'click', function(e) {
-            var clickedLatLng = e.coord; // 마우스로 콕 찍은 위치의 위경도 좌표
-            openPanorama(clickedLatLng);
-        });
-    } else {
-        // ③ 거리뷰 모드 Off: 일반 마우스 상태로 원상복구 및 스캔 장치 해제
-        btn.classList.remove("active");
-        map.setCursor("url(" + APP_CONFIG.urlNaverCursor + "), default");
-        if (mapClickEventListener) {
-            naver.maps.Event.removeListener(mapClickEventListener);
-            mapClickEventListener = null;
-        }
-    }
-}
-
-function openPanorama(latlng) {
-    var container = document.getElementById("pano-container");
-    if (!container) return;
-
-    container.style.display = "block"; // 전체화면 거리뷰 방 열기
-    
-    // ⭕ [이동 버그 원천 차단] 거리뷰가 열리면 지도의 클릭 감지 장치를 즉시 해제합니다.
-    if (mapClickEventListener) {
-        naver.maps.Event.removeListener(mapClickEventListener);
-        mapClickEventListener = null;
-    }
-
-    if (!pano) {
-        pano = new naver.maps.Panorama("panorama", {
-            position: latlng,
-            pov: { pan: 170, tilt: 0, fov: 100 }
-        });
-    } else {
-        pano.setPosition(latlng);
-    }
-}
-
-function closeRoadView() {
-    var container = document.getElementById("pano-container");
-    if (container) container.style.display = "none"; // 거리뷰 창 닫기
-    
-    // 거리뷰를 닫고 나면 켜져 있던 거리뷰 모드(조준경 상태)를 자동으로 안전하게 완전히 꺼줍니다.
-    if (isRoadViewMode) {
-        toggleRoadViewMode();
-    }
-}
-// =========================================================================
-// 🧭 [나침반 연동] 거리뷰 - 미니맵 실시간 방향 추적 및 동기화 스캔 장치
-// =========================================================================
-var panoMinimap = null;
-var minimapMarker = null;
-
-function initPanoMinimap(latlng) {
-    // ① 미니맵 전용 지도 객체 최초 생성
-    if (!panoMinimap) {
-        panoMinimap = new naver.maps.Map('pano-minimap', {
-            center: latlng,
-            zoom: 16,
-            mapTypeId: naver.maps.MapTypeId.NORMAL,
-            logoControl: false,
-            scaleControl: false,
-            zoomControl: false,
-            mapTypeControl: false
-        });
-
-        // ② 내가 서 있는 위치와 방향을 나타낼 나침반 모양 아이콘 지정
-        minimapMarker = new naver.maps.Marker({
-            position: latlng,
-            map: panoMinimap,
-            icon: {
-                content: '<div style="width:30px; height:30px; background:url(\'https://icons8.com\') no-repeat center; background-size:contain; transition: transform 0.1s ease-out;"></div>',
-                anchor: new naver.maps.Point(15, 15)
-            }
-        });
-    } else {
-        panoMinimap.setCenter(latlng);
-        minimapMarker.setPosition(latlng);
-    }
-}
-
-// openPanorama 함수 마지막 구역 내부(pano 설정 끝난 직후)에 아래 이벤트 바인딩 로직을 추가해 주세요.
-// (거리뷰가 회전할 때마다 각도를 계산해 아이콘을 돌려주는 역할을 합니다.)
-function bindPanoEvents() {
-    if (!pano) return;
-
-    // 1. 고개 회전 시 나침반 각도 연동
-    naver.maps.Event.addListener(pano, 'pano_status_changed', function() {
-        var pov = pano.getPov();
-        var markerDiv = minimapMarker.getElement().querySelector('div');
-        if (markerDiv) {
-            // 네이버 파노라마 pan 각도를 마커 커스텀 div 회전값(CSS transform)으로 즉시 동기화
-            markerDiv.style.transform = 'rotate(' + pov.pan + 'deg)';
-        }
-    });
-
-    // 2. 거리뷰 내에서 화살표 눌러서 이동 시 미니맵 위치 동기화
-    naver.maps.Event.addListener(pano, 'position_changed', function() {
-        var newPos = pano.getPosition();
-        panoMinimap.setCenter(newPos);
-        minimapMarker.setPosition(newPos);
     });
 }
