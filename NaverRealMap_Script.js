@@ -518,10 +518,11 @@ function selectProperty(index, marker) {
     if (listPanel) listPanel.style.display = "flex";
     if (panel) panel.style.display = "flex";
     
+    // 💡 마커 클릭 즉시 0.01초 만에 3면의 낙인을 동시에 세척하여 상단, 좌측, 우측이 칼박자로 뿜어져 나옵니다.
     setTimeout(function() {
         if (listPanel) listPanel.classList.remove("slide-left-out");
+        if (detailPanel) detailPanel.classList.remove("slide-up-out");
         if (panel) panel.classList.remove("slide-right-out");
-        if (detailPanel) { detailPanel.classList.remove("slide-up-out"); if (detailPanel.style.display === "none" || detailPanel.style.display === "") toggleDetailSelectorPanel(); }
     }, 10);
     
     isSidebarManuallyClosed = false;
@@ -658,20 +659,19 @@ function toggleSidebar() {
     var hasActiveVip = document.querySelector(".property-item.active") ? true : false;
     if (listPanel.classList.contains("slide-left-out") || listPanel.style.display === "none" || listPanel.style.display === "") { 
         listPanel.style.display = "flex"; if (hasActiveVip && statsPanel) statsPanel.style.display = "flex";
+        // 💡 [동시 기동 가드] 레이아웃이 잡히는 즉시 0.01초 만에 낙인 클래스들을 동시에 지워 삼방향에서 촤라락 동시에 밀려 들어옵니다.
         setTimeout(function() { 
-            listPanel.classList.remove("slide-left-out"); if (hasActiveVip && statsPanel) statsPanel.classList.remove("slide-right-out");
-            if (detailPanel) { detailPanel.classList.remove("slide-up-out"); if (detailPanel.style.display === "none" || detailPanel.style.display === "") toggleDetailSelectorPanel(); }
+            listPanel.classList.remove("slide-left-out"); if (detailPanel) detailPanel.classList.remove("slide-up-out"); if (hasActiveVip && statsPanel) statsPanel.classList.remove("slide-right-out");
         }, 10); isSidebarManuallyClosed = false; if (hasActiveVip && statsPanel) statsPanel.classList.add("active");
     } else { 
-        listPanel.classList.add("slide-left-out"); if (hasActiveVip && statsPanel) statsPanel.classList.add("slide-right-out");
-        if (detailPanel && detailPanel.style.display !== "none" && detailPanel.style.display !== "") detailPanel.classList.add("slide-up-out");
+        // 💡 [칼박자 전멸] 순정 함수를 부르지 않고 detailPanel(소분류) 이름 그대로 직접 낙인을 찍어 세 패널이 동시에 스르륵 탈출합니다.
+        listPanel.classList.add("slide-left-out"); if (detailPanel) detailPanel.classList.add("slide-up-out"); if (hasActiveVip && statsPanel) statsPanel.classList.add("slide-right-out");
+        // 0.3초 애니메이션이 완전히 끝난 시점에 백그라운드 디스플레이만 안전하게 off 해줍니다.
         setTimeout(function() { 
             listPanel.style.display = "none"; if (hasActiveVip && statsPanel) { statsPanel.style.display = "none"; statsPanel.classList.remove("slide-right-out"); }
-            if (detailPanel && detailPanel.style.display !== "none" && detailPanel.style.display !== "") { toggleDetailSelectorPanel(); detailPanel.classList.remove("slide-up-out"); }
         }, 300); isSidebarManuallyClosed = true;
     }
 }
-
 function toggleCategory(cat) {
     var btn = document.getElementById(cat === "토지" ? "btn-land" : cat === "공장" ? "btn-factory" : "btn-house"), activeClass = cat === "토지" ? "active-land" : cat === "공장" ? "active-factory" : "active-house";
     var idx = currentCategories.indexOf(cat); if (idx > -1) { currentCategories.splice(idx, 1); if (btn) btn.classList.remove(activeClass); } else { currentCategories.push(cat); if (btn) btn.classList.add(activeClass); }
