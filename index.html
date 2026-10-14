@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="robots" content="noindex, nofollow"> <!-- 🔒 [보안 차단] 구글/네이버 무단 수집 방지 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공부동산 매물지도 v2.0 - v.261014_1918</title>
+    <title>창공부동산 매물지도 v2.0 - v.261014_1921</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -175,8 +175,8 @@
     <a id="excel-download-btn" href="창공부동산_매물정보.xlsx" download>📊 엑셀 다운받기</a>
 </div>
 
-<!-- 🗺️ [기획 반영] 실제 거리뷰 사진이 지도 전체에 레이어로 팝업될 캔버스 무대 추가 -->
-<div id="pano-container">
+<!-- 🎥 [기획 반영] 실제 거리뷰 사진이 지도 전체에 레이어로 팝업될 캔버스 무대 추가 -->
+<div id="pano-container" style="position: absolute !important; left: 0px !important; top: 0px !important; width: 100% !important; height: 100% !important; z-index: 1005 !important; display: none;">
     <div id="panorama" style="width:100%; height:100%;"></div>
     <button id="pano-close-btn" onclick="closeRoadView()">✕ 지도 복귀</button>
 </div>
