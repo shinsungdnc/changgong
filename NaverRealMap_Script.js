@@ -498,9 +498,8 @@ function selectProperty(index, marker) {
     var targetItem = document.getElementById("item-" + index);
     var targetDetail = document.getElementById("detail-" + index); 
     var panel = document.getElementById("right-stats-panel");
-    
-    // 🌟 [추가 기획]: 마커 클릭 시 목록창을 제어하는 좌측 메인 패널 오브젝트 가져오기
     var listPanel = document.getElementById("property-list-panel");
+    var filterPanel = document.getElementById("sidebar-header");
     
     if (!targetItem) return;
 
