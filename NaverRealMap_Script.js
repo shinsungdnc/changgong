@@ -531,6 +531,12 @@ function selectProperty(index, marker) {
         isSidebarManuallyClosed = false; 
     }
 
+    // 🌟 [기획 보완 핵심 코어]: 숨겨져 있던 좌측 2, 3층 패널을 우측과 발맞추어 스르륵 강제 복구!
+    if (filterPanel && listPanel) {
+        filterPanel.classList.remove("slide-up");   // 2층 필터부 스르륵 노출
+        listPanel.classList.remove("slide-left");   // 3층 목록창 스르륵 노출
+    }
+
     // ② UI를 안전하게 활성화하여 노출
     if (targetDetail) targetDetail.style.display = "block"; 
     targetItem.classList.add("active");
