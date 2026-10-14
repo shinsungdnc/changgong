@@ -681,9 +681,35 @@ function loadTradeStatsPanel(index) {
 var isSidebarManuallyClosed = false;
 
 function toggleSidebar() {
-    var listPanel = document.getElementById("property-list-panel"), statsPanel = document.getElementById("right-stats-panel"); if (!listPanel) return;
-    if (listPanel.style.display === "none" || listPanel.style.display === "") { listPanel.style.display = "flex"; isSidebarManuallyClosed = false; if (document.querySelector(".property-item.active") && statsPanel) statsPanel.classList.add("active"); } 
-    else { listPanel.style.display = "none"; isSidebarManuallyClosed = true; if (statsPanel) { statsPanel.classList.remove("active", "expanded"); } }
+    // 💡 [기획 반영]: 2층 필터부(#sidebar-header) 엘리먼트 추적 코드를 새로 추가했습니다.
+    var filterPanel = document.getElementById("sidebar-header"),
+        listPanel = document.getElementById("property-list-panel"), 
+        statsPanel = document.getElementById("right-stats-panel"); 
+        
+    if (!listPanel || !filterPanel) return;
+
+    // [숨김 -> 나타남]: 마스터 버튼을 눌러 세 가지를 동시에 원래대로 복구하는 타이밍
+    if (listPanel.style.display === "none" || listPanel.style.display === "") { 
+        filterPanel.style.display = "block"; // 2층 필터부 나타남
+        listPanel.style.display = "flex";    // 3층 목록창 나타남
+        isSidebarManuallyClosed = false; 
+        
+        // 💡 [기획 반영]: 마커 클릭으로 우측 실거래 패널이 열려있던 상태였다면 동시 복구
+        if (document.querySelector(".property-item.active") && statsPanel) {
+            statsPanel.classList.add("active");
+        } 
+    } 
+    // [보여짐 -> 숨김]: 마스터 버튼을 눌러 세 가지를 한방에 완전히 지우는 타이밍
+    else { 
+        filterPanel.style.display = "none";  // 2층 필터부 숨김 (기존 누락 항목 추가)
+        listPanel.style.display = "none";    // 3층 목록창 숨김
+        isSidebarManuallyClosed = true; 
+        
+        // 💡 [기획 반영]: 우측 실거래 패널까지 한방에 깨끗하게 숨김
+        if (statsPanel) { 
+            statsPanel.classList.remove("active", "expanded"); 
+        } 
+    }
 }
 function toggleCategory(cat) {
     var btn = document.getElementById(cat === "토지" ? "btn-land" : cat === "공장" ? "btn-factory" : "btn-house"), activeClass = cat === "토지" ? "active-land" : cat === "공장" ? "active-factory" : "active-house";
