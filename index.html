@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="robots" content="noindex, nofollow"> <!-- 🔒 [보안 차단] 구글/네이버 무단 수집 방지 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>창공부동산 매물지도 v2.0 - v.261014_1149</title>
+    <title>창공부동산 매물지도 v2.0 - v.261014_1158</title>
     <script type="text/javascript" src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=pc690hrfbt&submodules=panorama,geocoder,drawing,visualization"></script>
     <script type="text/javascript" src="https://navermaps.github.io/maps.js.ncp/docs/js/MarkerClustering.js"></script>
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css" />
@@ -28,7 +28,7 @@
 </head>
 
     <style>
-        #sidebar-header { padding: 12px; background: #4ad3ff !important; border-radius: 6px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); margin-top: 10px; pointer-events: auto; transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s; transform: translateY(0); opacity: 1; }
+        #sidebar-header { padding: 12px; background: #4ad3ff !important; border-radius: 6px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); margin-top: 10px; pointer-events: auto; transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s; transform: translateY(0); opacity: 1; }
         #sidebar-header.slide-up { transform: translateY(-120%); opacity: 0; pointer-events: none; }
         .filter-section { display: flex; flex-direction: column; gap: 8px; }
         .filter-tabs { display: flex; gap: 5px; }
@@ -43,7 +43,7 @@
         .deal-btn.active-dangi { background: #F3E5F5 !important; color: #4A148C !important; border: 1px solid #BA68C8 !important; box-shadow: 0 2px 4px rgba(74,20,140,0.1); }
         .town-select { width: 100%; padding: 8px; font-size: 12px; border: 1px solid #ced4da; border-radius: 4px; font-weight: bold; background: rgba(255,255,255,0.95); color: #004b6e; }
         #detail-selector { display: none; gap: 6px; padding: 10px 4px 5px 4px; overflow-x: auto; white-space: nowrap; max-width: 100%; box-sizing: border-box; -webkit-overflow-scrolling: touch; }
-        #property-list-panel { width: 100%; height: calc(100vh - 200px); max-height: 480px; background: rgba(248, 249, 250, 0.95) !important; border: 1px solid #dee2e6; border-radius: 6px; display: flex; flex-direction: column; margin-top: 4px; pointer-events: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.15); transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s; transform: translateX(0); opacity: 1; }
+        #property-list-panel { width: 100%; height: calc(100vh - 200px); max-height: 480px; background: rgba(248, 249, 250, 0.95) !important; border: 1px solid #dee2e6; border-radius: 6px; display: flex; flex-direction: column; margin-top: 4px; pointer-events: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.15); transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s; transform: translateX(0); opacity: 1; }
         #property-list-panel.slide-left { transform: translateX(-360px); opacity: 0; pointer-events: none; }
         #property-list { flex: 1; overflow-y: auto; padding: 6px; -webkit-overflow-scrolling: touch; background: rgba(248, 249, 250, 0.1); }
         .property-item { padding: 4px 10px; margin-bottom: 6px; border: 2px solid transparent; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); cursor: pointer; transition: all 0.2s; }
