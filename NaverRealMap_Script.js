@@ -924,6 +924,11 @@ function toggleRoadViewMode() {
 }
 
 function openPanorama(latlng) {
+    if (typeof naver.maps.Panorama === 'undefined') {
+        console.error("네이버 거리뷰 서브모듈이 로드되지 않았습니다. 백엔드 HTML의 maps.js 주소를 점검하세요.");
+        return;
+    }
+
     var container = document.getElementById("pano-container");
     if (!container) return;
 
