@@ -554,16 +554,62 @@ function selectProperty(index, marker) {
     marker.set("isForcedVip", true);
     marker.setMap(map); 
     
-    if (currentBoundaryCircle) currentBoundaryCircle.setMap(null);
-    currentBoundaryCircle = new naver.maps.Circle({ 
-        map: map, 
-        center: marker.getPosition(), 
-        radius: 15, 
-        fillColor: "#00bfff", 
-        fillOpacity: 0.2, 
-        strokeColor: "#ff0000", 
-        strokeWeight: 2 
-    });
+    // 📡 [v2.0 프론트엔드 공간 시각화] 기존 원형 마커 지우고 35% 투명도 형광 초록 네온 폴리곤 가동
+    if (currentBoundaryCircle) { currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }
+    
+    // 백엔드가 수확해 준 polygon_wkt(예: POLYGON((...))) 문자열 검증 및 실시간 파싱
+    if (prop.polygon_wkt && prop.polygon_wkt.indexOf("POLYGON") !== -1) {
+        try {
+            var wktStr = prop.polygon_wkt;
+            // POLYGON ((...)) 또는 MULTIPOLYGON 등에서 순수 좌표 숫자 텍스트 세트만 추출
+            var coordSection = wktStr.substring(wktStr.indexOf("((") + 2, wktStr.lastIndexOf("))"));
+            // 멀티폴리곤 괄호 찌꺼기 청소
+            coordSection = coordSection.replace(/\(/g, "").replace(/\)/g, "");
+            
+            var points = coordSection.split(",");
+            var polygonPaths = [];
+            
+            points.forEach(function(pt) {
+                var pair = pt.trim().split(" ");
+                if (pair.length >= 2) {
+                    var lngVal = parseFloat(pair[0]); // SQL Server geom_wkt는 일반적으로 경도(X) 위도(Y) 순서
+                    var latVal = parseFloat(pair[1]);
+                    if (!isNaN(latVal) && !isNaN(lngVal)) {
+                        polygonPaths.push(new naver.maps.LatLng(latVal, lngVal));
+                    }
+                }
+            });
+            
+            if (polygonPaths.length > 0) {
+                // 🎨 [소장님 친필 명세] 위성지도 시인성 극대화 - 35% 투명도 형광 초록 네온 컬러 드로잉
+                currentBoundaryCircle = new naver.maps.Polygon({
+                    map: map,
+                    paths: polygonPaths,
+                    fillColor: '#39FF14',     // 형광 네온 초록 (Neon Green)
+                    fillOpacity: 0.35,        // 명세서 정확한 투명도 35% 반영
+                    strokeColor: '#39FF14',   // 테두리 네온 초록
+                    strokeOpacity: 0.90,
+                    strokeWeight: 3,          // 위성 위에서 칼 같은 가독성을 위한 두께 3px
+                    clickable: false
+                });
+            }
+        } catch (polygonErr) {
+            console.warn("⚠️ [공간 엔진] WKT 폴리곤 실시간 드로잉 실패 (원형 가이드로 교체 방어):", polygonErr);
+        }
+    }
+    
+    // 만약 지적도 매칭 실패(대장 없음 등) 시 시스템 레이아웃이 깨지지 않도록 기존 원형 가이드라인 백업 기동
+    if (!currentBoundaryCircle) {
+        currentBoundaryCircle = new naver.maps.Circle({ 
+            map: map, 
+            center: marker.getPosition(), 
+            radius: 15, 
+            fillColor: "#39FF14", 
+            fillOpacity: 0.35, 
+            strokeColor: "#2E7D32", 
+            strokeWeight: 2 
+        });
+    }
     
     // ④ 모든 상태가 안전하게 고정된 후 지도를 이동
     var targetPos = marker.getPosition(); 
