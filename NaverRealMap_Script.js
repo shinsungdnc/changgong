@@ -160,7 +160,10 @@ function initMap() {
     var listContainer = document.getElementById("property-list"); 
     if (listContainer) listContainer.innerHTML = ""; 
     markers = []; 
+    updateDetailSelectorOptions(); 
     
+    // [기획 반영 1] 초기 로딩 시 목록 카드를 생성하지 않고 0개 유지 (DOM 트리 생성 완전 차단)
+    // 기존에 이곳에 존재하던 수백 줄의 카드 드로잉(itemDiv 생성) 로직은 하단의 독립 함수로 격리 이동되었습니다.
     properties.forEach(function(prop, index) {
         var latlng = new naver.maps.LatLng(prop.lat, prop.lng);
         var markerHtml = [
@@ -185,15 +188,12 @@ function initMap() {
         markers.push(marker);
 
         naver.maps.Event.addListener(marker, "click", function() { 
+            // 독립된 함수 구조에 맞춰 인덱스와 마커를 전달하도록 클릭 이벤트 바인딩 유지
             selectProperty(index, marker); 
         });
     });
     
-    // 💡 [버그 소멸 코어]: 0.1초 뒤 화면에 안 보이는 상태에서 안전하게 칩 장부를 채우고 필터를 차분히 기동합니다.
-    setTimeout(function() { 
-        updateDetailSelectorOptions();
-        applyFilters(); 
-    }, 100);
+    setTimeout(function() { applyFilters(); }, 300);
 }
 
 // =========================================================================
@@ -385,7 +385,6 @@ function applyFilters() {
 
     // 광역 시야(줌 14 미만) 처리 구역
     if (currentZoom < 14) {
-        if (filterPanel) filterPanel.style.display = "none";
         if (listPanel) listPanel.style.display = "none";
         if (markerClustering !== null) { markerClustering.setMap(null); markerClustering = null; }
         var townStats = getActiveTownCenterStats();
@@ -413,24 +412,13 @@ function applyFilters() {
         return;
     }
 
-    // 정밀 시야(줌 14 이상) 진입 구역 수정본
-    if (listPanel && filterPanel) {
-        if (window.innerWidth <= 768) { 
-            // 모바일 예외 제어 유지
+    if (listPanel) {
+        if (window.innerWidth <= 768) { // 모바일 전용
         } else {
             if (isSidebarManuallyClosed) {
-                filterPanel.style.display = "none";
                 listPanel.style.display = "none";
             } else {
-                // 🌟 [최종 하이라이트]: 줌 14 이상일 때만 진짜 오리지널 명품 컬러 디자인을 화면에 입힙니다!
-                filterPanel.style.display = "block";
-                filterPanel.style.setProperty("background", "#4ad3ff", "important");
-                filterPanel.style.setProperty("box-shadow", "0 4px 15px rgba(0,0,0,0.15)", "important");
-
                 listPanel.style.display = "flex";
-                listPanel.style.setProperty("background", "rgba(248, 249, 250, 0.95)", "important");
-                listPanel.style.setProperty("border", "1px solid #dee2e6", "important");
-                listPanel.style.setProperty("box-shadow", "0 4px 15px rgba(0,0,0,0.15)", "important");
             }
         }
     }
@@ -769,49 +757,29 @@ function toggleSidebar() {
         
     if (!listPanel || !filterPanel) return;
 
-    // 📱 [모바일 버전 전용 트랙]
+    // 📱 [모바일 버전 전용 트랙]: 숨김 상태에서 노출 상태로 역전 동작
     if (window.innerWidth <= 768) {
-        if (filterPanel.style.display === "none" || filterPanel.classList.contains("slide-up")) {
-            filterPanel.style.display = "block";
-            listPanel.style.display = "flex";
-            filterPanel.classList.remove("slide-up");
-            listPanel.classList.remove("slide-left");
+        if (filterPanel.classList.contains("slide-up")) {
+            filterPanel.classList.remove("slide-up");   // 2층 필터부 노출
+            listPanel.classList.remove("slide-left");   // 3층 목록창 노출
         } else {
-            filterPanel.classList.add("slide-up");
-            listPanel.classList.add("slide-left");
-            setTimeout(function() {
-                filterPanel.style.display = "none";
-                listPanel.style.display = "none";
-            }, 220); // 슬라이드 애니메이션 시간(0.22초) 가드 후 물리적 숨김
+            filterPanel.classList.add("slide-up");     // 2층 필터부 숨김
+            listPanel.classList.add("slide-left");     // 3층 목록창 숨김
         }
-        return; 
+        return; // 모바일 제어 마감
     }
 
-    // 💻 [PC 버전 마스터 버튼 토글 트랙 완벽 일치]
-    if (listPanel.style.display === "none" || listPanel.classList.contains("slide-left")) { 
-        // 닫혀있던 상태면 숨김 풀고 스르륵 보여주기
-        filterPanel.style.display = "block";
-        listPanel.style.display = "flex";
-        
-        // 브라우저 렌더링 타이밍을 위해 미세한 찰나의 마진을 두고 애니메이션 클래스 제거
-        setTimeout(function() {
-            filterPanel.classList.remove("slide-up");
-            listPanel.classList.remove("slide-left");
-        }, 10);
-        
+    // 💻 [기존 PC 버전 트랙]: 노출 상태에서 숨김 상태로 동작
+    if (listPanel.classList.contains("slide-left")) { 
+        filterPanel.classList.remove("slide-up");
+        listPanel.classList.remove("slide-left");
         isSidebarManuallyClosed = false; 
         if (document.querySelector(".property-item.active") && statsPanel) statsPanel.classList.add("active");
     } else { 
-        // 열려있던 상태면 애니메이션 밀어내고 장부 완전히 닫기
         filterPanel.classList.add("slide-up");
         listPanel.classList.add("slide-left");
         isSidebarManuallyClosed = true; 
         if (statsPanel) statsPanel.classList.remove("active", "expanded");
-        
-        setTimeout(function() {
-            filterPanel.style.display = "none";
-            listPanel.style.display = "none";
-        }, 220); // 0.22초 뒤 완전 소멸
     }
 }
 function toggleCategory(cat) {
