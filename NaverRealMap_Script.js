@@ -154,7 +154,7 @@ function updateDetailSelectorOptions() {
     });
 }
 // =========================================================================
-// 🚀 초기 지도 마커 인스턴스 빌드 [5번 블록 최적화 수정완결판]
+// 🚀 초기 지도 마커 인스턴스 빌드 [5번 블록 완벽 교정판]
 // =========================================================================
 function initMap() {
     var listContainer = document.getElementById("property-list"); 
@@ -162,21 +162,28 @@ function initMap() {
     markers = []; 
     updateDetailSelectorOptions(); 
     
-    // [기획 반영 1] 초기 로딩 시 목록 카드를 생성하지 않고 0개 유지 (DOM 트리 생성 완전 차단)
-    // 기존에 이곳에 존재하던 수백 줄의 카드 드로잉(itemDiv 생성) 로직은 하단의 독립 함수로 격리 이동되었습니다.
     properties.forEach(function(prop, index) {
         var latlng = new naver.maps.LatLng(prop.lat, prop.lng);
+        
+        // 💡 가로폭을 140px로 명시적으로 고정하여 앵커 계산을 정밀하게 만듭니다.
         var markerHtml = [
-            '<div class="m-box" style="position:absolute; transform:translate(-50%, -100%); margin-top:-65px; background-color:' + prop.bg + '; border:2px solid #00bfff; opacity:0.98; border-radius:6px; padding:5px 10px; font-weight:bold; font-size:11px; color:#111; white-space:nowrap; box-shadow:0 4px 15px rgba(0,0,0,0.25); text-align:center; line-height:1.3; cursor:pointer;">', 
+            '<div class="m-box" style="position:relative; width:140px; background-color:' + prop.bg + '; border:2px solid #00bfff; opacity:0.98; border-radius:6px; padding:5px 8px; font-weight:bold; font-size:11px; color:#111; box-shadow:0 4px 15px rgba(0,0,0,0.25); text-align:center; line-height:1.3; cursor:pointer; box-sizing:border-box;">', 
             ' ' + prop.marker_text + '<br>', 
             ' <span style="font-size:12px; font-weight:bold; color:#E65100; display:inline-block; margin-top:1px;">' + prop.dan_text + '</span>', 
-            ' <div style="position:absolute; bottom:-55px; left:50%; transform:translateX(-50%); width:0; height:0; border-left:5px solid transparent; border-right:5px solid transparent; border-top:55px solid #00bfff; opacity:0.45; pointer-events:none;"></div>', 
+            // 말풍선 화살표 꼬리 디자인
+            ' <div style="position:absolute; bottom:-8px; left:50%; transform:translateX(-50%); width:0; height:0; border-left:6px solid transparent; border-right:6px solid transparent; border-top:8px solid #00bfff; pointer-events:none;"></div>', 
             '</div>'
         ].join('');
         
         var marker = new naver.maps.Marker({ 
             position: latlng, 
-            icon: { content: markerHtml, anchor: new naver.maps.Point(0, 0) } 
+            map: null,
+            icon: { 
+                content: markerHtml, 
+                // 💡 중요: 140px의 절반인 70을 X축으로, 전체 세로높이(약 45px)에 꼬리 8px를 더한 값을 Y축 앵커로 잡아야 
+                // 줌인을 해도 꼬리가 좌표 위치에 자석처럼 딱 고정됩니다.
+                anchor: new naver.maps.Point(70, 53) 
+            } 
         });
         
         marker.set("category", prop.category); 
@@ -187,8 +194,9 @@ function initMap() {
         marker.set("isActive", true);
         markers.push(marker);
 
-        naver.maps.Event.addListener(marker, "click", function() { 
-            // 독립된 함수 구조에 맞춰 인덱스와 마커를 전달하도록 클릭 이벤트 바인딩 유지
+        // 💡 마커 클릭 시 이벤트 버블링을 차단하여 지도가 마우스에 자석처럼 붙는 현상을 원천 차단합니다.
+        naver.maps.Event.addListener(marker, "click", function(e) { 
+            if (e && e.stopEventPropagation) { e.stopEventPropagation(); }
             selectProperty(index, marker); 
         });
     });
@@ -384,33 +392,53 @@ function applyFilters() {
     });
 
     // 광역 시야(줌 14 미만) 처리 구역
-    if (currentZoom < 14) {
-        if (listPanel) listPanel.style.display = "none";
-        if (markerClustering !== null) { markerClustering.setMap(null); markerClustering = null; }
-        var townStats = getActiveTownCenterStats();
+// NaverRealMap_Script.js 내의 applyFilters() 함수 중간, [currentZoom < 14] 조건문 내부 교정
+if (currentZoom < 14) {
+    if (listPanel) listPanel.style.display = "none";
+    if (markerClustering !== null) { markerClustering.setMap(null); markerClustering = null; }
+    var townStats = getActiveTownCenterStats();
 
-        Object.keys(townStats).forEach(function(tName) {
-            var stat = townStats[tName]; 
-            if (stat.count === 0) return;
-            var townLatLng = new naver.maps.LatLng(stat.lat, stat.lng);
-            var townClusterHtml = ['<div class="custom-town-cluster" style="cursor:pointer; pointer-events:auto !important; z-index:9999 !important; width:64px; height:64px; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(74, 211, 255, 0.95); border:2px solid #ffffff; border-radius:50%; box-shadow:0 3px 12px rgba(0,0,0,0.3); transform:translate(-50%, -50%); box-sizing:border-box; padding:2px;">', ' <div style="font-size:11px; font-weight:700; color:#111111; line-height:1.2; text-align:center; max-width:58px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; pointer-events:none;">' + tName.replace('오송읍', '오송').replace('조치원읍', '조치원') + '</div>', ' <div style="font-size:13px; font-weight:800; color:#111111; line-height:1.2; margin-top:2px; pointer-events:none;">' + stat.count + '</div>', '</div>'].join('');
-            var vTownMarker = new naver.maps.Marker({ position: townLatLng, map: map, icon: { content: townClusterHtml, anchor: new naver.maps.Point(0, 0) }, clickable: true });
-
-            naver.maps.Event.addListener(vTownMarker, "click", function() {
-                var targetZoom = tName.endsWith('면') ? 15 : 17;
-                map.morph(townLatLng, targetZoom);
-                var townSelector = document.getElementById("town-selector"); 
-                if (townSelector) { townSelector.value = tName; currentTown = tName; currentRi = "전체"; }
-            });
-            virtualTownMarkers.push(vTownMarker); 
+    Object.keys(townStats).forEach(function(tName) {
+        var stat = townStats[tName]; 
+        if (stat.count === 0) return;
+        var townLatLng = new naver.maps.LatLng(stat.lat, stat.lng);
+        
+        // 💡 transform: translate(-50%, -50%)를 제거하고 순수 레이아웃만 남깁니다. (네이버 엔진이 anchor로 제어하도록 설정)
+        var townClusterHtml = [
+            '<div class="custom-town-cluster" style="cursor:pointer; width:64px; height:64px; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(74, 211, 255, 0.95); border:1px solid #ffffff; border-radius:50%; box-shadow:0 3px 12px rgba(0,0,0,0.3); box-sizing:border-box; padding:2px;">', 
+            ' <div style="font-size:11px; font-weight:700; color:#111111; line-height:1.2; text-align:center; max-width:58px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; pointer-events:none;">' + tName.replace('오송읍', '오송').replace('조치원읍', '조치원') + '</div>', 
+            ' <div style="font-size:13px; font-weight:800; color:#111111; line-height:1.2; margin-top:2px; pointer-events:none;">' + stat.count + '</div>', 
+            '</div>'
+        ].join('');
+        
+        var vTownMarker = new naver.maps.Marker({ 
+            position: townLatLng, 
+            map: map, 
+            icon: { 
+                content: townClusterHtml, 
+                // 💡 가로 64px, 세로 64px 원형 배지이므로 정확히 정중앙(32, 32)을 기준점으로 잡아야 빗나가지 않습니다.
+                anchor: new naver.maps.Point(32, 32) 
+            }, 
+            clickable: true 
         });
-        
-        var listContainer = document.getElementById("property-list");
-        if (listContainer) listContainer.innerHTML = "";
-        
-        updateTownSelectorOptions(); 
-        return;
-    }
+
+        // 💡 여기에도 클릭 이벤트 버블링 차단(stopEventPropagation)을 적용하여 자석 현상을 해결합니다.
+        naver.maps.Event.addListener(vTownMarker, "click", function(e) {
+            if (e && e.stopEventPropagation) { e.stopEventPropagation(); }
+            var targetZoom = tName.endsWith('면') ? 15 : 17;
+            map.morph(townLatLng, targetZoom);
+            var townSelector = document.getElementById("town-selector"); 
+            if (townSelector) { townSelector.value = tName; currentTown = tName; currentRi = "전체"; }
+        });
+        virtualTownMarkers.push(vTownMarker); 
+    });
+    
+    var listContainer = document.getElementById("property-list");
+    if (listContainer) listContainer.innerHTML = "";
+    
+    updateTownSelectorOptions(); 
+    return;
+}
 
     if (listPanel) {
         if (window.innerWidth <= 768) { // 모바일 전용
