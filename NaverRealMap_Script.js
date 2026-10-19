@@ -154,7 +154,7 @@ function updateDetailSelectorOptions() {
     });
 }
 // =========================================================================
-// 🚀 초기 지도 마커 인스턴스 빌드 [5번 블록 완벽 교정판]
+// 🚀 초기 지도 마커 인스턴스 빌드 [5번 블록 자석 현상 원천 차단 최종판]
 // =========================================================================
 function initMap() {
     var listContainer = document.getElementById("property-list"); 
@@ -165,25 +165,18 @@ function initMap() {
     properties.forEach(function(prop, index) {
         var latlng = new naver.maps.LatLng(prop.lat, prop.lng);
         
-        // 💡 가로폭을 140px로 명시적으로 고정하여 앵커 계산을 정밀하게 만듭니다.
+        // 🌟 순정 디자인 마크업 100% 원본 유지
         var markerHtml = [
-            '<div class="m-box" style="position:relative; width:140px; background-color:' + prop.bg + '; border:2px solid #00bfff; opacity:0.98; border-radius:6px; padding:5px 8px; font-weight:bold; font-size:11px; color:#111; box-shadow:0 4px 15px rgba(0,0,0,0.25); text-align:center; line-height:1.3; cursor:pointer; box-sizing:border-box;">', 
+            '<div class="m-box" style="position:absolute; transform:translate(-50%, -100%); margin-top:-65px; background-color:' + prop.bg + '; border:2px solid #00bfff; opacity:0.98; border-radius:6px; padding:5px 10px; font-weight:bold; font-size:11px; color:#111; white-space:nowrap; box-shadow:0 4px 15px rgba(0,0,0,0.25); text-align:center; line-height:1.3; cursor:pointer;">', 
             ' ' + prop.marker_text + '<br>', 
             ' <span style="font-size:12px; font-weight:bold; color:#E65100; display:inline-block; margin-top:1px;">' + prop.dan_text + '</span>', 
-            // 말풍선 화살표 꼬리 디자인
-            ' <div style="position:absolute; bottom:-8px; left:50%; transform:translateX(-50%); width:0; height:0; border-left:6px solid transparent; border-right:6px solid transparent; border-top:8px solid #00bfff; pointer-events:none;"></div>', 
+            ' <div style="position:absolute; bottom:-55px; left:50%; transform:translateX(-50%); width:0; height:0; border-left:5px solid transparent; border-right:5px solid transparent; border-top:55px solid #00bfff; opacity:0.45; pointer-events:none;"></div>', 
             '</div>'
         ].join('');
         
         var marker = new naver.maps.Marker({ 
             position: latlng, 
-            map: null,
-            icon: { 
-                content: markerHtml, 
-                // 💡 중요: 140px의 절반인 70을 X축으로, 전체 세로높이(약 45px)에 꼬리 8px를 더한 값을 Y축 앵커로 잡아야 
-                // 줌인을 해도 꼬리가 좌표 위치에 자석처럼 딱 고정됩니다.
-                anchor: new naver.maps.Point(70, 53) 
-            } 
+            icon: { content: markerHtml, anchor: new naver.maps.Point(0, 0) } // 🌟 순정 앵커 원복 완료
         });
         
         marker.set("category", prop.category); 
@@ -194,7 +187,22 @@ function initMap() {
         marker.set("isActive", true);
         markers.push(marker);
 
-        // 💡 마커 클릭 시 이벤트 버블링을 차단하여 지도가 마우스에 자석처럼 붙는 현상을 원천 차단합니다.
+        // 💡 [자석 버그 완전 박멸 코어 1]: 마커를 마우스로 누르는 즉시 지도가 같이 드래그되는 현상을 전면 차단합니다.
+        naver.maps.Event.addListener(marker, "mousedown", function(e) {
+            if (e && e.domEvent) {
+                e.domEvent.preventDefault();  // 브라우저 기본 드래그 락 방지
+                e.domEvent.stopPropagation();  // 지도 엔진으로 드래그 이벤트가 흘러 들어가는 것 차단
+            }
+        });
+
+        // 💡 [자석 버그 완전 박멸 코어 2]: 터치 기기(태블릿, 모바일) 전용 자석 현상 방어막 추가
+        naver.maps.Event.addListener(marker, "touchstart", function(e) {
+            if (e && e.domEvent) {
+                e.domEvent.stopPropagation();
+            }
+        });
+
+        // 클릭 이벤트 처리
         naver.maps.Event.addListener(marker, "click", function(e) { 
             if (e && e.stopEventPropagation) { e.stopEventPropagation(); }
             selectProperty(index, marker); 
