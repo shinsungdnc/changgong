@@ -160,10 +160,7 @@ function initMap() {
     var listContainer = document.getElementById("property-list"); 
     if (listContainer) listContainer.innerHTML = ""; 
     markers = []; 
-    updateDetailSelectorOptions(); 
     
-    // [기획 반영 1] 초기 로딩 시 목록 카드를 생성하지 않고 0개 유지 (DOM 트리 생성 완전 차단)
-    // 기존에 이곳에 존재하던 수백 줄의 카드 드로잉(itemDiv 생성) 로직은 하단의 독립 함수로 격리 이동되었습니다.
     properties.forEach(function(prop, index) {
         var latlng = new naver.maps.LatLng(prop.lat, prop.lng);
         var markerHtml = [
@@ -188,12 +185,15 @@ function initMap() {
         markers.push(marker);
 
         naver.maps.Event.addListener(marker, "click", function() { 
-            // 독립된 함수 구조에 맞춰 인덱스와 마커를 전달하도록 클릭 이벤트 바인딩 유지
             selectProperty(index, marker); 
         });
     });
     
-    setTimeout(function() { applyFilters(); }, 300);
+    // 💡 [버그 소멸 코어]: 0.1초 뒤 화면에 안 보이는 상태에서 안전하게 칩 장부를 채우고 필터를 차분히 기동합니다.
+    setTimeout(function() { 
+        updateDetailSelectorOptions();
+        applyFilters(); 
+    }, 100);
 }
 
 // =========================================================================
