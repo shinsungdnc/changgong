@@ -413,17 +413,24 @@ function applyFilters() {
         return;
     }
 
-    // 🌟 [정밀 시야 줌 14 이상 진입 구역 수정]: 사용자가 수동으로 닫은 이력이 없을 때만 자동으로 둘 다 노출
+    // 정밀 시야(줌 14 이상) 진입 구역 수정본
     if (listPanel && filterPanel) {
-        if (window.innerWidth <= 768) { // 모바일 전용
-            // 모바일은 터치 시야 확보를 위해 별도 제어 유지
+        if (window.innerWidth <= 768) { 
+            // 모바일 예외 제어 유지
         } else {
             if (isSidebarManuallyClosed) {
                 filterPanel.style.display = "none";
                 listPanel.style.display = "none";
             } else {
+                // 🌟 [최종 하이라이트]: 줌 14 이상일 때만 진짜 오리지널 명품 컬러 디자인을 화면에 입힙니다!
                 filterPanel.style.display = "block";
+                filterPanel.style.setProperty("background", "#4ad3ff", "important");
+                filterPanel.style.setProperty("box-shadow", "0 4px 15px rgba(0,0,0,0.15)", "important");
+
                 listPanel.style.display = "flex";
+                listPanel.style.setProperty("background", "rgba(248, 249, 250, 0.95)", "important");
+                listPanel.style.setProperty("border", "1px solid #dee2e6", "important");
+                listPanel.style.setProperty("box-shadow", "0 4px 15px rgba(0,0,0,0.15)", "important");
             }
         }
     }
