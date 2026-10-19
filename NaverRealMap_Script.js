@@ -845,9 +845,6 @@ document.addEventListener("DOMContentLoaded", function() {
 
         // 🎯 [무한 멈춤 완전 차단] 불필요한 전체 매물 거리 연산 및 스크롤 강제 루프를 전면 제거
         naver.maps.Event.addListener(map, "idle", function() {
-            // 🌟 [중앙 정렬 가드 활성화]: 매물 선택 후 가운데로 모이는 중이라면 이 이벤트 연산을 즉시 생략(Skip)합니다!
-            if (isCameraMovingToVip) return;
-
             var centerLatLng = map.getCenter();
             var currentZoom = map.getZoom();
 
