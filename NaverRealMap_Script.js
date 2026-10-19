@@ -385,6 +385,7 @@ function applyFilters() {
 
     // 광역 시야(줌 14 미만) 처리 구역
     if (currentZoom < 14) {
+        if (filterPanel) filterPanel.style.display = "none";
         if (listPanel) listPanel.style.display = "none";
         if (markerClustering !== null) { markerClustering.setMap(null); markerClustering = null; }
         var townStats = getActiveTownCenterStats();
@@ -412,12 +413,16 @@ function applyFilters() {
         return;
     }
 
-    if (listPanel) {
+    // 🌟 [정밀 시야 줌 14 이상 진입 구역 수정]: 사용자가 수동으로 닫은 이력이 없을 때만 자동으로 둘 다 노출
+    if (listPanel && filterPanel) {
         if (window.innerWidth <= 768) { // 모바일 전용
+            // 모바일은 터치 시야 확보를 위해 별도 제어 유지
         } else {
             if (isSidebarManuallyClosed) {
+                filterPanel.style.display = "none";
                 listPanel.style.display = "none";
             } else {
+                filterPanel.style.display = "block";
                 listPanel.style.display = "flex";
             }
         }
@@ -757,29 +762,49 @@ function toggleSidebar() {
         
     if (!listPanel || !filterPanel) return;
 
-    // 📱 [모바일 버전 전용 트랙]: 숨김 상태에서 노출 상태로 역전 동작
+    // 📱 [모바일 버전 전용 트랙]
     if (window.innerWidth <= 768) {
-        if (filterPanel.classList.contains("slide-up")) {
-            filterPanel.classList.remove("slide-up");   // 2층 필터부 노출
-            listPanel.classList.remove("slide-left");   // 3층 목록창 노출
+        if (filterPanel.style.display === "none" || filterPanel.classList.contains("slide-up")) {
+            filterPanel.style.display = "block";
+            listPanel.style.display = "flex";
+            filterPanel.classList.remove("slide-up");
+            listPanel.classList.remove("slide-left");
         } else {
-            filterPanel.classList.add("slide-up");     // 2층 필터부 숨김
-            listPanel.classList.add("slide-left");     // 3층 목록창 숨김
+            filterPanel.classList.add("slide-up");
+            listPanel.classList.add("slide-left");
+            setTimeout(function() {
+                filterPanel.style.display = "none";
+                listPanel.style.display = "none";
+            }, 220); // 슬라이드 애니메이션 시간(0.22초) 가드 후 물리적 숨김
         }
-        return; // 모바일 제어 마감
+        return; 
     }
 
-    // 💻 [기존 PC 버전 트랙]: 노출 상태에서 숨김 상태로 동작
-    if (listPanel.classList.contains("slide-left")) { 
-        filterPanel.classList.remove("slide-up");
-        listPanel.classList.remove("slide-left");
+    // 💻 [PC 버전 마스터 버튼 토글 트랙 완벽 일치]
+    if (listPanel.style.display === "none" || listPanel.classList.contains("slide-left")) { 
+        // 닫혀있던 상태면 숨김 풀고 스르륵 보여주기
+        filterPanel.style.display = "block";
+        listPanel.style.display = "flex";
+        
+        // 브라우저 렌더링 타이밍을 위해 미세한 찰나의 마진을 두고 애니메이션 클래스 제거
+        setTimeout(function() {
+            filterPanel.classList.remove("slide-up");
+            listPanel.classList.remove("slide-left");
+        }, 10);
+        
         isSidebarManuallyClosed = false; 
         if (document.querySelector(".property-item.active") && statsPanel) statsPanel.classList.add("active");
     } else { 
+        // 열려있던 상태면 애니메이션 밀어내고 장부 완전히 닫기
         filterPanel.classList.add("slide-up");
         listPanel.classList.add("slide-left");
         isSidebarManuallyClosed = true; 
         if (statsPanel) statsPanel.classList.remove("active", "expanded");
+        
+        setTimeout(function() {
+            filterPanel.style.display = "none";
+            listPanel.style.display = "none";
+        }, 220); // 0.22초 뒤 완전 소멸
     }
 }
 function toggleCategory(cat) {
