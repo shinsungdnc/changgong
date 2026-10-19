@@ -496,6 +496,9 @@ function updateClustering(validMarkers) {
 // =========================================================================
 // 🎯 8번 블록: 개별 매물 마커 클릭 이벤트 엔진 수정
 // =========================================================================
+// 🌟 [기획 추가]: 카메라 강제 무빙 중 idle 이벤트 간섭을 원천 차단하는 물리 락(Lock) 스위치 선언
+var isCameraMovingToVip = false;
+
 function selectProperty(index, marker) {
     var listContainer = document.getElementById("property-list");
     var targetItem = document.getElementById("item-" + index);
@@ -504,7 +507,9 @@ function selectProperty(index, marker) {
     var listPanel = document.getElementById("property-list-panel");
     var filterPanel = document.getElementById("sidebar-header");
     
-    if (!targetItem) return;
+    // 💡 [버그 완전 치료]: 함수 최상단에 누락되었던 마스터 데이터 변수 'prop'을 명확하게 바인딩합니다.
+    var prop = properties[index]; 
+    if (!targetItem || !prop) return;
 
     // 🔄 선택된 카드를 다시 클릭하여 해제할 때의 처리
     if (targetItem.classList.contains("active")) {
@@ -523,6 +528,9 @@ function selectProperty(index, marker) {
 
     // ① 기존에 찍혀있던 모든 마커의 VIP 절대 권한 초기화 청소
     markers.forEach(function(m) { m.set("isForcedVip", false); });
+    
+    // 🌟 [중앙 정렬 보장 레이어]: 카메라 강제 중심 이동이 시작됨을 선언하여 백그라운드 필터 차단
+    isCameraMovingToVip = true;
 
     document.querySelectorAll(".property-detail").forEach(function(el) { el.style.display = "none"; });
     document.querySelectorAll(".property-item").forEach(function(el) { el.classList.remove("active"); });
@@ -611,8 +619,16 @@ function selectProperty(index, marker) {
         });
     }
     
-    // ④ 모든 상태가 안전하게 고정된 후 지도를 이동
+    // ④ 모든 상태가 안전하게 고정된 후 지도를 이동 (중앙 정렬 엇박자 완치 레이어)
     var targetPos = marker.getPosition(); 
+    
+    // 지도가 중앙 이동 목적지에 완벽하게 '안착'해서 멈췄을 때만 락을 해제하는 단발성(once) 가드 설치
+    naver.maps.Event.once(map, "idle", function() {
+        isCameraMovingToVip = false;
+        // 안착이 완전히 끝나고 화면 필터를 차분하게 동기화해 줍니다.
+        applyFilters(); 
+    });
+
     if (map.getZoom() < 16) { 
         map.morph(targetPos, 16); 
     } else { 
@@ -829,6 +845,9 @@ document.addEventListener("DOMContentLoaded", function() {
 
         // 🎯 [무한 멈춤 완전 차단] 불필요한 전체 매물 거리 연산 및 스크롤 강제 루프를 전면 제거
         naver.maps.Event.addListener(map, "idle", function() {
+            // 🌟 [중앙 정렬 가드 활성화]: 매물 선택 후 가운데로 모이는 중이라면 이 이벤트 연산을 즉시 생략(Skip)합니다!
+            if (isCameraMovingToVip) return;
+
             var centerLatLng = map.getCenter();
             var currentZoom = map.getZoom();
 
