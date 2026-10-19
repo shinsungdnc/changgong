@@ -166,9 +166,8 @@ function initMap() {
     // 기존에 이곳에 존재하던 수백 줄의 카드 드로잉(itemDiv 생성) 로직은 하단의 독립 함수로 격리 이동되었습니다.
     properties.forEach(function(prop, index) {
         var latlng = new naver.maps.LatLng(prop.lat, prop.lng);
-        // 🛠️ [교정]: position:absolute 및 과도한 마진을 지우고, 공식 앵커 시스템이 꼬리표 바닥 끝점을 인지하도록 수정
         var markerHtml = [
-            '<div class="m-box" style="position:relative; margin-bottom:55px; background-color:' + prop.bg + '; border:2px solid #00bfff; opacity:0.98; border-radius:6px; padding:5px 10px; font-weight:bold; font-size:11px; color:#111; white-space:nowrap; box-shadow:0 4px 15px rgba(0,0,0,0.25); text-align:center; line-height:1.3; cursor:pointer;">', 
+            '<div class="m-box" style="position:absolute; transform:translate(-50%, -100%); margin-top:-65px; background-color:' + prop.bg + '; border:2px solid #00bfff; opacity:0.98; border-radius:6px; padding:5px 10px; font-weight:bold; font-size:11px; color:#111; white-space:nowrap; box-shadow:0 4px 15px rgba(0,0,0,0.25); text-align:center; line-height:1.3; cursor:pointer;">', 
             ' ' + prop.marker_text + '<br>', 
             ' <span style="font-size:12px; font-weight:bold; color:#E65100; display:inline-block; margin-top:1px;">' + prop.dan_text + '</span>', 
             ' <div style="position:absolute; bottom:-55px; left:50%; transform:translateX(-50%); width:0; height:0; border-left:5px solid transparent; border-right:5px solid transparent; border-top:55px solid #00bfff; opacity:0.45; pointer-events:none;"></div>', 
@@ -177,10 +176,7 @@ function initMap() {
         
         var marker = new naver.maps.Marker({ 
             position: latlng, 
-            icon: { 
-                content: markerHtml, 
-                anchor: new naver.maps.Point(60, 95) // ★ 배지 가로 절반(60px), 배지+꼬리표 통합 높이 바닥점(95px) 매칭
-            } 
+            icon: { content: markerHtml, anchor: new naver.maps.Point(0, 0) } 
         });
         
         marker.set("category", prop.category); 
@@ -322,9 +318,6 @@ function renderPropertyCards(targetProperties) {
 // 🗺️ 실시간 필터링 및 명품 2단 가상 클러스터링 동기화 분기 엔진 [6번 블록 최적화 완결판 - 버그 수정]
 // =========================================================================
 function applyFilters() {
-    // ★ [유령 중첩 해결]: 지도가 줌/드래그로 움직여 필터가 재기동되면 과거 화면에 남은 폴리곤을 완벽히 소거하고 리셋
-    if (currentBoundaryCircle) { currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }
-
     var validMarkersForCluster = []; 
     var currentZoom = map.getZoom(); 
     var currentBounds = map.getBounds(); 
@@ -600,12 +593,12 @@ function selectProperty(index, marker) {
                 currentBoundaryCircle = new naver.maps.Polygon({
                     map: map,
                     paths: polygonPaths,
-                    fillColor: '#39FF14',     
-                    fillOpacity: 0.35,        
-                    strokeColor: '#39FF14',   
+                    fillColor: '#39FF14',     // 형광 네온 초록 (Neon Green)
+                    fillOpacity: 0.35,        // 명세서 정확한 투명도 35% 반영
+                    strokeColor: '#39FF14',   // 테두리 네온 초록
                     strokeOpacity: 0.90,
-                    strokeWeight: 3,          
-                    clickable: false          // ★ 마우스 클릭/드래그 무조건 패스시켜 지도 먹통 현상 해결
+                    strokeWeight: 3,          // 위성 위에서 칼 같은 가독성을 위한 두께 3px
+                    clickable: false
                 });
             }
         } catch (polygonErr) {
@@ -622,8 +615,7 @@ function selectProperty(index, marker) {
             fillColor: "#39FF14", 
             fillOpacity: 0.35, 
             strokeColor: "#2E7D32", 
-            strokeWeight: 2,
-            clickable: false          // ★ 백업 서클도 클릭 패스 처리 동일하게 적용
+            strokeWeight: 2 
         });
     }
     
@@ -868,6 +860,11 @@ document.addEventListener("DOMContentLoaded", function() {
             // 줌 14 이상 진입 시, 화면 중심점이 이동하여 지도가 멈추면 실시간으로 중심점 읍면동 매물 목록을 재구성
             if (currentZoom >= 14) {
                 applyFilters();
+            }
+            
+            // 기존 VIP 가이드라인 원 반경 동적 스케일 제어 로직은 완벽 보존
+            if (currentBoundaryCircle && currentBoundaryCircle.getMap()) {
+                currentBoundaryCircle.setRadius(currentZoom === 18 ? 8 : (currentZoom === 17 ? 15 : 20));
             }
         });
         
