@@ -317,17 +317,14 @@ function renderPropertyCards(targetProperties) {
 // =========================================================================
 // 🗺️ 실시간 필터링 및 명품 2단 가상 클러스터링 동기화 분기 엔진 [6번 블록 최적화 완결판 - 버그 수정]
 // =========================================================================
-// =========================================================================
-// 🗺️ 실시간 필터링 및 명품 2단 가상 클러스터링 동기화 분기 엔진 [6번 블록 최적화 완결판 - 버그 수정]
-// =========================================================================
 function applyFilters() {
     var validMarkersForCluster = []; 
     var currentZoom = map.getZoom(); 
     var currentBounds = map.getBounds(); 
     var listPanel = document.getElementById("property-list-panel");
     
-    // 카메라 집중 이동 락 상태 확인
-    if (typeof isCameraMovingToVip !== 'undefined' && isCameraMovingToVip) return;
+    // 🛡️ [버그 방어막]: 현재 어떤 매물이 선택되어 VIP 상태라면, 지도가 움직여도 목록창(DOM)을 리셋하지 않고 그대로 유지합니다.
+    var hasActiveVip = markers.some(function(m) { return m.get("isForcedVip") === true; });
 
     var listTargetProperties = [];
 
@@ -355,54 +352,40 @@ function applyFilters() {
         var p = properties[i]; 
         if (!p) return;
         
-        // 🛡️ [수정 1] return을 제거하여 VIP 매물이 있어도 인근 마커들이 연산되도록 합니다.
+        // 🛡️ 현재 선택되어 활성화된 VIP 마커 사양 보존
         if (marker.get("isForcedVip") === true) {
             marker.set("isActive", true);
             listTargetProperties.push({ prop: p, index: i });
-        } else {
-            // 기존 4단계 필터 식 완전 보존
-            var mCat = (currentCategories.indexOf(marker.get("category")) !== -1);
-            var mDet = (currentCategories.length === 0 || currentDetail.indexOf(marker.get("detail_type")) !== -1);
-            var mTown = (currentTown === "전체" || marker.get("town") === currentTown);
-            var mRi = (currentRi === "전체" || (p.name && p.name.indexOf(currentRi) !== -1));
-            var mDeal = false; 
-            currentDealTypes.forEach(function(t) { if (p.price && p.price.indexOf(t) !== -1) mDeal = true; });
+            return; 
+        }
 
-            var isFilterPassed = (mCat && mDet && mTown && mRi && mDeal); 
-            marker.set("isActive", isFilterPassed);
-            
-            marker.setMap(null); 
+        // 기존 4단계 필터 식 완전 보존
+        var mCat = (currentCategories.indexOf(marker.get("category")) !== -1);
+        var mDet = (currentCategories.length === 0 || currentDetail.indexOf(marker.get("detail_type")) !== -1);
+        var mTown = (currentTown === "전체" || marker.get("town") === currentTown);
+        var mRi = (currentRi === "전체" || (p.name && p.name.indexOf(currentRi) !== -1));
+        var mDeal = false; 
+        currentDealTypes.forEach(function(t) { if (p.price && p.price.indexOf(t) !== -1) mDeal = true; });
 
-            if (isFilterPassed) {
-                if (currentZoom >= 14) {
-                    // [순서 1] 수동으로 특정 읍면동을 딱 집어 고른 게 아니라면 ('전체' 상태라면)
-                    if (currentTown === "전체") {
-                        // 1-1. 화면 내(시야 범위)에 들어와 있는 매물인가요?
-                        if (currentBounds && currentBounds.hasLatlng(marker.getPosition())) {
-                            // 마커는 무조건 노출되어야 하므로 활성화 장부를 켜고 지도에 직접 바로 꽂아버립니다.
-                            marker.set("isActive", true);
-                            marker.setMap(map); 
-                            
-                            // 1-2. 다만, 그중에서 화면 중심점 읍면동(closestTown)에 속한 정예 매물인가요?
-                            if (p.town === closestTown) {
-                                // 매물 목록창에는 이 중심점 동네 매물들만 로드 시킵니다.
-                                listTargetProperties.push({ prop: p, index: i });
-                            }
-                        }
-                    } 
-                    // [순서 2] 수동으로 특정 읍면동 필터를 선택해 둔 상태라면
-                    else {
-                        // 철저하게 수동 선택된 그 동네 매물만 목록에 담고 노출되도록 제한합니다.
-                        if (p.town === currentTown) {
-                            listTargetProperties.push({ prop: p, index: i });
-                        }
+        var isFilterPassed = (mCat && mDet && mTown && mRi && mDeal); 
+        marker.set("isActive", isFilterPassed);
+        marker.setMap(null); 
+
+        if (isFilterPassed) {
+            if (currentZoom >= 14) {
+                // ⭕ 기획 구현 핵심 2: 지도 마커는 살려두되, '목록창'에 들어갈 카드는 중심점 동네(closestTown)만 타깃으로 수집
+                if (currentTown === "전체") {
+                    if (p.town === closestTown) {
+                        listTargetProperties.push({ prop: p, index: i });
                     }
                 } else {
-                    // 줌 14 미만 광역 뷰일 때는 기존 소스2 규칙 그대로 적용
+                    // 지역 필터가 특정 동네로 찍혀있을 때는 당연히 그 동네 매물만 목록창에 수집
                     listTargetProperties.push({ prop: p, index: i });
                 }
+            } else {
+                listTargetProperties.push({ prop: p, index: i });
             }
-        } // else 닫는 괄호 추가됨
+        }
     });
 
     // 광역 시야(줌 14 미만) 처리 구역
@@ -445,8 +428,8 @@ function applyFilters() {
         }
     }
     
-    // 🛡️ 딱 여기 한 곳만 변경된 상태면 완벽합니다!
-    if (!document.querySelector(".property-item.active")) {
+    // 🛡️ [버그 해결의 핵심]: 선택된 VIP 매물이 없을 때만 목록창 카드를 새로 그립니다. (DOM 증발 차단)
+    if (!hasActiveVip) {
         renderPropertyCards(listTargetProperties);
     }
     
@@ -476,7 +459,6 @@ function applyFilters() {
     updateTownSelectorOptions(); 
     updateClustering(validMarkersForCluster);
 }
-
 // =========================================================================
 // 📊 줌 14레벨 이상 전용 네이버 순정 클러스터러 기동 및 배지 확대 조율 [7번 블록]
 // =========================================================================
@@ -966,6 +948,9 @@ document.addEventListener("DOMContentLoaded", function() {
         // 💡 줌 인/아웃 연속 조작 시 주변 마커들이 꼬이지 않도록 0.2초 디바운스 가드 고정 유지
         var zoomTimer = null;
         naver.maps.Event.addListener(map, "zoom_changed", function() {
+            var hasActiveVip = markers.some(function(m) { return m.get("isForcedVip") === true; });
+            if (hasActiveVip) return; // 폴리곤 노출 상태일 때는 줌 도중 클러스터러 재조립 연산을 생략하여 중심축 완벽 고정
+
             if (zoomTimer !== null) { clearTimeout(zoomTimer); }
             zoomTimer = setTimeout(function() {
                 applyFilters();
@@ -973,8 +958,10 @@ document.addEventListener("DOMContentLoaded", function() {
             }, 200); 
         });
 
-        // 지도를 드래그하다가 손을 뗐을 때도 주변 연산을 정상 수행하여 자연스러운 정지 보장
+        // 지도를 드래그하다가 손을 뗐을 때도 VIP 상태라면 주변 연산을 건너뛰어 자연스러운 정지 보장
         naver.maps.Event.addListener(map, "dragend", function() { 
+            var hasActiveVip = markers.some(function(m) { return m.get("isForcedVip") === true; });
+            if (hasActiveVip) return;
             applyFilters(); 
         });
     }
