@@ -530,7 +530,7 @@ function selectProperty(index, marker) {
         
         if (panel) panel.classList.remove("active", "expanded"); 
         
-        setTimeout(function() { applyFilters(); }, 50);
+        setTimeout(function() { applyFilters(); }, 100);
         return; 
     }
 
@@ -543,14 +543,15 @@ function selectProperty(index, marker) {
     document.querySelectorAll(".property-detail").forEach(function(el) { el.style.display = "none"; });
     document.querySelectorAll(".property-item").forEach(function(el) { el.classList.remove("active"); });
 
-    // 🌟 [마커 클릭 시 목록창 강제 수복]: 숨겨져 있던 목록창을 다시 열고, 수동 닫힘 장부 스위치를 완전히 해제!
-    if (listPanel) {
-        listPanel.style.display = "flex";
-        isSidebarManuallyClosed = false; 
-    }
+    // // 🌟 [마커 클릭 시 목록창 강제 수복]: 숨겨져 있던 목록창을 다시 열고, 수동 닫힘 장부 스위치를 완전히 해제!
+    // if (listPanel) {
+    //     listPanel.style.display = "flex";
+    //     isSidebarManuallyClosed = false; 
+    // }
 
-    // 🌟 [기획 보완 핵심 코어]: 숨겨져 있던 좌측 2, 3층 패널을 우측과 발맞추어 스르륵 강제 복구!
+    // 🌟 오직 순정 슬라이딩 클래스(slide-left, slide-up)를 해제하는 방식으로 문을 매끄럽게 열어줍니다.
     if (filterPanel && listPanel) {
+        isSidebarManuallyClosed = false;
         filterPanel.classList.remove("slide-up");   // 2층 필터부 스르륵 노출
         listPanel.classList.remove("slide-left");   // 3층 목록창 스르륵 노출
     }
