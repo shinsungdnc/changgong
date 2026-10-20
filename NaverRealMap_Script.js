@@ -851,6 +851,11 @@ document.addEventListener("DOMContentLoaded", function() {
     if (typeof naver !== 'undefined' && map) {
         if (typeof window.initMapPipeline === 'function') window.initMapPipeline();
 
+        // 🎯 [소장님 기획 추가]: 첫 로딩 시(줌 12) 사이드바 필터부를 스르륵 닫은 채로 청정 시작
+        if (typeof toggleSidebar === 'function') {
+            toggleSidebar(); 
+        }
+
         // -----------------------------------------------------------------
         // [기획 핵심 스위치 ①] 지도가 움직이기 시작하면 네온 폴리곤을 즉시 숨김 처리
         // -----------------------------------------------------------------
@@ -870,6 +875,19 @@ document.addEventListener("DOMContentLoaded", function() {
         naver.maps.Event.addListener(map, "idle", function() {
             var centerLatLng = map.getCenter();
             var currentZoom = map.getZoom();
+
+            // 🎯 [소장님 기획 추가]: 줌 레벨 연동형 마스터 토글 원격 스위치 레이어
+            var filterPanel = document.getElementById("sidebar-header");
+            if (filterPanel) {
+                // 줌 14 이상 정밀 시야인데 닫혀 있다면 ➡️ 스르륵 열기
+                if (currentZoom >= 14 && filterPanel.classList.contains("slide-up")) {
+                    toggleSidebar();
+                }
+                // 줌 13 이하 광역 시야인데 열려 있다면 ➡️ 스르륵 닫기
+                else if (currentZoom < 14 && !filterPanel.classList.contains("slide-up")) {
+                    toggleSidebar();
+                }
+            }
 
             // [락 해제] 마우스 드래그가 무한 지속되던 엇박자 타이밍 가드를 강제로 깨워 멈춤 불량 치료
             isCameraMovingToVip = false;
