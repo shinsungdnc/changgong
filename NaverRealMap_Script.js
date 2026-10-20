@@ -420,16 +420,16 @@ function applyFilters() {
         return;
     }
 
-    if (listPanel) {
-        if (window.innerWidth <= 768) { // 모바일 전용
-        } else {
-            if (isSidebarManuallyClosed) {
-                listPanel.style.display = "none";
-            } else {
-                listPanel.style.display = "flex";
-            }
-        }
-    }
+    // if (listPanel) {
+    //     if (window.innerWidth <= 768) { // 모바일 전용
+    //     } else {
+    //         if (isSidebarManuallyClosed) {
+    //             listPanel.style.display = "none";
+    //         } else {
+    //             listPanel.style.display = "flex";
+    //         }
+    //     }
+    // }
     
     // 🛡️ [버그 해결의 핵심]: 선택된 VIP 매물이 없을 때만 목록창 카드를 새로 그립니다. (DOM 증발 차단)
     if (!hasActiveVip) {
@@ -777,8 +777,8 @@ function toggleSidebar() {
         return; // 모바일 제어 마감
     }
 
-    // 💻 [기존 PC 버전 트랙]: 노출 상태에서 숨김 상태로 동작
-    if (listPanel.classList.contains("slide-left")) { 
+    // 💻 [기존 PC 버전 트랙]: 기준축을 filterPanel(slide-up)로 일치시켜 엇박자 원천 봉쇄
+    if (filterPanel.classList.contains("slide-up")) { 
         filterPanel.classList.remove("slide-up");
         listPanel.classList.remove("slide-left");
         isSidebarManuallyClosed = false; 
