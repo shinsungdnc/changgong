@@ -375,13 +375,30 @@ function applyFilters() {
 
             if (isFilterPassed) {
                 if (currentZoom >= 14) {
-                    // 🛡️ [수정 2] 사용자가 수동으로 동네를 선택한 게 아니라면('전체' 상태라면),
-                    // 현재 선택된 VIP 매물이 있을 때는 인근 읍면동 마커도 지도에 살아남게(Push) 뚫어줍니다.
-                    var hasActiveCard = !!document.querySelector(".property-item.active");
-                    if (p.town === closestTown || (currentTown === "전체" && hasActiveCard)) {
-                        listTargetProperties.push({ prop: p, index: i });
+                    // [순서 1] 수동으로 특정 읍면동을 딱 집어 고른 게 아니라면 ('전체' 상태라면)
+                    if (currentTown === "전체") {
+                        // 1-1. 화면 내(시야 범위)에 들어와 있는 매물인가요?
+                        if (currentBounds && currentBounds.hasLatlng(marker.getPosition())) {
+                            // 마커는 무조건 노출되어야 하므로 활성화 장부를 켜고 지도에 직접 바로 꽂아버립니다.
+                            marker.set("isActive", true);
+                            marker.setMap(map); 
+                            
+                            // 1-2. 다만, 그중에서 화면 중심점 읍면동(closestTown)에 속한 정예 매물인가요?
+                            if (p.town === closestTown) {
+                                // 매물 목록창에는 이 중심점 동네 매물들만 로드 시킵니다.
+                                listTargetProperties.push({ prop: p, index: i });
+                            }
+                        }
+                    } 
+                    // [순서 2] 수동으로 특정 읍면동 필터를 선택해 둔 상태라면
+                    else {
+                        // 철저하게 수동 선택된 그 동네 매물만 목록에 담고 노출되도록 제한합니다.
+                        if (p.town === currentTown) {
+                            listTargetProperties.push({ prop: p, index: i });
+                        }
                     }
                 } else {
+                    // 줌 14 미만 광역 뷰일 때는 기존 소스2 규칙 그대로 적용
                     listTargetProperties.push({ prop: p, index: i });
                 }
             }
