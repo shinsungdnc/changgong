@@ -32,7 +32,7 @@ function getActiveTownCenterStats() {
 
         if (mCat && mDet && mDeal) {
             var tName = p.town;
-            if (!stats[tName]) stats[tName] = { count: 0, sumLat: 0, sumLng: 0, lat: p.lat, lng: p.lng };
+            if (!stats[tName]) stats[tName] = { count: 0, sumLat: 0, sumLng: 0, lat: p.lat, lng: p.lng, town_type: p.town_type };
             stats[tName].count++;
             stats[tName].sumLat += p.lat;
             stats[tName].sumLng += p.lng;
@@ -405,7 +405,7 @@ function applyFilters() {
             var vTownMarker = new naver.maps.Marker({ position: townLatLng, map: map, icon: { content: townClusterHtml, anchor: new naver.maps.Point(0, 0) }, clickable: true });
 
             naver.maps.Event.addListener(vTownMarker, "click", function() {
-                var targetZoom = tName.endsWith('면') ? 15 : 17;
+                var targetZoom = (stat.town_type === "rural") ? 15 : 17;
                 map.morph(townLatLng, targetZoom);
                 var townSelector = document.getElementById("town-selector"); 
                 if (townSelector) { townSelector.value = tName; currentTown = tName; currentRi = "전체"; }
