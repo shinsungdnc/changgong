@@ -369,17 +369,12 @@ function applyFilters() {
 
         var isFilterPassed = (mCat && mDet && mTown && mRi && mDeal); 
         marker.set("isActive", isFilterPassed);
+        
         marker.setMap(null); 
 
         if (isFilterPassed) {
             if (currentZoom >= 14) {
-                // ⭕ 기획 구현 핵심 2: 지도 마커는 살려두되, '목록창'에 들어갈 카드는 중심점 동네(closestTown)만 타깃으로 수집
-                if (currentTown === "전체") {
-                    if (p.town === closestTown) {
-                        listTargetProperties.push({ prop: p, index: i });
-                    }
-                } else {
-                    // 지역 필터가 특정 동네로 찍혀있을 때는 당연히 그 동네 매물만 목록창에 수집
+                if (p.town === closestTown) {
                     listTargetProperties.push({ prop: p, index: i });
                 }
             } else {
