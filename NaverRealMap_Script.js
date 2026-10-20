@@ -420,16 +420,16 @@ function applyFilters() {
         return;
     }
 
-    if (listPanel) {
-        if (window.innerWidth <= 768) { // 모바일 전용
-        } else {
-            if (isSidebarManuallyClosed) {
-                listPanel.style.display = "none";
-            } else {
-                listPanel.style.display = "flex";
-            }
-        }
-    }
+    // if (listPanel) {
+    //     if (window.innerWidth <= 768) { // 모바일 전용
+    //     } else {
+    //         if (isSidebarManuallyClosed) {
+    //             listPanel.style.display = "none";
+    //         } else {
+    //             listPanel.style.display = "flex";
+    //         }
+    //     }
+    // }
     
     // 🛡️ [버그 해결의 핵심]: 선택된 VIP 매물이 없을 때만 목록창 카드를 새로 그립니다. (DOM 증발 차단)
     if (!hasActiveVip) {
@@ -851,10 +851,11 @@ document.addEventListener("DOMContentLoaded", function() {
     if (typeof naver !== 'undefined' && map) {
         if (typeof window.initMapPipeline === 'function') window.initMapPipeline();
 
-        // 🎯 [소장님 기획 추가]: 첫 로딩 시(줌 12) 사이드바 필터부를 스르륵 닫은 채로 청정 시작
-        if (typeof toggleSidebar === 'function') {
-            toggleSidebar(); 
-        }
+        // 🎯 [소장님 교정 조치]: 첫 화면 렌더링 시 필터창과 목록창에 숨김 클래스를 즉시 각인
+        var filterPanel = document.getElementById("sidebar-header");
+        var listPanel = document.getElementById("property-list-panel");
+        if (filterPanel) filterPanel.classList.add("slide-up");
+        if (listPanel) listPanel.classList.add("slide-left");
 
         // -----------------------------------------------------------------
         // [기획 핵심 스위치 ①] 지도가 움직이기 시작하면 네온 폴리곤을 즉시 숨김 처리
