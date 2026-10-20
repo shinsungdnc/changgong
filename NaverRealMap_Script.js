@@ -325,6 +325,7 @@ function applyFilters() {
     
     // 🛡️ [버그 방어막]: 현재 어떤 매물이 선택되어 VIP 상태라면, 지도가 움직여도 목록창(DOM)을 리셋하지 않고 그대로 유지합니다.
     var hasActiveVip = markers.some(function(m) { return m.get("isForcedVip") === true; });
+    if (!hasActiveVip) { isCameraMovingToVip = false; }
 
     var listTargetProperties = [];
 
@@ -368,13 +369,20 @@ function applyFilters() {
         currentDealTypes.forEach(function(t) { if (p.price && p.price.indexOf(t) !== -1) mDeal = true; });
 
         var isFilterPassed = (mCat && mDet && mTown && mRi && mDeal); 
-        marker.set("isActive", isFilterPassed);
         
+        // ⭕ 기획 구현 핵심 1: 지도 마커의 노출 여부는 순수 필터 통과 여부로만 결정 (경계 해제)
+        marker.set("isActive", isFilterPassed);
         marker.setMap(null); 
 
         if (isFilterPassed) {
             if (currentZoom >= 14) {
-                if (p.town === closestTown) {
+                // ⭕ 기획 구현 핵심 2: 마커는 살려두고, 목록창 카드만 '전체'일 때 중심점 동네(closestTown)로 격리수집
+                if (currentTown === "전체") {
+                    if (p.town === closestTown) {
+                        listTargetProperties.push({ prop: p, index: i });
+                    }
+                } else {
+                    // 지역 필터가 특정 동네로 찍혀있을 때는 당연히 그 동네 매물만 목록창에 수집
                     listTargetProperties.push({ prop: p, index: i });
                 }
             } else {
