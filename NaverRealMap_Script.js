@@ -543,14 +543,9 @@ function selectProperty(index, marker) {
     document.querySelectorAll(".property-detail").forEach(function(el) { el.style.display = "none"; });
     document.querySelectorAll(".property-item").forEach(function(el) { el.classList.remove("active"); });
 
-    // 🌟 [마커 클릭 시 목록창 강제 수복]: 숨겨져 있던 목록창을 다시 열고, 수동 닫힘 장부 스위치를 완전히 해제!
-    if (listPanel) {
-        listPanel.style.display = "flex";
+    // 🎯 [소장님 교정 조치]: 매물 선택 시 display 스위치 대신, 숨김 클래스를 완전히 파괴(제거)하여 목록창 출현!
+    if (listPanel && filterPanel) {
         isSidebarManuallyClosed = false; 
-    }
-
-    // 🌟 [기획 보완 핵심 코어]: 숨겨져 있던 좌측 2, 3층 패널을 우측과 발맞추어 스르륵 강제 복구!
-    if (filterPanel && listPanel) {
         filterPanel.classList.remove("slide-up");   // 2층 필터부 스르륵 노출
         listPanel.classList.remove("slide-left");   // 3층 목록창 스르륵 노출
     }
