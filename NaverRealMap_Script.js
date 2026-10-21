@@ -511,9 +511,6 @@ function updateClustering(validMarkers) {
 // =========================================================================
 // 🎯 8번 블록: 개별 매물 마커 클릭 이벤트 엔진 수정
 // =========================================================================
-// 🌟 [기획 추가]: 카메라 강제 무빙 중 idle 이벤트 간섭을 원천 차단하는 물리 락(Lock) 스위치 선언
-var isCameraMovingToVip = false;
-
 function selectProperty(index, marker) {
     var listContainer = document.getElementById("property-list");
     var targetItem = document.getElementById("item-" + index);
@@ -522,11 +519,24 @@ function selectProperty(index, marker) {
     var listPanel = document.getElementById("property-list-panel");
     var filterPanel = document.getElementById("sidebar-header");
     
-    // 💡 [버그 완전 치료]: 함수 최상단에 누락되었던 마스터 데이터 변수 'prop'을 명확하게 바인딩합니다.
-    var prop = properties[index]; 
-    if (!prop) return; 
+    // 🛠️ [수정 핵심]: 기존의 if (!targetItem) return; 장벽을 완전히 걷어내고
+    // 타 지역 매물이라 카드가 없을 때만 처리하는 스마트 가드를 심습니다.
+    if (!targetItem) {
+        // 1단계: 지도의 중심점을 클릭한 마커 위치로 즉시 강제 워프시켜 2번 중심점 스캔 발동 유도!
+        map.setCenter(marker.getPosition());
+        
+        // 2단계: 중심점이 바뀌었으므로 필터를 강제 가동하여 목록창에 목적지 동네(부강면) 카드를 싹 새로 그립니다.
+        applyFilters();
+        
+        // 3단계: 새로 그려진 부강면 카드 엘리먼트들을 번개처럼 재바인딩합니다.
+        targetItem = document.getElementById("item-" + index);
+        targetDetail = document.getElementById("detail-" + index);
+        
+        // 만약 필터 제한 등으로 정말 카드가 없다면 그때 안전하게 종료합니다.
+        if (!targetItem) return;
+    }
 
-    // 🔄 선택된 카드를 다시 클릭하여 해제할 때의 처리
+    // 🔄 선택된 카드를 다시 클릭하여 해제할 때의 처리 (이하 기존 코드 100% 동일)
     if (targetItem.classList.contains("active")) {
         targetItem.classList.remove("active"); 
         if (targetDetail) targetDetail.style.display = "none";
@@ -910,6 +920,21 @@ document.addEventListener("DOMContentLoaded", function() {
         naver.maps.Event.addListener(map, "idle", function() {
             var centerLatLng = map.getCenter();
             var currentZoom = map.getZoom();
+
+            // -------------------------------------------------------------------------
+            // 🛠️ [정확한 주입 위치]: 마커 클릭 VIP 상태일 때는 자동 중심점 목록 갱신을 패스합니다.
+            // -------------------------------------------------------------------------
+            var hasActiveVip = markers.some(function(m) { return m.get("isForcedVip") === true; });
+            if (hasActiveVip) {
+                // 지도가 완전히 멈췄으므로, 숨겨졌던 폴리곤(또는 가이드 원)을 화면에 다시 얹어줍니다.
+                if (currentBoundaryCircle) {
+                    currentBoundaryCircle.setMap(map);
+                    if (typeof currentBoundaryCircle.setRadius === 'function') {
+                        currentBoundaryCircle.setRadius(currentZoom === 18 ? 8 : (currentZoom === 17 ? 15 : 20));
+                    }
+                }
+                return; // 🛑 아래의 1단계(중심점 스캔 및 applyFilters)로 내려가지 못하게 차단!
+            }
 
             // [락 해제] 마우스 드래그가 무한 지속되던 엇박자 타이밍 가드를 강제로 깨워 멈춤 불량 치료
             isCameraMovingToVip = false;
