@@ -32,7 +32,7 @@ function getActiveTownCenterStats() {
 
         if (mCat && mDet && mDeal) {
             var tName = p.town;
-            if (!stats[tName]) stats[tName] = { count: 0, sumLat: 0, sumLng: 0, lat: p.lat, lng: p.lng, town_type: p.town_type };
+            if (!stats[tName]) stats[tName] = { count: 0, sumLat: 0, sumLng: 0, lat: p.lat, lng: p.lng };
             stats[tName].count++;
             stats[tName].sumLat += p.lat;
             stats[tName].sumLng += p.lng;
@@ -325,7 +325,6 @@ function applyFilters() {
     
     // 🛡️ [버그 방어막]: 현재 어떤 매물이 선택되어 VIP 상태라면, 지도가 움직여도 목록창(DOM)을 리셋하지 않고 그대로 유지합니다.
     var hasActiveVip = markers.some(function(m) { return m.get("isForcedVip") === true; });
-    if (!hasActiveVip) { isCameraMovingToVip = false; }
 
     var listTargetProperties = [];
 
@@ -334,7 +333,7 @@ function applyFilters() {
 
     // 줌 14레벨 이상일 때 화면 중심점 기준 읍면동 탐색 연산
     var closestTown = "전체";
-        if (currentZoom >= 14) {
+    if (currentZoom >= 14) {
         var centerLatLng = map.getCenter();
         var cLat = centerLatLng.lat();
         var cLng = centerLatLng.lng();
@@ -369,20 +368,13 @@ function applyFilters() {
         currentDealTypes.forEach(function(t) { if (p.price && p.price.indexOf(t) !== -1) mDeal = true; });
 
         var isFilterPassed = (mCat && mDet && mTown && mRi && mDeal); 
-        
-        // ⭕ 기획 구현 핵심 1: 지도 마커의 노출 여부는 순수 필터 통과 여부로만 결정 (경계 해제)
         marker.set("isActive", isFilterPassed);
+        
         marker.setMap(null); 
 
         if (isFilterPassed) {
             if (currentZoom >= 14) {
-                // ⭕ 기획 구현 핵심 2: 마커는 살려두고, 목록창 카드만 '전체'일 때 중심점 동네(closestTown)로 격리수집
-                if (currentTown === "전체") {
-                    if (p.town === closestTown) {
-                        listTargetProperties.push({ prop: p, index: i });
-                    }
-                } else {
-                    // 지역 필터가 특정 동네로 찍혀있을 때는 당연히 그 동네 매물만 목록창에 수집
+                if (p.town === closestTown) {
                     listTargetProperties.push({ prop: p, index: i });
                 }
             } else {
@@ -401,11 +393,11 @@ function applyFilters() {
             var stat = townStats[tName]; 
             if (stat.count === 0) return;
             var townLatLng = new naver.maps.LatLng(stat.lat, stat.lng);
-            var townClusterHtml = ['<div class="custom-town-cluster" style="cursor:pointer; pointer-events:auto !important; z-index:9999 !important; width:64px; height:64px; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(74, 211, 255, 0.95); border:2px solid #ffffff; border-radius:50%; box-shadow:0 3px 12px rgba(0,0,0,0.3); transform:translate(-50%, -50%); box-sizing:border-box; padding:2px;">', ' <div style="font-size:11px; font-weight:700; color:#111111; line-height:1.2; text-align:center; max-width:58px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; pointer-events:none;">' + tName.replace('오송읍', '오송').replace('조치원읍', '조치원') + '</div>', ' <div style="font-size:13px; font-weight:800; color:#111111; line-height:1.2; margin-top:2px; pointer-events:none;">' + stat.count + '</div>', '</div>'].join('');
+            var townClusterHtml = ['<div class="custom-town-cluster" style="cursor:pointer; pointer-events:auto !important; z-index:9999 !important; width:64px; height:64px; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(74, 211, 255, 0.95); border:1px solid #ffffff; border-radius:50%; box-shadow:0 3px 12px rgba(0,0,0,0.3); transform:translate(-50%, -50%); box-sizing:border-box; padding:2px;">', ' <div style="font-size:11px; font-weight:700; color:#111111; line-height:1.2; text-align:center; max-width:58px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; pointer-events:none;">' + tName.replace('오송읍', '오송').replace('조치원읍', '조치원') + '</div>', ' <div style="font-size:13px; font-weight:800; color:#111111; line-height:1.2; margin-top:2px; pointer-events:none;">' + stat.count + '</div>', '</div>'].join('');
             var vTownMarker = new naver.maps.Marker({ position: townLatLng, map: map, icon: { content: townClusterHtml, anchor: new naver.maps.Point(0, 0) }, clickable: true });
 
             naver.maps.Event.addListener(vTownMarker, "click", function() {
-                var targetZoom = (stat.town_type === "rural") ? 15 : 17;
+                var targetZoom = tName.endsWith('면') ? 15 : 17;
                 map.morph(townLatLng, targetZoom);
                 var townSelector = document.getElementById("town-selector"); 
                 if (townSelector) { townSelector.value = tName; currentTown = tName; currentRi = "전체"; }
@@ -512,24 +504,9 @@ function selectProperty(index, marker) {
     var listPanel = document.getElementById("property-list-panel");
     var filterPanel = document.getElementById("sidebar-header");
     
-    // 🛠️ [수정 핵심]: 기존의 if (!targetItem) return; 장벽을 완전히 걷어내고
-    // 타 지역 매물이라 카드가 없을 때만 처리하는 스마트 가드를 심습니다.
-    if (!targetItem) {
-        // 1단계: 지도의 중심점을 클릭한 마커 위치로 즉시 강제 워프시켜 2번 중심점 스캔 발동 유도!
-        map.setCenter(marker.getPosition());
-        
-        // 2단계: 중심점이 바뀌었으므로 필터를 강제 가동하여 목록창에 목적지 동네(부강면) 카드를 싹 새로 그립니다.
-        applyFilters();
-        
-        // 3단계: 새로 그려진 부강면 카드 엘리먼트들을 번개처럼 재바인딩합니다.
-        targetItem = document.getElementById("item-" + index);
-        targetDetail = document.getElementById("detail-" + index);
-        
-        // 만약 필터 제한 등으로 정말 카드가 없다면 그때 안전하게 종료합니다.
-        if (!targetItem) return;
-    }
+    if (!targetItem) return;
 
-    // 🔄 선택된 카드를 다시 클릭하여 해제할 때의 처리 (이하 기존 코드 100% 동일)
+    // 🔄 선택된 카드를 다시 클릭하여 해제할 때의 처리
     if (targetItem.classList.contains("active")) {
         targetItem.classList.remove("active"); 
         if (targetDetail) targetDetail.style.display = "none";
@@ -546,44 +523,7 @@ function selectProperty(index, marker) {
 
     // ① 기존에 찍혀있던 모든 마커의 VIP 절대 권한 초기화 청소
     markers.forEach(function(m) { m.set("isForcedVip", false); });
-    
-    // -------------------------------------------------------------------------
-    // 🛠️ [타 지역 먹통 버그 완치 레이어]
-    // -------------------------------------------------------------------------
-    isCameraMovingToVip = true;
-    marker.set("isForcedVip", true);
 
-    // 타 지역 마커라서 좌측 리스트에 카드가 존재하지 않을 때만 전체 재렌더링 가동!
-    if (!targetItem) {
-        var clickedTownProperties = [];
-        markers.forEach(function(m, i) {
-            var p = properties[i];
-            if (!p) return;
-            
-            // 카테고리 및 거래유형 기본 필터 검사
-            var mCat = (currentCategories.indexOf(m.get("category")) !== -1);
-            var mDet = (currentCategories.length === 0 || currentDetail.indexOf(m.get("detail_type")) !== -1);
-            var mDeal = false;
-            currentDealTypes.forEach(function(t) { if (p.price && p.price.indexOf(t) !== -1) mDeal = true; });
-
-            // 🎯 [핵심 수리 부위]: 현재 지도 드롭다운 상태와 무관하게, 
-            // 무조건 클릭한 마커와 '같은 읍면동'인 매물들만 정밀 격리 수확합니다.
-            var mTown = (p.town === prop.town); 
-
-            if (mCat && mDet && mTown && mDeal) {
-                clickedTownProperties.push({ prop: p, index: i });
-            }
-        });
-        
-        // 목록창을 부강면(목적지 동네) 매물들로 즉시 강제 전환!
-        renderPropertyCards(clickedTownProperties);
-
-        // 번개처럼 새로 그려진 HTML 카드를 메모리에 다시 바인딩합니다.
-        targetItem = document.getElementById("item-" + index);
-        targetDetail = document.getElementById("detail-" + index);
-    }
-
-    // [기존 UI 노출 로직 유지] 
     document.querySelectorAll(".property-detail").forEach(function(el) { el.style.display = "none"; });
     document.querySelectorAll(".property-item").forEach(function(el) { el.classList.remove("active"); });
 
@@ -592,6 +532,7 @@ function selectProperty(index, marker) {
         listPanel.style.display = "flex";
         isSidebarManuallyClosed = false; 
     }
+
     // 🌟 [기획 보완 핵심 코어]: 숨겨져 있던 좌측 2, 3층 패널을 우측과 발맞추어 스르륵 강제 복구!
     if (filterPanel && listPanel) {
         filterPanel.classList.remove("slide-up");   // 2층 필터부 스르륵 노출
@@ -613,73 +554,19 @@ function selectProperty(index, marker) {
     marker.set("isForcedVip", true);
     marker.setMap(map); 
     
-    // 📡 [v2.0 프론트엔드 공간 시각화] 기존 원형 마커 지우고 35% 투명도 형광 초록 네온 폴리곤 가동
-    if (currentBoundaryCircle) { currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }
-    
-    // 백엔드가 수확해 준 polygon_wkt(예: POLYGON((...))) 문자열 검증 및 실시간 파싱
-    if (prop.polygon_wkt && prop.polygon_wkt.indexOf("POLYGON") !== -1) {
-        try {
-            var wktStr = prop.polygon_wkt;
-            // POLYGON ((...)) 또는 MULTIPOLYGON 등에서 순수 좌표 숫자 텍스트 세트만 추출
-            var coordSection = wktStr.substring(wktStr.indexOf("((") + 2, wktStr.lastIndexOf("))"));
-            // 멀티폴리곤 괄호 찌꺼기 청소
-            coordSection = coordSection.replace(/\(/g, "").replace(/\)/g, "");
-            
-            var points = coordSection.split(",");
-            var polygonPaths = [];
-            
-            points.forEach(function(pt) {
-                var pair = pt.trim().split(" ");
-                if (pair.length >= 2) {
-                    var lngVal = parseFloat(pair[0]); // SQL Server geom_wkt는 일반적으로 경도(X) 위도(Y) 순서
-                    var latVal = parseFloat(pair[1]);
-                    if (!isNaN(latVal) && !isNaN(lngVal)) {
-                        polygonPaths.push(new naver.maps.LatLng(latVal, lngVal));
-                    }
-                }
-            });
-            
-            if (polygonPaths.length > 0) {
-                // 🎨 [소장님 친필 명세] 위성지도 시인성 극대화 - 35% 투명도 형광 초록 네온 컬러 드로잉
-                currentBoundaryCircle = new naver.maps.Polygon({
-                    map: map,
-                    paths: polygonPaths,
-                    fillColor: '#39FF14',     // 형광 네온 초록 (Neon Green)
-                    fillOpacity: 0.35,        // 명세서 정확한 투명도 35% 반영
-                    strokeColor: '#39FF14',   // 테두리 네온 초록
-                    strokeOpacity: 0.90,
-                    strokeWeight: 3,          // 위성 위에서 칼 같은 가독성을 위한 두께 3px
-                    clickable: false
-                });
-            }
-        } catch (polygonErr) {
-            console.warn("⚠️ [공간 엔진] WKT 폴리곤 실시간 드로잉 실패 (원형 가이드로 교체 방어):", polygonErr);
-        }
-    }
-    
-    // 만약 지적도 매칭 실패(대장 없음 등) 시 시스템 레이아웃이 깨지지 않도록 기존 원형 가이드라인 백업 기동
-    if (!currentBoundaryCircle) {
-        currentBoundaryCircle = new naver.maps.Circle({ 
-            map: map, 
-            center: marker.getPosition(), 
-            radius: 15, 
-            fillColor: "#39FF14", 
-            fillOpacity: 0.35, 
-            strokeColor: "#2E7D32", 
-            strokeWeight: 2 
-        });
-    }
-    
-    // ④ 모든 상태가 안전하게 고정된 후 지도를 이동 (중앙 정렬 엇박자 완치 레이어)
-    var targetPos = marker.getPosition(); 
-    
-    // 지도가 중앙 이동 목적지에 완벽하게 '안착'해서 멈췄을 때만 락을 해제하는 단발성(once) 가드 설치
-    naver.maps.Event.once(map, "idle", function() {
-        isCameraMovingToVip = false;
-        // 안착이 완전히 끝나고 화면 필터를 차분하게 동기화해 줍니다.
-        applyFilters(); 
+    if (currentBoundaryCircle) currentBoundaryCircle.setMap(null);
+    currentBoundaryCircle = new naver.maps.Circle({ 
+        map: map, 
+        center: marker.getPosition(), 
+        radius: 15, 
+        fillColor: "#00bfff", 
+        fillOpacity: 0.2, 
+        strokeColor: "#ff0000", 
+        strokeWeight: 2 
     });
-
+    
+    // ④ 모든 상태가 안전하게 고정된 후 지도를 이동
+    var targetPos = marker.getPosition(); 
     if (map.getZoom() < 16) { 
         map.morph(targetPos, 16); 
     } else { 
@@ -894,137 +781,44 @@ document.addEventListener("DOMContentLoaded", function() {
     if (typeof naver !== 'undefined' && map) {
         if (typeof window.initMapPipeline === 'function') window.initMapPipeline();
 
-        // -----------------------------------------------------------------
-        // [기획 핵심 스위치 ①] 지도가 움직이기 시작하면 네온 폴리곤을 즉시 숨김 처리
-        // -----------------------------------------------------------------
-        function hidePolygonOnMove() {
-            if (currentBoundaryCircle) {
-                currentBoundaryCircle.setMap(null); // 지도가 회전/이동/줌 하는 동안 면적 연산 부하를 0으로 강제 격리
-            }
-        }
-        // 사용자가 줌 휠을 돌리기 시작하거나 지도를 붙잡고 드래그를 시작하는 순간 발동
-        naver.maps.Event.addListener(map, "zoom_start", hidePolygonOnMove);
-        naver.maps.Event.addListener(map, "dragstart", hidePolygonOnMove);
-
-
-        // -----------------------------------------------------------------
-        // [기획 핵심 스위치 ②] 지도가 완벽하게 멈추어 안착하면 폴리곤을 깨끗하게 재조립
-        // -----------------------------------------------------------------
+        // 🎯 [무한 멈춤 완전 차단] 불필요한 전체 매물 거리 연산 및 스크롤 강제 루프를 전면 제거
         naver.maps.Event.addListener(map, "idle", function() {
             var centerLatLng = map.getCenter();
             var currentZoom = map.getZoom();
 
-            // -------------------------------------------------------------------------
-            // 🛠️ [정확한 주입 위치]: 마커 클릭 VIP 상태일 때는 자동 중심점 목록 갱신을 패스합니다.
-            // -------------------------------------------------------------------------
-            var hasActiveVip = markers.some(function(m) { return m.get("isForcedVip") === true; });
-            if (hasActiveVip) {
-                // 지도가 완전히 멈췄으므로, 숨겨졌던 폴리곤(또는 가이드 원)을 화면에 다시 얹어줍니다.
-                if (currentBoundaryCircle) {
-                    currentBoundaryCircle.setMap(map);
-                    if (typeof currentBoundaryCircle.setRadius === 'function') {
-                        currentBoundaryCircle.setRadius(currentZoom === 18 ? 8 : (currentZoom === 17 ? 15 : 20));
-                    }
-                }
-                return; // 🛑 아래의 1단계(중심점 스캔 및 applyFilters)로 내려가지 못하게 차단!
-            }
-
-            // [락 해제] 마우스 드래그가 무한 지속되던 엇박자 타이밍 가드를 강제로 깨워 멈춤 불량 치료
-            isCameraMovingToVip = false;
-
-            // 💡 1단계: 줌 13 이하 광역 뷰로 완전히 빠져나갈 때는 수동 동네 필터를 초기화
+            // 💡줌 13 이하 광역 뷰로 나갈 때 수동 동네 필터를 자동으로 전체 리셋
             if (currentZoom <= 14 && currentTown !== "전체") {
                 var townSelector = document.getElementById("town-selector");
                 currentTown = "전체";
                 currentRi = "전체";
                 if (townSelector) townSelector.value = "전체";
-                applyFilters(); 
+                applyFilters(); // 필터 해제 상태를 화면에 즉시 새로고침 반영
             }
             
-            // 💡 2단계: 지도가 멈췄으므로 주변 매물 마커와 클러스터러를 차분하게 동기화
+            // 줌 14 이상 진입 시, 화면 중심점이 이동하여 지도가 멈추면 실시간으로 중심점 읍면동 매물 목록을 재구성
             if (currentZoom >= 14) {
                 applyFilters();
             }
             
-            // 💡 3단계: [폴리곤 부활] 지도가 정지했으므로 현재 활성화된 VIP 매물의 네온 폴리곤을 화면에 다시 선명하게 얹음
-            var vipIndex = -1;
-            // 현재 어떤 마커가 선택 상태(VIP)인지 영구 낙인을 추적 스캔
-            markers.forEach(function(m, idx) {
-                if (m.get("isForcedVip") === true) { vipIndex = idx; }
-            });
-
-            // 만약 선택된 VIP 매물이 있다면, 손을 뗀 제자리에 폴리곤 드로잉 장부를 재가동
-            if (vipIndex > -1 && properties[vipIndex]) {
-                var prop = properties[vipIndex];
-                var marker = markers[vipIndex];
-                
-                // 기존 폴리곤 잔상을 완벽히 청소한 후 다시 바인딩
-                if (currentBoundaryCircle) { currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }
-                
-                if (prop.polygon_wkt && prop.polygon_wkt.indexOf("POLYGON") !== -1) {
-                    try {
-                        var coordSection = prop.polygon_wkt.substring(prop.polygon_wkt.indexOf("((") + 2, prop.polygon_wkt.lastIndexOf("))")).replace(/\(/g, "").replace(/\)/g, "");
-                        var points = coordSection.split(",");
-                        var polygonPaths = [];
-                        
-                        points.forEach(function(pt) {
-                            var pair = pt.trim().split(" ");
-                            if (pair.length >= 2) {
-                                var lngVal = parseFloat(pair[0]);
-                                var latVal = parseFloat(pair[1]);
-                                if (!isNaN(latVal) && !isNaN(lngVal)) { polygonPaths.push(new naver.maps.LatLng(latVal, lngVal)); }
-                            }
-                        });
-                        
-                        if (polygonPaths.length > 0) {
-                            currentBoundaryCircle = new naver.maps.Polygon({
-                                map: map,
-                                paths: polygonPaths,
-                                fillColor: '#39FF14',
-                                fillOpacity: 0.35,
-                                strokeColor: '#39FF14',
-                                strokeOpacity: 0.90,
-                                strokeWeight: 3,
-                                clickable: false
-                            });
-                        }
-                    } catch (e) { console.warn("⚠️ 안착 시 폴리곤 복원 가드 작동:", e); }
-                }
-                
-                // 만약 지적 매칭이 없는 토지/주택일 경우 백업용 가이드 원형 레이어 기동
-                if (!currentBoundaryCircle && marker) {
-                    currentBoundaryCircle = new naver.maps.Circle({ 
-                        map: map, 
-                        center: marker.getPosition(), 
-                        radius: currentZoom === 18 ? 8 : (currentZoom === 17 ? 15 : 20), 
-                        fillColor: "#39FF14", 
-                        fillOpacity: 0.35, 
-                        strokeColor: "#2E7D32", 
-                        strokeWeight: 2 
-                    });
-                }
+            // 기존 VIP 가이드라인 원 반경 동적 스케일 제어 로직은 완벽 보존
+            if (currentBoundaryCircle && currentBoundaryCircle.getMap()) {
+                currentBoundaryCircle.setRadius(currentZoom === 18 ? 8 : (currentZoom === 17 ? 15 : 20));
             }
         });
         
-        // 💡 줌 인/아웃 연속 조작 시 주변 마커들이 꼬이지 않도록 0.2초 디바운스 가드 고정 유지
+        // 💡 화면 뷰포트 시야각이 완벽하게 고정 및 정지되는 '마우스 끝 시점'에만 실시간 필터를 과부하 없이 한 번만 기동
+        // 💡 [739번 라인 대체]: 줌 인/아웃 연속 무빙 시 렉을 없애주는 디바운스 가드
         var zoomTimer = null;
         naver.maps.Event.addListener(map, "zoom_changed", function() {
-            var hasActiveVip = markers.some(function(m) { return m.get("isForcedVip") === true; });
-            if (hasActiveVip) return; // 폴리곤 노출 상태일 때는 줌 도중 클러스터러 재조립 연산을 생략하여 중심축 완벽 고정
-
-            if (zoomTimer !== null) { clearTimeout(zoomTimer); }
+            if (zoomTimer !== null) {
+                clearTimeout(zoomTimer);
+            }
             zoomTimer = setTimeout(function() {
                 applyFilters();
                 zoomTimer = null;
-            }, 200); 
+            }, 200); // 0.2초 동안 추가 휠 입력이 없으면 멈춘 것으로 판단하고 딱 1번 실행
         });
-
-        // 지도를 드래그하다가 손을 뗐을 때도 VIP 상태라면 주변 연산을 건너뛰어 자연스러운 정지 보장
-        naver.maps.Event.addListener(map, "dragend", function() { 
-            var hasActiveVip = markers.some(function(m) { return m.get("isForcedVip") === true; });
-            if (hasActiveVip) return;
-            applyFilters(); 
-        });
+        naver.maps.Event.addListener(map, "dragend", function() { applyFilters(); });
     }
 });
 
