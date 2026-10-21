@@ -327,13 +327,6 @@ function applyFilters() {
     var hasActiveVip = markers.some(function(m) { return m.get("isForcedVip") === true; });
     if (!hasActiveVip) { isCameraMovingToVip = false; }
 
-    // -------------------------------------------------------------------------
-    // 🛠️ [연산 부하 차단 가드] 마커 클릭 이동 중이면 즉시 리턴하여 지연 현상을 박멸합니다.
-    // -------------------------------------------------------------------------
-    if (isCameraMovingToVip && hasActiveVip) {
-        return;
-    }
-
     var listTargetProperties = [];
 
     virtualTownMarkers.forEach(function(vm) { vm.setMap(null); }); 
