@@ -544,6 +544,7 @@ function selectProperty(index, marker) {
         isSidebarManuallyClosed = false;            // 수동 닫힘 장부 해제
         filterPanel.classList.remove("slide-up");   // 2층 필터부 스르륵 노출
         listPanel.classList.remove("slide-left");   // 3층 목록창 스르륵 노출
+        listPanel.style.setProperty("display", "flex", "important"); 
     }
 
     // 기존의 모든 상세 정보 창과 활성화 클래스 초기화 (순정 그대로 보존)
