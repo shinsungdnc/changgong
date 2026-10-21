@@ -420,16 +420,16 @@ function applyFilters() {
         return;
     }
 
-    // if (listPanel) {
-    //     if (window.innerWidth <= 768) { // 모바일 전용
-    //     } else {
-    //         if (isSidebarManuallyClosed) {
-    //             listPanel.style.display = "none";
-    //         } else {
-    //             listPanel.style.display = "flex";
-    //         }
-    //     }
-    // }
+    if (listPanel) {
+        if (window.innerWidth <= 768) { // 모바일 전용
+        } else {
+            if (isSidebarManuallyClosed) {
+                listPanel.style.display = "none";
+            } else {
+                listPanel.style.display = "flex";
+            }
+        }
+    }
     
     // 🛡️ [버그 해결의 핵심]: 선택된 VIP 매물이 없을 때만 목록창 카드를 새로 그립니다. (DOM 증발 차단)
     if (!hasActiveVip) {
@@ -502,8 +502,9 @@ function updateClustering(validMarkers) {
     // });
 }
 // =========================================================================
-// 🎯 8번 블록: 개별 매물 마커 클릭 이벤트 엔진 (순정 UI 복구 완결판)
+// 🎯 8번 블록: 개별 매물 마커 클릭 이벤트 엔진 수정
 // =========================================================================
+// 🌟 [기획 추가]: 카메라 강제 무빙 중 idle 이벤트 간섭을 원천 차단하는 물리 락(Lock) 스위치 선언
 var isCameraMovingToVip = false;
 
 function selectProperty(index, marker) {
@@ -514,12 +515,12 @@ function selectProperty(index, marker) {
     var listPanel = document.getElementById("property-list-panel");
     var filterPanel = document.getElementById("sidebar-header");
     
-    // 💡 [수정 구간] 원본 데이터 변수 'prop' 매칭 (targetItem 검사 장벽만 제거)
+    // 💡 [버그 완전 치료]: 함수 최상단에 누락되었던 마스터 데이터 변수 'prop'을 명확하게 바인딩합니다.
     var prop = properties[index]; 
-    if (!prop) return;
+    if (!targetItem || !prop) return;
 
-    // 🔄 선택된 카드를 다시 클릭하여 해제할 때의 처리 (순정 그대로 보존)
-    if (targetItem && targetItem.classList.contains("active")) {
+    // 🔄 선택된 카드를 다시 클릭하여 해제할 때의 처리
+    if (targetItem.classList.contains("active")) {
         targetItem.classList.remove("active"); 
         if (targetDetail) targetDetail.style.display = "none";
         if (currentBoundaryCircle) { currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }
@@ -529,39 +530,41 @@ function selectProperty(index, marker) {
         
         if (panel) panel.classList.remove("active", "expanded"); 
         
-        setTimeout(function() { applyFilters(); }, 100);
+        setTimeout(function() { applyFilters(); }, 50);
         return; 
     }
 
     // ① 기존에 찍혀있던 모든 마커의 VIP 절대 권한 초기화 청소
     markers.forEach(function(m) { m.set("isForcedVip", false); });
     
-    // 🌟 [중앙 정렬 보장 레이어 가동]
+    // 🌟 [중앙 정렬 보장 레이어]: 카메라 강제 중심 이동이 시작됨을 선언하여 백그라운드 필터 차단
     isCameraMovingToVip = true;
 
-    // 🌟 [순정 UI 수복 코어]: 숨겨져 있거나 닫혀 있던 목록창 문을 순정 명세대로 확실하게 열어줍니다.
-    if (filterPanel && listPanel) {
-        filterPanel.classList.remove("slide-up");   // 2층 필터부 스르륵 노출
-        listPanel.classList.remove("slide-left");   // 3층 목록창 스르륵 노출 
-    }
-
-    // 기존의 모든 상세 정보 창과 활성화 클래스 초기화 (순정 그대로 보존)
     document.querySelectorAll(".property-detail").forEach(function(el) { el.style.display = "none"; });
     document.querySelectorAll(".property-item").forEach(function(el) { el.classList.remove("active"); });
 
-    // ② UI를 안전하게 활성화하여 노출 (카드가 이미 리스트에 존재할 때만 실행)
-    if (targetItem) {
-        if (targetDetail) targetDetail.style.display = "block"; 
-        targetItem.classList.add("active");
-
-        if (listContainer) {
-            listContainer.scrollTo({
-                top: targetItem.offsetTop - listContainer.offsetTop - 4,
-                behavior: "smooth"
-            });
-        }
+    // 🌟 [마커 클릭 시 목록창 강제 수복]: 숨겨져 있던 목록창을 다시 열고, 수동 닫힘 장부 스위치를 완전히 해제!
+    if (listPanel) {
+        listPanel.style.display = "flex";
+        isSidebarManuallyClosed = false; 
     }
-    // 💡 [수정 구간 끝 - 이 아래부터는 기존 순정 카메라 이동 및 폴리곤 로직이 이어집니다.]
+
+    // 🌟 [기획 보완 핵심 코어]: 숨겨져 있던 좌측 2, 3층 패널을 우측과 발맞추어 스르륵 강제 복구!
+    if (filterPanel && listPanel) {
+        filterPanel.classList.remove("slide-up");   // 2층 필터부 스르륵 노출
+        listPanel.classList.remove("slide-left");   // 3층 목록창 스르륵 노출
+    }
+
+    // ② UI를 안전하게 활성화하여 노출
+    if (targetDetail) targetDetail.style.display = "block"; 
+    targetItem.classList.add("active");
+
+    if (listContainer) {
+        listContainer.scrollTo({
+            top: targetItem.offsetTop - listContainer.offsetTop - 4,
+            behavior: "smooth"
+        });
+    }
 
     // ③ 카메라가 이동하기 전에 생존 낙인을 박아 idle 리셋 방어
     marker.set("isForcedVip", true);
@@ -774,8 +777,8 @@ function toggleSidebar() {
         return; // 모바일 제어 마감
     }
 
-    // 💻 [기존 PC 버전 트랙]: 기준축을 filterPanel(slide-up)로 일치시켜 엇박자 원천 봉쇄
-    if (filterPanel.classList.contains("slide-up")) { 
+    // 💻 [기존 PC 버전 트랙]: 노출 상태에서 숨김 상태로 동작
+    if (listPanel.classList.contains("slide-left")) { 
         filterPanel.classList.remove("slide-up");
         listPanel.classList.remove("slide-left");
         isSidebarManuallyClosed = false; 
@@ -870,19 +873,6 @@ document.addEventListener("DOMContentLoaded", function() {
 
             // [락 해제] 마우스 드래그가 무한 지속되던 엇박자 타이밍 가드를 강제로 깨워 멈춤 불량 치료
             isCameraMovingToVip = false;
-
-            // 🎯 [소장님 기획 추가]: 줌 레벨 연동형 명품 토글 엔진 대리 스위치
-            var filterPanel = document.getElementById("sidebar-header");
-            if (filterPanel) {
-                // 줌 14 이상 정밀 시야인데 닫혀 있다면 (slide-up 클래스가 있다면) ➡️ 양 날개 스르륵 열기
-                if (currentZoom >= 14 && filterPanel.classList.contains("slide-up")) {
-                    toggleSidebar();
-                }
-                // 줌 13 이하 광역 시야인데 열려 있다면 (slide-up 클래스가 없다면) ➡️ 양 날개 스르륵 닫기
-                else if (currentZoom < 14 && !filterPanel.classList.contains("slide-up")) {
-                    toggleSidebar();
-                }
-            }
 
             // 💡 1단계: 줌 13 이하 광역 뷰로 완전히 빠져나갈 때는 수동 동네 필터를 초기화
             if (currentZoom <= 14 && currentTown !== "전체") {
