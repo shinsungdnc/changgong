@@ -541,10 +541,8 @@ function selectProperty(index, marker) {
 
     // 🌟 [순정 UI 수복 코어]: 숨겨져 있거나 닫혀 있던 목록창 문을 순정 명세대로 확실하게 열어줍니다.
     if (filterPanel && listPanel) {
-        isSidebarManuallyClosed = false;            // 수동 닫힘 장부 해제
         filterPanel.classList.remove("slide-up");   // 2층 필터부 스르륵 노출
-        listPanel.classList.remove("slide-left");   // 3층 목록창 스르륵 노출
-        listPanel.style.setProperty("display", "flex", "important"); 
+        listPanel.classList.remove("slide-left");   // 3층 목록창 스르륵 노출 
     }
 
     // 기존의 모든 상세 정보 창과 활성화 클래스 초기화 (순정 그대로 보존)
