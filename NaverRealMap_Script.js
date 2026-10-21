@@ -515,12 +515,12 @@ function selectProperty(index, marker) {
     var listPanel = document.getElementById("property-list-panel");
     var filterPanel = document.getElementById("sidebar-header");
     
-    // 💡 [버그 완전 치료]: 함수 최상단에 누락되었던 마스터 데이터 변수 'prop'을 명확하게 바인딩합니다.
+    // 💡 [순리대로의 수정 구간 시작] 
     var prop = properties[index]; 
-    if (!targetItem || !prop) return;
+    if (!prop) return; // 마스터 데이터인 매물 정보(prop)만 있으면 일단 통과합니다.
 
     // 🔄 선택된 카드를 다시 클릭하여 해제할 때의 처리
-    if (targetItem.classList.contains("active")) {
+    if (targetItem && targetItem.classList.contains("active")) {
         targetItem.classList.remove("active"); 
         if (targetDetail) targetDetail.style.display = "none";
         if (currentBoundaryCircle) { currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }
@@ -537,34 +537,32 @@ function selectProperty(index, marker) {
     // ① 기존에 찍혀있던 모든 마커의 VIP 절대 권한 초기화 청소
     markers.forEach(function(m) { m.set("isForcedVip", false); });
     
-    // 🌟 [중앙 정렬 보장 레이어]: 카메라 강제 중심 이동이 시작됨을 선언하여 백그라운드 필터 차단
+    // 🌟 [중앙 정렬 보장 레이어]: 지도가 이동해서 멈출 때까지 시스템 자동 필터 연산을 대기시킵니다.
     isCameraMovingToVip = true;
 
+    // 🛠️ [버그 완치 핵심]: 목록창에 카드가 없더라도(!targetItem) 강제로 화면을 엶 처리합니다.
+    if (filterPanel && listPanel) {
+        isSidebarManuallyClosed = false;
+        filterPanel.classList.remove("slide-up");   // 2층 필터부 노출
+        listPanel.classList.remove("slide-left");   // 3층 목록창 노출
+    }
+
+    // 기존의 모든 상세 정보 창과 활성화 클래스 초기화
     document.querySelectorAll(".property-detail").forEach(function(el) { el.style.display = "none"; });
     document.querySelectorAll(".property-item").forEach(function(el) { el.classList.remove("active"); });
 
-    // // 🌟 [마커 클릭 시 목록창 강제 수복]: 숨겨져 있던 목록창을 다시 열고, 수동 닫힘 장부 스위치를 완전히 해제!
-    // if (listPanel) {
-    //     listPanel.style.display = "flex";
-    //     isSidebarManuallyClosed = false; 
-    // }
+    // ② UI 안전 활성화 (카드가 목록창에 이미 존재할 때만 스크롤 이동 및 active 처리)
+    if (targetItem) {
+        var targetDetail = document.getElementById("detail-" + index); 
+        if (targetDetail) targetDetail.style.display = "block"; 
+        targetItem.classList.add("active");
 
-    // 🌟 오직 순정 슬라이딩 클래스(slide-left, slide-up)를 해제하는 방식으로 문을 매끄럽게 열어줍니다.
-    if (filterPanel && listPanel) {
-        isSidebarManuallyClosed = false;
-        filterPanel.classList.remove("slide-up");   // 2층 필터부 스르륵 노출
-        listPanel.classList.remove("slide-left");   // 3층 목록창 스르륵 노출
-    }
-
-    // ② UI를 안전하게 활성화하여 노출
-    if (targetDetail) targetDetail.style.display = "block"; 
-    targetItem.classList.add("active");
-
-    if (listContainer) {
-        listContainer.scrollTo({
-            top: targetItem.offsetTop - listContainer.offsetTop - 4,
-            behavior: "smooth"
-        });
+        if (listContainer) {
+            listContainer.scrollTo({
+                top: targetItem.offsetTop - listContainer.offsetTop - 4,
+                behavior: "smooth"
+            });
+        }
     }
 
     // ③ 카메라가 이동하기 전에 생존 낙인을 박아 idle 리셋 방어
