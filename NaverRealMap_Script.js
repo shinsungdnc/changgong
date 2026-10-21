@@ -502,9 +502,8 @@ function updateClustering(validMarkers) {
     // });
 }
 // =========================================================================
-// 🎯 8번 블록: 개별 매물 마커 클릭 이벤트 엔진 수정
+// 🎯 8번 블록: 개별 매물 마커 클릭 이벤트 엔진 (순정 UI 복구 완결판)
 // =========================================================================
-// 🌟 [기획 추가]: 카메라 강제 무빙 중 idle 이벤트 간섭을 원천 차단하는 물리 락(Lock) 스위치 선언
 var isCameraMovingToVip = false;
 
 function selectProperty(index, marker) {
@@ -515,11 +514,11 @@ function selectProperty(index, marker) {
     var listPanel = document.getElementById("property-list-panel");
     var filterPanel = document.getElementById("sidebar-header");
     
-    // 💡 [순리대로의 수정 구간 시작] 
+    // 💡 [수정 구간] 원본 데이터 변수 'prop' 매칭 (targetItem 검사 장벽만 제거)
     var prop = properties[index]; 
-    if (!prop) return; // 마스터 데이터인 매물 정보(prop)만 있으면 일단 통과합니다.
+    if (!prop) return;
 
-    // 🔄 선택된 카드를 다시 클릭하여 해제할 때의 처리
+    // 🔄 선택된 카드를 다시 클릭하여 해제할 때의 처리 (순정 그대로 보존)
     if (targetItem && targetItem.classList.contains("active")) {
         targetItem.classList.remove("active"); 
         if (targetDetail) targetDetail.style.display = "none";
@@ -537,23 +536,22 @@ function selectProperty(index, marker) {
     // ① 기존에 찍혀있던 모든 마커의 VIP 절대 권한 초기화 청소
     markers.forEach(function(m) { m.set("isForcedVip", false); });
     
-    // 🌟 [중앙 정렬 보장 레이어]: 지도가 이동해서 멈출 때까지 시스템 자동 필터 연산을 대기시킵니다.
+    // 🌟 [중앙 정렬 보장 레이어 가동]
     isCameraMovingToVip = true;
 
-    // 🛠️ [버그 완치 핵심]: 목록창에 카드가 없더라도(!targetItem) 강제로 화면을 엶 처리합니다.
+    // 🌟 [순정 UI 수복 코어]: 숨겨져 있거나 닫혀 있던 목록창 문을 순정 명세대로 확실하게 열어줍니다.
     if (filterPanel && listPanel) {
-        isSidebarManuallyClosed = false;
-        filterPanel.classList.remove("slide-up");   // 2층 필터부 노출
-        listPanel.classList.remove("slide-left");   // 3층 목록창 노출
+        isSidebarManuallyClosed = false;            // 수동 닫힘 장부 해제
+        filterPanel.classList.remove("slide-up");   // 2층 필터부 스르륵 노출
+        listPanel.classList.remove("slide-left");   // 3층 목록창 스르륵 노출
     }
 
-    // 기존의 모든 상세 정보 창과 활성화 클래스 초기화
+    // 기존의 모든 상세 정보 창과 활성화 클래스 초기화 (순정 그대로 보존)
     document.querySelectorAll(".property-detail").forEach(function(el) { el.style.display = "none"; });
     document.querySelectorAll(".property-item").forEach(function(el) { el.classList.remove("active"); });
 
-    // ② UI 안전 활성화 (카드가 목록창에 이미 존재할 때만 스크롤 이동 및 active 처리)
+    // ② UI를 안전하게 활성화하여 노출 (카드가 이미 리스트에 존재할 때만 실행)
     if (targetItem) {
-        var targetDetail = document.getElementById("detail-" + index); 
         if (targetDetail) targetDetail.style.display = "block"; 
         targetItem.classList.add("active");
 
@@ -564,6 +562,7 @@ function selectProperty(index, marker) {
             });
         }
     }
+    // 💡 [수정 구간 끝 - 이 아래부터는 기존 순정 카메라 이동 및 폴리곤 로직이 이어집니다.]
 
     // ③ 카메라가 이동하기 전에 생존 낙인을 박아 idle 리셋 방어
     marker.set("isForcedVip", true);
