@@ -517,7 +517,7 @@ function selectProperty(index, marker) {
     
     // 💡 [버그 완전 치료]: 함수 최상단에 누락되었던 마스터 데이터 변수 'prop'을 명확하게 바인딩합니다.
     var prop = properties[index]; 
-    if (!targetItem || !prop) return;
+    if (!prop) return; 
 
     // 🔄 선택된 카드를 다시 클릭하여 해제할 때의 처리
     if (targetItem.classList.contains("active")) {
