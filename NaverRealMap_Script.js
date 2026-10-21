@@ -332,6 +332,11 @@ function applyFilters() {
     virtualTownMarkers.forEach(function(vm) { vm.setMap(null); }); 
     virtualTownMarkers = [];
 
+    if (isCameraMovingToVip && hasActiveVip) {
+        // 이미 8번 블록에서 세팅한 목적지 동네 매물 목록창(DOM) 장부를 그대로 유지하고 리턴시킵니다.
+        return;
+    }
+
     // 줌 14레벨 이상일 때 화면 중심점 기준 읍면동 탐색 연산
     var closestTown = "전체";
     if (currentZoom >= 14) {
@@ -537,9 +542,39 @@ function selectProperty(index, marker) {
     // ① 기존에 찍혀있던 모든 마커의 VIP 절대 권한 초기화 청소
     markers.forEach(function(m) { m.set("isForcedVip", false); });
     
-    // 🌟 [중앙 정렬 보장 레이어]: 카메라 강제 중심 이동이 시작됨을 선언하여 백그라운드 필터 차단
+    // -------------------------------------------------------------------------
+    // 🛠️ [기획 1번 절대 명령권 선포 및 목록 강제 가로채기 부위]
+    // -------------------------------------------------------------------------
+    // 1단계: 카메라 강제 중심 이동 물리 락(Lock)을 즉시 가동하여 2번 자동화 차단!
     isCameraMovingToVip = true;
+    marker.set("isForcedVip", true); // 마커에 VIP 생존 낙인 주입
 
+    // 2단계: 지역 필터가 '전체'인 상황이더라도, 목적지 매물이 소속된 동네(예: 부강면) 매물 전체를 필터링하여 목록창에 한 발 먼저 로딩!
+    var clickedTownProperties = [];
+    markers.forEach(function(m, i) {
+        var p = properties[i];
+        if (!p) return;
+        
+        // 카테고리, 거래유형 등의 기본 필터를 통과하고 + 클릭한 매물과 '같은 동네'인 매물들을 격리 수집
+        var mCat = (currentCategories.indexOf(m.get("category")) !== -1);
+        var mDet = (currentCategories.length === 0 || currentDetail.indexOf(m.get("detail_type")) !== -1);
+        var mTown = (currentTown === "전체" || p.town === prop.town); // 클릭한 매물의 town과 일치 검사
+        var mDeal = false;
+        currentDealTypes.forEach(function(t) { if (p.price && p.price.indexOf(t) !== -1) mDeal = true; });
+
+        if (mCat && mDet && mTown && mDeal) {
+            clickedTownProperties.push({ prop: p, index: i });
+        }
+    });
+    
+    // 3단계: 부강면 매물 카드를 목록창(DOM)에 싹 깔아버려서 스크롤 타깃 장부 완벽 구성!
+    renderPropertyCards(clickedTownProperties);
+
+    // 다시 동적으로 생성된 HTML 카드를 정확하게 재바인딩합니다.
+    targetItem = document.getElementById("item-" + index);
+    targetDetail = document.getElementById("detail-" + index);
+
+    // [기존 UI 노출 로직 유지] 
     document.querySelectorAll(".property-detail").forEach(function(el) { el.style.display = "none"; });
     document.querySelectorAll(".property-item").forEach(function(el) { el.classList.remove("active"); });
 
