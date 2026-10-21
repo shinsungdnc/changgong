@@ -19,6 +19,9 @@ var currentDealTypes = ["매매", "전세", "월세", "단기"];
 var markerClustering = null; 
 var currentBoundaryCircle = null;
 var virtualTownMarkers = []; 
+// 🌟 [기획 연동 코어]: 카메라 강제 무빙 중 중심점 이벤트 간섭을 원천 차단하는 전역 스위치
+var isCameraMovingToVip = false;
+
 // =========================================================================
 // 🎯 실시간 동네별 가상 중심점 및 수량 수확 계산기 [2번 블록]
 // =========================================================================
@@ -322,6 +325,8 @@ function applyFilters() {
     var currentZoom = map.getZoom(); 
     var currentBounds = map.getBounds(); 
     var listPanel = document.getElementById("property-list-panel");
+
+    if (isCameraMovingToVip) { return; }
     
     // 🛡️ [버그 방어막]: 현재 어떤 매물이 선택되어 VIP 상태라면, 지도가 움직여도 목록창(DOM)을 리셋하지 않고 그대로 유지합니다.
     var hasActiveVip = markers.some(function(m) { return m.get("isForcedVip") === true; });
@@ -507,88 +512,68 @@ function updateClustering(validMarkers) {
 // 🌟 [기획 추가]: 카메라 강제 무빙 중 idle 이벤트 간섭을 원천 차단하는 물리 락(Lock) 스위치 선언
 var isCameraMovingToVip = false;
 
+// =========================================================================
+// 🎯 [8번 블록 수정완결판] 개별 매물 마커 클릭 이벤트 엔진
+// =========================================================================
 function selectProperty(index, marker) {
     var listContainer = document.getElementById("property-list");
-    var targetItem = document.getElementById("item-" + index);
-    var targetDetail = document.getElementById("detail-" + index); 
     var panel = document.getElementById("right-stats-panel");
     var listPanel = document.getElementById("property-list-panel");
     var filterPanel = document.getElementById("sidebar-header");
     
-    // 💡 [버그 완전 치료]: 함수 최상단에 누락되었던 마스터 데이터 변수 'prop'을 명확하게 바인딩합니다.
+    // 💡 [수술 포인트 1]: 목록창 대조 브레이크 철폐! 다른 지역 마커여도 원본 데이터(prop)만 있으면 통과!
     var prop = properties[index]; 
-    if (!targetItem || !prop) return;
+    if (!prop) return; 
+
+    // 현재 목록창에 카드가 있는지 조회만 해둡니다 (종료 스위치로 사용)
+    var targetItem = document.getElementById("item-" + index);
 
     // 🔄 선택된 카드를 다시 클릭하여 해제할 때의 처리
-    if (targetItem.classList.contains("active")) {
+    if (targetItem && targetItem.classList.contains("active")) {
         targetItem.classList.remove("active"); 
+        var targetDetail = document.getElementById("detail-" + index);
         if (targetDetail) targetDetail.style.display = "none";
         if (currentBoundaryCircle) { currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }
         
         marker.set("isForcedVip", false);
         marker.setMap(null);
-        
         if (panel) panel.classList.remove("active", "expanded"); 
         
         setTimeout(function() { applyFilters(); }, 50);
         return; 
     }
 
-    // ① 기존에 찍혀있던 모든 마커의 VIP 절대 권한 초기화 청소
+    // ① 다른 마커를 선택했으므로 기존 모든 마커의 VIP 절대 권한을 즉시 초기화 청소
     markers.forEach(function(m) { m.set("isForcedVip", false); });
     
-    // 🌟 [중앙 정렬 보장 레이어]: 카메라 강제 중심 이동이 시작됨을 선언하여 백그라운드 필터 차단
+    // 🌟 [수술 포인트 2]: 클릭되자마자 카메라 락(Lock)을 걸어 자동 비행 중 필터 간섭 차단!
     isCameraMovingToVip = true;
 
+    // 기존 UI 활성화 흔적 일제 청소
     document.querySelectorAll(".property-detail").forEach(function(el) { el.style.display = "none"; });
     document.querySelectorAll(".property-item").forEach(function(el) { el.classList.remove("active"); });
 
-    // 🌟 [마커 클릭 시 목록창 강제 수복]: 숨겨져 있던 목록창을 다시 열고, 수동 닫힘 장부 스위치를 완전히 해제!
-    if (listPanel) {
-        listPanel.style.display = "flex";
-        isSidebarManuallyClosed = false; 
-    }
+    // 숨겨져 있던 목록창 패널 및 2, 3층 패널 스르륵 복구
+    if (listPanel) { listPanel.style.display = "flex"; isSidebarManuallyClosed = false; }
+    if (filterPanel && listPanel) { filterPanel.classList.remove("slide-up"); listPanel.classList.remove("slide-left"); }
 
-    // 🌟 [기획 보완 핵심 코어]: 숨겨져 있던 좌측 2, 3층 패널을 우측과 발맞추어 스르륵 강제 복구!
-    if (filterPanel && listPanel) {
-        filterPanel.classList.remove("slide-up");   // 2층 필터부 스르륵 노출
-        listPanel.classList.remove("slide-left");   // 3층 목록창 스르륵 노출
-    }
-
-    // ② UI를 안전하게 활성화하여 노출
-    if (targetDetail) targetDetail.style.display = "block"; 
-    targetItem.classList.add("active");
-
-    if (listContainer) {
-        listContainer.scrollTo({
-            top: targetItem.offsetTop - listContainer.offsetTop - 4,
-            behavior: "smooth"
-        });
-    }
-
-    // ③ 카메라가 이동하기 전에 생존 낙인을 박아 idle 리셋 방어
+    // 마커에 생존 낙인을 박고 지도 위에 강제 상주
     marker.set("isForcedVip", true);
     marker.setMap(map); 
     
-    // 📡 [v2.0 프론트엔드 공간 시각화] 기존 원형 마커 지우고 35% 투명도 형광 초록 네온 폴리곤 가동
+    // ② [공간 시각화]: 대장님의 명품 35% 투명도 형광 초록 네온 폴리곤 로직 (★원본 100% 그대로 보존)
     if (currentBoundaryCircle) { currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }
     
-    // 백엔드가 수확해 준 polygon_wkt(예: POLYGON((...))) 문자열 검증 및 실시간 파싱
     if (prop.polygon_wkt && prop.polygon_wkt.indexOf("POLYGON") !== -1) {
         try {
-            var wktStr = prop.polygon_wkt;
-            // POLYGON ((...)) 또는 MULTIPOLYGON 등에서 순수 좌표 숫자 텍스트 세트만 추출
-            var coordSection = wktStr.substring(wktStr.indexOf("((") + 2, wktStr.lastIndexOf("))"));
-            // 멀티폴리곤 괄호 찌꺼기 청소
-            coordSection = coordSection.replace(/\(/g, "").replace(/\)/g, "");
-            
+            var coordSection = prop.polygon_wkt.substring(prop.polygon_wkt.indexOf("((") + 2, prop.polygon_wkt.lastIndexOf("))")).replace(/\(/g, "").replace(/\)/g, "");
             var points = coordSection.split(",");
             var polygonPaths = [];
             
             points.forEach(function(pt) {
                 var pair = pt.trim().split(" ");
                 if (pair.length >= 2) {
-                    var lngVal = parseFloat(pair[0]); // SQL Server geom_wkt는 일반적으로 경도(X) 위도(Y) 순서
+                    var lngVal = parseFloat(pair[0]); 
                     var latVal = parseFloat(pair[1]);
                     if (!isNaN(latVal) && !isNaN(lngVal)) {
                         polygonPaths.push(new naver.maps.LatLng(latVal, lngVal));
@@ -597,15 +582,14 @@ function selectProperty(index, marker) {
             });
             
             if (polygonPaths.length > 0) {
-                // 🎨 [소장님 친필 명세] 위성지도 시인성 극대화 - 35% 투명도 형광 초록 네온 컬러 드로잉
                 currentBoundaryCircle = new naver.maps.Polygon({
                     map: map,
                     paths: polygonPaths,
-                    fillColor: '#39FF14',     // 형광 네온 초록 (Neon Green)
-                    fillOpacity: 0.35,        // 명세서 정확한 투명도 35% 반영
+                    fillColor: '#39FF14',     // 형광 네온 초록
+                    fillOpacity: 0.35,        // 투명도 35%
                     strokeColor: '#39FF14',   // 테두리 네온 초록
                     strokeOpacity: 0.90,
-                    strokeWeight: 3,          // 위성 위에서 칼 같은 가독성을 위한 두께 3px
+                    strokeWeight: 3,          // 두께 3px
                     clickable: false
                 });
             }
@@ -614,27 +598,37 @@ function selectProperty(index, marker) {
         }
     }
     
-    // 만약 지적도 매칭 실패(대장 없음 등) 시 시스템 레이아웃이 깨지지 않도록 기존 원형 가이드라인 백업 기동
+    // 지적도 매칭 실패 시 백업용 원형 가이드라인 레이어 기동 (★원본 100% 그대로 보존)
     if (!currentBoundaryCircle) {
         currentBoundaryCircle = new naver.maps.Circle({ 
-            map: map, 
-            center: marker.getPosition(), 
-            radius: 15, 
-            fillColor: "#39FF14", 
-            fillOpacity: 0.35, 
-            strokeColor: "#2E7D32", 
-            strokeWeight: 2 
+            map: map, center: marker.getPosition(), radius: 15, fillColor: "#39FF14", fillOpacity: 0.35, strokeColor: "#2E7D32", strokeWeight: 2 
         });
     }
     
-    // ④ 모든 상태가 안전하게 고정된 후 지도를 이동 (중앙 정렬 엇박자 완치 레이어)
+    // ③ [수술 포인트 3]: 목록창 검사 없이 카메라 무빙 명령 최우선 즉시 발사!
     var targetPos = marker.getPosition(); 
     
-    // 지도가 중앙 이동 목적지에 완벽하게 '안착'해서 멈췄을 때만 락을 해제하는 단발성(once) 가드 설치
+    // 🏁 지도가 목적지(부강면)에 완벽하게 안착해서 멈췄을 때 작동할 마감 장부 예약
     naver.maps.Event.once(map, "idle", function() {
-        isCameraMovingToVip = false;
-        // 안착이 완전히 끝나고 화면 필터를 차분하게 동기화해 줍니다.
+        isCameraMovingToVip = false; // 안착 끝났으니 락 해제
+        
+        // 🌟 [수술 포인트 4]: 도착했으니 원래 대장님 기획대로 현재 이동된 중심점 매물 목록을 싹 새로 채웁니다!
         applyFilters(); 
+
+        // 이제 목록창에 부강면 카드가 생성되었으므로, 해당 카드를 찾아 불을 켜주고 상세창 오픈 및 스크롤 주차!
+        var newTargetItem = document.getElementById("item-" + index);
+        var newTargetDetail = document.getElementById("detail-" + index);
+        
+        if (newTargetItem) {
+            newTargetItem.classList.add("active");
+            if (newTargetDetail) newTargetDetail.style.display = "block";
+            if (listContainer) {
+                listContainer.scrollTo({
+                    top: newTargetItem.offsetTop - listContainer.offsetTop - 4,
+                    behavior: "smooth"
+                });
+            }
+        }
     });
 
     if (map.getZoom() < 16) { 
@@ -645,6 +639,7 @@ function selectProperty(index, marker) {
     
     if (typeof loadTradeStatsPanel === 'function') loadTradeStatsPanel(index);
 }
+
 // =========================================================================
 // 📊 국토부 실거래가 및 공장 건축물대장 동별 명세표 통합 드로잉 엔진 [9번 블록]
 // =========================================================================
