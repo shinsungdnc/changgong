@@ -165,11 +165,6 @@ function initMap() {
     markers = []; 
     updateDetailSelectorOptions(); 
     
-    // ⭕ [순정 마감]: 원본 properties 데이터를 가지고 카드를 단 1번만 깔끔하게 선행 빌드해 둡니다.
-    var allProps = [];
-    properties.forEach(function(p, idx) { allProps.push({ prop: p, index: idx }); });
-    renderPropertyCards(allProps);
-
     // [기획 반영 1] 초기 로딩 시 목록 카드를 생성하지 않고 0개 유지 (DOM 트리 생성 완전 차단)
     // 기존에 이곳에 존재하던 수백 줄의 카드 드로잉(itemDiv 생성) 로직은 하단의 독립 함수로 격리 이동되었습니다.
     properties.forEach(function(prop, index) {
@@ -441,21 +436,37 @@ function applyFilters() {
         }
     }
 
-    // ⭕ [최종 마감 1]: 카메라 비행 중 리스트 간섭 원천 차단 가드
-    if (!isCameraMovingToVip) { 
-        markers.forEach(function(marker, i) {
-            var itemDiv = document.getElementById("item-" + i);
-            if (!itemDiv) return;
+    // =========================================================================
+    // ⭕ [최종 스마트 순정 마감]: 수천 개 렌더링 과부하 및 스크롤 튕김 동시 박멸
+    // =========================================================================
+    if (!isCameraMovingToVip) {
+        // 1. 현재 필터를 통과한 정예 매물들의 고유 ID 문자열 배열을 만듭니다.
+        var targetIds = listTargetProperties.map(function(t) { return "item-" + t.index; });
+        var hasVip = markers.some(function(m) { return m.get("isForcedVip") === true; });
 
-            var isPassedInList = listTargetProperties.some(function(target) { return target.index === i; });
+        // 2. 만약 지도가 이동해서 다른 동네로 완전히 바뀐 상황이라면 목록창을 1회 새로고침(세대교체)합니다.
+        var listContainer = document.getElementById("property-list");
+        var firstChild = listContainer ? listContainer.firstElementChild : null;
+        var isDifferentTown = firstChild && targetIds.indexOf(firstChild.id) === -1;
 
-            if (isPassedInList) {
-                itemDiv.style.display = "block"; 
-            } else {
-                itemDiv.style.display = "none";  
+        if (isDifferentTown || !firstChild || (!hasVip && firstChild)) {
+            // 다른 동네로 완전히 넘어갔거나 최초 구동일 때만 딱 '1번' 정예 목록을 새로 박제합니다.
+            renderPropertyCards(listTargetProperties);
+        } else {
+            // 3. 🌟 [핵심 - 원래 기획]: 같은 동네 내부 이동 및 미세 드래그 시에는 
+            // HTML을 절대로 부수지 않고, 목록창에 이미 박제된 카드들의 display 스타일만 켜고 끕니다.
+            var items = listContainer ? listContainer.getElementsByClassName("property-item") : [];
+            for (var k = 0; k < items.length; k++) {
+                var itemEl = items[k];
+                if (targetIds.indexOf(itemEl.id) !== -1) {
+                    itemEl.style.display = "block"; // 필터 부합 시 상시 유지 (스크롤 고정)
+                } else {
+                    itemEl.style.display = "none";  // 화면 밖으로 탈락 시 숨김
+                }
             }
-        });
+        }
     }
+    
     // 정밀 시야(줌 14 이상) 마커 노출 및 클러스터 타깃 분류 구역
     markers.forEach(function(marker, i) {
         var p = properties[i]; 
