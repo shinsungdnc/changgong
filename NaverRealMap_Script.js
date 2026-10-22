@@ -593,7 +593,7 @@ function updateClustering(validMarkers) {
 }
 
 // =========================================================================
-// 🎯 [8번 블록 수정완결판] 개별 매물 마커 클릭 이벤트 엔진
+// 🎯 [8번 블록 기획 수복 최종 완결판] 개별 매물 마커 클릭 이벤트 엔진
 // =========================================================================
 function selectProperty(index, marker) {
     var listContainer = document.getElementById("property-list");
@@ -625,10 +625,11 @@ function selectProperty(index, marker) {
     markers.forEach(function(m) { m.set("isForcedVip", false); });
     isCameraMovingToVip = true;
 
-    // ② [기획안 1 반영]: 지도 무빙 전에 상세페이지 UI 및 분석 패널 0.01초 만에 즉시 표출
+    // ② 지도 무빙 전에 상세페이지 UI 및 분석 패널 0.01초 만에 즉시 표출
     if (listPanel) { listPanel.style.display = "flex"; isSidebarManuallyClosed = false; }
     if (filterPanel && listPanel) { filterPanel.classList.remove("slide-up"); listPanel.classList.remove("slide-left"); }
 
+    // 🌟 [정밀 조율 1] 좌측 상세 카드 포커스 위치 정밀 매칭 (상단 보정값 -10으로 스크롤 딱 맞춰 고정)
     if (targetItem) {
         document.querySelectorAll(".property-detail").forEach(function(el) { el.style.display = "none"; });
         document.querySelectorAll(".property-item").forEach(function(el) { el.classList.remove("active"); });
@@ -637,7 +638,7 @@ function selectProperty(index, marker) {
         if (targetDetail) targetDetail.style.display = "block";
         if (listContainer) {
             listContainer.scrollTo({
-                top: targetItem.offsetTop - listContainer.offsetTop - 4,
+                top: targetItem.offsetTop - listContainer.offsetTop - 10,
                 behavior: "smooth"
             });
         }
@@ -647,23 +648,68 @@ function selectProperty(index, marker) {
     marker.set("isForcedVip", true);
     if (typeof loadTradeStatsPanel === 'function') loadTradeStatsPanel(index);
     
-    // ③ 백업용 형광 가이드라인 원형 레이어 사전 생성 (부하 방지를 위해 지도 얹기는 idle 시점으로 연기)
+    // 🌟 [정밀 조율 2 - 속도 혁명]: 지도가 멈출 때까지 기다리지 않고, 클릭한 순간 즉시 공간 폴리곤을 파싱해서 띄웁니다!
+    if (currentBoundaryCircle) { currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }
+    
+    if (prop.polygon_wkt && prop.polygon_wkt.indexOf("POLYGON") !== -1) {
+        try {
+            var coordSection = prop.polygon_wkt.substring(prop.polygon_wkt.indexOf("((") + 2, prop.polygon_wkt.lastIndexOf("))")).replace(/\(/g, "").replace(/\)/g, "");
+            var points = coordSection.split(",");
+            var polygonPaths = [];
+            
+            points.forEach(function(pt) {
+                var pair = pt.trim().split(" ");
+                if (pair.length >= 2) {
+                    var lngVal = parseFloat(pair[0]); 
+                    var latVal = parseFloat(pair[1]);
+                    if (!isNaN(latVal) && !isNaN(lngVal)) {
+                        polygonPaths.push(new naver.maps.LatLng(latVal, lngVal));
+                    }
+                }
+            });
+            
+            if (polygonPaths.length > 0) {
+                currentBoundaryCircle = new naver.maps.Polygon({
+                    map: map,
+                    paths: polygonPaths,
+                    fillColor: '#39FF14',     // 형광 네온 초록
+                    fillOpacity: 0.35,        // 투명도 35%
+                    strokeColor: '#39FF14',   // 테두리 네온 초록
+                    strokeOpacity: 0.90,
+                    strokeWeight: 3,          // 두께 3px
+                    clickable: false
+                });
+            }
+        } catch (polygonErr) {
+            console.warn("⚠️ [공간 엔진] WKT 폴리곤 실시간 즉시 드로잉 실패:", polygonErr);
+        }
+    }
+    
+    // 지적도 매칭 실패 상품인 경우 백업용 가이드 원형 레이어 사전 기동
     var backupCircle = new naver.maps.Circle({ 
         center: marker.getPosition(), radius: 15, fillColor: "#39FF14", fillOpacity: 0.35, strokeColor: "#2E7D32", strokeWeight: 2 
     });
 
-    // ④ [기획안 2 반영 - 거리 대조용 무빙 이원화 및 안착 연산 예약]
+    if (!currentBoundaryCircle) {
+        currentBoundaryCircle = backupCircle;
+    }
+    // 폴리곤 혹은 원형 가이드를 지도에 즉시 노출 (딜레이 0초화)
+    if (currentBoundaryCircle) {
+        currentBoundaryCircle.setMap(map);
+    }
+
+    // ④ 거리 대조용 무빙 이원화 및 안착 연산 예약
     var targetPos = marker.getPosition(); 
     var currentCenter = map.getCenter();
     
     // 위경도 격차 판별을 통해 같은 읍면동(반경 약 2.5km 이내 근거리) 여부 체크
     var isSameTown = (Math.abs(targetPos.lat() - currentCenter.lat()) < 0.025 && Math.abs(targetPos.lng() - currentCenter.lng()) < 0.025);
 
-    // 🏁 지도가 정지 지점에 완벽하게 안착했을 때 최종 마감할 장부 예약
+    // 🏁 지도가 정지 지점에 완벽하게 안착했을 때 최종 마감할 장부
     naver.maps.Event.once(map, "idle", function() {
         isCameraMovingToVip = false; // 안착 끝났으니 물리 락 해제
         
-        // [기획안 3 반영]: 타 동네 장거리 이동이었다면 이 시점에 목록창을 새 동네 매물로 세대교체(새로고침)
+        // 타 동네 장거리 이동이었다면 이 시점에 목록창을 새 동네 매물로 세대교체(새로고침)
         applyFilters(); 
 
         // 새롭게 리스트가 갱신된 후 카드를 재매칭하여 최종 주차 및 활성화 불빛 유지
@@ -675,58 +721,17 @@ function selectProperty(index, marker) {
             if (finalDetail) finalDetail.style.display = "block";
             if (listContainer) {
                 listContainer.scrollTo({
-                    top: finalItem.offsetTop - listContainer.offsetTop - 4
+                    top: finalItem.offsetTop - listContainer.offsetTop - 10
                 });
             }
         }
 
-        // 마커 및 공간 시각화 폴리곤 레이어 최종 바인딩 복원 (원본 파싱 엔진 100% 보존)
+        // 마커 최종 바인딩 복원
         marker.setMap(map);
-        if (currentBoundaryCircle) { currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }
-        
-        if (prop.polygon_wkt && prop.polygon_wkt.indexOf("POLYGON") !== -1) {
-            try {
-                var coordSection = prop.polygon_wkt.substring(prop.polygon_wkt.indexOf("((") + 2, prop.polygon_wkt.lastIndexOf("))")).replace(/\(/g, "").replace(/\)/g, "");
-                var points = coordSection.split(",");
-                var polygonPaths = [];
-                
-                points.forEach(function(pt) {
-                    var pair = pt.trim().split(" ");
-                    if (pair.length >= 2) {
-                        var lngVal = parseFloat(pair[0]); 
-                        var latVal = parseFloat(pair[1]);
-                        if (!isNaN(latVal) && !isNaN(lngVal)) {
-                            polygonPaths.push(new naver.maps.LatLng(latVal, lngVal));
-                        }
-                    }
-                });
-                
-                if (polygonPaths.length > 0) {
-                    currentBoundaryCircle = new naver.maps.Polygon({
-                        map: map,
-                        paths: polygonPaths,
-                        fillColor: '#39FF14',     // 형광 네온 초록
-                        fillOpacity: 0.35,        // 투명도 35%
-                        strokeColor: '#39FF14',   // 테두리 네온 초록
-                        strokeOpacity: 0.90,
-                        strokeWeight: 3,          // 두께 3px
-                        clickable: false
-                    });
-                }
-            } catch (polygonErr) {
-                console.warn("⚠️ [공간 엔진] WKT 폴리곤 실시간 드로잉 실패:", polygonErr);
-            }
-        }
-        
-        // 지적도 매칭 실패 상품인 경우 백업용 가이드 원형 레이어 최종 활성화
-        if (!currentBoundaryCircle) {
-            currentBoundaryCircle = backupCircle;
-            currentBoundaryCircle.setMap(map);
-        }
     });
 
     if (isSameTown) {
-        // ⭕ 같은 동네일지라도 지도를 멀리서 보고 있다면(줌 16 미만), 16레벨로 부드럽게 당겨주며 이동(morph)합니다.
+        // 같은 동네일지라도 지도를 멀리서 보고 있다면(줌 16 미만), 16레벨로 부드럽게 당겨주며 이동(morph)합니다.
         if (map.getZoom() < 16) {
             map.morph(targetPos, 16);
         } else {
@@ -734,7 +739,7 @@ function selectProperty(index, marker) {
             map.panTo(targetPos);
         }
     } else {
-        // ⭕ 다른 동네 장거리 이동: 거시적 공간감을 위해 기존대로 줌 아웃-인 비행 처리
+        // 다른 동네 장거리 이동: 거시적 공간감을 위해 기존대로 줌 아웃-인 비행 처리
         if (map.getZoom() < 16) { 
             map.morph(targetPos, 16); 
         } else { 
