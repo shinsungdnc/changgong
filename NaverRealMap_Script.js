@@ -201,6 +201,44 @@ function initMap() {
             // 독립된 함수 구조에 맞춰 인덱스와 마커를 전달하도록 클릭 이벤트 바인딩 유지
             selectProperty(index, marker); 
         });
+        
+        // =========================================================================
+        // 🎯 [2번 수정 고도화] 마커 호버 시 목록 카드 양방향 발광 및 무부하 자석 스크롤 엔진
+        // =========================================================================
+        var scrollTimer = null; // 초고속 마우스 호버링 시 발생하는 웅성거림 및 덜덜 떨림 차단 가드
+
+        naver.maps.Event.addListener(marker, "mouseenter", function() {
+            var targetCard = document.getElementById("item-" + index);
+            var listContainer = document.getElementById("property-list"); // 좌측 스크롤 컨테이너
+            
+            if (targetCard && listContainer) {
+                // 현재 메인 클릭 활성화(VIP)된 카드가 아닐 때만 호버 스타일 가동 (초록 테두리 가드 보존)
+                if (!targetCard.classList.contains("active")) {
+                    // ① 목록 카드 발광은 마우스가 닿는 순간 즉시 켜서 엇박자 없는 반응 속도 확보
+                    targetCard.style.setProperty("border", "2px solid #FFF200", "important");
+                    targetCard.style.setProperty("box-shadow", "0 0 10px rgba(255, 242, 0, 0.6)", "important");
+                    
+                    // ② [디바운스 가드] 0.05초(50ms) 이상 시선이 머물 때만 브라우저 내장 스크롤 부드럽게 슥 실행
+                    if (scrollTimer) clearTimeout(scrollTimer);
+                    scrollTimer = setTimeout(function() {
+                        targetCard.scrollIntoView({
+                            behavior: "smooth", // 스르륵 미끄러지듯 이동하는 모션
+                            block: "nearest"    // 💡 화면 내에 이미 카드가 훤히 보인다면 연산 무시, 안 보일 때만 칼주차
+                        });
+                    }, 50);
+                }
+            }
+        });
+        
+        naver.maps.Event.addListener(marker, "mouseleave", function() {
+            if (scrollTimer) clearTimeout(scrollTimer); // 마우스가 마커를 초고속으로 탈출하면 스크롤 예약 즉시 파기
+            var targetCard = document.getElementById("item-" + index);
+            if (targetCard) {
+                // 마우스가 나가면 원래 클래스 사양(일반 또는 은회색 visited 테두리)으로 깔끔하게 원상복구
+                targetCard.style.removeProperty("border");
+                targetCard.style.removeProperty("box-shadow");
+            }
+        });
     });
     
     setTimeout(function() { applyFilters(); }, 150);
@@ -252,6 +290,7 @@ function renderPropertyCards(targetProperties) {
         var badgeBg = (prop.price.indexOf("전세") !== -1) ? "#1B5E20" : (prop.price.indexOf("월세") !== -1) ? "#ff6e40" : (prop.price.indexOf("단기") !== -1) ? "#4A148C" : "#2b5c8f";
         
         var itemDiv = document.createElement("div"); 
+        var isVisitedClass = (marker && marker.get("isVisited") === true) ? " visited" : "";
         itemDiv.className = "property-item " + (prop.category === "토지" ? "item-land" : prop.category === "주택" ? "item-house" : "item-factory"); 
         itemDiv.id = "item-" + index;
 
