@@ -165,6 +165,10 @@ function initMap() {
     markers = []; 
     updateDetailSelectorOptions(); 
     
+    // ⭕ [순정 복구 1]: 격리되었던 매물 카드를 최초 1회 전체 빌드하여 메모리에 영구 박제합니다.
+    var allProperties = properties.map(function(p, idx) { return { prop: p, index: idx }; });
+    renderPropertyCards(allProperties);
+
     // [기획 반영 1] 초기 로딩 시 목록 카드를 생성하지 않고 0개 유지 (DOM 트리 생성 완전 차단)
     // 기존에 이곳에 존재하던 수백 줄의 카드 드로잉(itemDiv 생성) 로직은 하단의 독립 함수로 격리 이동되었습니다.
     properties.forEach(function(prop, index) {
@@ -435,10 +439,25 @@ function applyFilters() {
             }
         }
     }
-    
-    // ⭕ [수리 완결]: VIP 방어막을 걷어내고 렌더링 엔진을 정상 가동시킵니다.
-    renderPropertyCards(listTargetProperties);
-    
+
+    // =========================================================================
+    // ⭕ [순정 복구]: 매번 새로 지우고 그리던 악습을 철폐합니다.
+    // 최초 1회 박제된 HTML 매물 카드를 필터 통과 성적표에 맞춰 초고속 show/hide 처리합니다.
+    // =========================================================================
+    markers.forEach(function(marker, i) {
+        var itemDiv = document.getElementById("item-" + i);
+        if (!itemDiv) return;
+
+        // 현재 줌/위치 필터를 완벽히 통과하여 노출 대상으로 판정되었는지 대조
+        var isPassedInList = listTargetProperties.some(function(target) { return target.index === i; });
+
+        if (isPassedInList) {
+            itemDiv.style.display = "block"; // 원래 대장님 기획대로 즉시 표출 (스크롤 절대 이탈 없음)
+        } else {
+            itemDiv.style.display = "none";  // 필터 탈락 혹은 화면 밖 매물은 메모리 유지한 채 숨김
+        }
+    });
+
     // 정밀 시야(줌 14 이상) 마커 노출 및 클러스터 타깃 분류 구역
     markers.forEach(function(marker, i) {
         var p = properties[i]; 
