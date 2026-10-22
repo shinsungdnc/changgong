@@ -328,9 +328,9 @@ function applyFilters() {
 
     if (isCameraMovingToVip) { return; }
     
-    // 🛡️ [버그 방어막]: 현재 어떤 매물이 선택되어 VIP 상태라면, 지도가 움직여도 목록창(DOM)을 리셋하지 않고 그대로 유지합니다.
-    var hasActiveVip = markers.some(function(m) { return m.get("isForcedVip") === true; });
-    if (!hasActiveVip) { isCameraMovingToVip = false; }
+    // // 🛡️ [버그 방어막]: 현재 어떤 매물이 선택되어 VIP 상태라면, 지도가 움직여도 목록창(DOM)을 리셋하지 않고 그대로 유지합니다.
+    // var hasActiveVip = markers.some(function(m) { return m.get("isForcedVip") === true; });
+    // if (!hasActiveVip) { isCameraMovingToVip = false; }
 
     var listTargetProperties = [];
 
@@ -512,20 +512,15 @@ function updateClustering(validMarkers) {
 // 🌟 [기획 추가]: 카메라 강제 무빙 중 idle 이벤트 간섭을 원천 차단하는 물리 락(Lock) 스위치 선언
 var isCameraMovingToVip = false;
 
-// =========================================================================
-// 🎯 [8번 블록 수정완결판] 개별 매물 마커 클릭 이벤트 엔진
-// =========================================================================
 function selectProperty(index, marker) {
     var listContainer = document.getElementById("property-list");
     var panel = document.getElementById("right-stats-panel");
     var listPanel = document.getElementById("property-list-panel");
     var filterPanel = document.getElementById("sidebar-header");
     
-    // 💡 [수술 포인트 1]: 목록창 대조 브레이크 철폐! 다른 지역 마커여도 원본 데이터(prop)만 있으면 통과!
     var prop = properties[index]; 
     if (!prop) return; 
 
-    // 현재 목록창에 카드가 있는지 조회만 해둡니다 (종료 스위치로 사용)
     var targetItem = document.getElementById("item-" + index);
 
     // 🔄 선택된 카드를 다시 클릭하여 해제할 때의 처리
@@ -543,101 +538,122 @@ function selectProperty(index, marker) {
         return; 
     }
 
-    // ① 다른 마커를 선택했으므로 기존 모든 마커의 VIP 절대 권한을 즉시 초기화 청소
+    // ① 기존 모든 마커의 VIP 절대 권한 즉시 초기화 청소 및 카메라 물리 락 가동
     markers.forEach(function(m) { m.set("isForcedVip", false); });
-    
-    // 🌟 [수술 포인트 2]: 클릭되자마자 카메라 락(Lock)을 걸어 자동 비행 중 필터 간섭 차단!
     isCameraMovingToVip = true;
 
-    // 기존 UI 활성화 흔적 일제 청소
-    document.querySelectorAll(".property-detail").forEach(function(el) { el.style.display = "none"; });
-    document.querySelectorAll(".property-item").forEach(function(el) { el.classList.remove("active"); });
-
-    // 숨겨져 있던 목록창 패널 및 2, 3층 패널 스르륵 복구
+    // ② 🌟 [기획안 1 반영]: 지도 무빙 전에 상세페이지 UI 및 분석 패널 0.01초 만에 즉시 표출
     if (listPanel) { listPanel.style.display = "flex"; isSidebarManuallyClosed = false; }
     if (filterPanel && listPanel) { filterPanel.classList.remove("slide-up"); listPanel.classList.remove("slide-left"); }
 
-    // 마커에 생존 낙인을 박고 지도 위에 강제 상주
-    marker.set("isForcedVip", true);
-    marker.setMap(map); 
-    
-    // ② [공간 시각화]: 대장님의 명품 35% 투명도 형광 초록 네온 폴리곤 로직 (★원본 100% 그대로 보존)
-    if (currentBoundaryCircle) { currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }
-    
-    if (prop.polygon_wkt && prop.polygon_wkt.indexOf("POLYGON") !== -1) {
-        try {
-            var coordSection = prop.polygon_wkt.substring(prop.polygon_wkt.indexOf("((") + 2, prop.polygon_wkt.lastIndexOf("))")).replace(/\(/g, "").replace(/\)/g, "");
-            var points = coordSection.split(",");
-            var polygonPaths = [];
-            
-            points.forEach(function(pt) {
-                var pair = pt.trim().split(" ");
-                if (pair.length >= 2) {
-                    var lngVal = parseFloat(pair[0]); 
-                    var latVal = parseFloat(pair[1]);
-                    if (!isNaN(latVal) && !isNaN(lngVal)) {
-                        polygonPaths.push(new naver.maps.LatLng(latVal, lngVal));
-                    }
-                }
+    if (targetItem) {
+        document.querySelectorAll(".property-detail").forEach(function(el) { el.style.display = "none"; });
+        document.querySelectorAll(".property-item").forEach(function(el) { el.classList.remove("active"); });
+        targetItem.classList.add("active");
+        var targetDetail = document.getElementById("detail-" + index);
+        if (targetDetail) targetDetail.style.display = "block";
+        if (listContainer) {
+            listContainer.scrollTo({
+                top: targetItem.offsetTop - listContainer.offsetTop - 4,
+                behavior: "smooth"
             });
-            
-            if (polygonPaths.length > 0) {
-                currentBoundaryCircle = new naver.maps.Polygon({
-                    map: map,
-                    paths: polygonPaths,
-                    fillColor: '#39FF14',     // 형광 네온 초록
-                    fillOpacity: 0.35,        // 투명도 35%
-                    strokeColor: '#39FF14',   // 테두리 네온 초록
-                    strokeOpacity: 0.90,
-                    strokeWeight: 3,          // 두께 3px
-                    clickable: false
-                });
-            }
-        } catch (polygonErr) {
-            console.warn("⚠️ [공간 엔진] WKT 폴리곤 실시간 드로잉 실패 (원형 가이드로 교체 방어):", polygonErr);
         }
     }
+
+    // 마커 생존 낙인 부여 및 우측 실거래/대장 분석 명세표 즉시 드로잉 호출
+    marker.set("isForcedVip", true);
+    if (typeof loadTradeStatsPanel === 'function') loadTradeStatsPanel(index);
     
-    // 지적도 매칭 실패 시 백업용 원형 가이드라인 레이어 기동 (★원본 100% 그대로 보존)
-    if (!currentBoundaryCircle) {
-        currentBoundaryCircle = new naver.maps.Circle({ 
-            map: map, center: marker.getPosition(), radius: 15, fillColor: "#39FF14", fillOpacity: 0.35, strokeColor: "#2E7D32", strokeWeight: 2 
-        });
-    }
-    
-    // ③ [수술 포인트 3]: 목록창 검사 없이 카메라 무빙 명령 최우선 즉시 발사!
+    // ③ 백업용 형광 가이드라인 원형 레이어 사전 생성 (부하 방지를 위해 지도 얹기는 idle 시점으로 연기)
+    var backupCircle = new naver.maps.Circle({ 
+        center: marker.getPosition(), radius: 15, fillColor: "#39FF14", fillOpacity: 0.35, strokeColor: "#2E7D32", strokeWeight: 2 
+    });
+
+    // ④ 🌟 [기획안 2 반영 - 거리 대조용 무빙 이원화 및 안착 연산 예약]
     var targetPos = marker.getPosition(); 
+    var currentCenter = map.getCenter();
     
-    // 🏁 지도가 목적지(부강면)에 완벽하게 안착해서 멈췄을 때 작동할 마감 장부 예약
+    // 위경도 격차 판별을 통해 같은 읍면동(반경 약 2.5km 이내 근거리) 여부 체크
+    var isSameTown = (Math.abs(targetPos.lat() - currentCenter.lat()) < 0.025 && Math.abs(targetPos.lng() - currentCenter.lng()) < 0.025);
+
+    // 🏁 지도가 정지 지점에 완벽하게 안착했을 때 최종 마감할 장부 예약
     naver.maps.Event.once(map, "idle", function() {
-        isCameraMovingToVip = false; // 안착 끝났으니 락 해제
+        isCameraMovingToVip = false; // 안착 끝났으니 물리 락 해제
         
-        // 🌟 [수술 포인트 4]: 도착했으니 원래 대장님 기획대로 현재 이동된 중심점 매물 목록을 싹 새로 채웁니다!
+        // 🌟 [기획안 3 반영]: 타 동네 장거리 이동이었다면 이 시점에 목록창을 새 동네 매물로 세대교체(새로고침)
         applyFilters(); 
 
-        // 이제 목록창에 부강면 카드가 생성되었으므로, 해당 카드를 찾아 불을 켜주고 상세창 오픈 및 스크롤 주차!
-        var newTargetItem = document.getElementById("item-" + index);
-        var newTargetDetail = document.getElementById("detail-" + index);
+        // 새롭게 리스트가 갱신된 후 카드를 재매칭하여 최종 주차 및 활성화 불빛 유지
+        var finalItem = document.getElementById("item-" + index);
+        var finalDetail = document.getElementById("detail-" + index);
         
-        if (newTargetItem) {
-            newTargetItem.classList.add("active");
-            if (newTargetDetail) newTargetDetail.style.display = "block";
+        if (finalItem) {
+            finalItem.classList.add("active");
+            if (finalDetail) finalDetail.style.display = "block";
             if (listContainer) {
                 listContainer.scrollTo({
-                    top: newTargetItem.offsetTop - listContainer.offsetTop - 4,
-                    behavior: "smooth"
+                    top: finalItem.offsetTop - listContainer.offsetTop - 4
                 });
             }
+        }
+
+        // 마커 및 공간 시각화 폴리곤 레이어 최종 바인딩 복원 (원본 파싱 엔진 100% 보존)
+        marker.setMap(map);
+        if (currentBoundaryCircle) { currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }
+        
+        if (prop.polygon_wkt && prop.polygon_wkt.indexOf("POLYGON") !== -1) {
+            try {
+                var coordSection = prop.polygon_wkt.substring(prop.polygon_wkt.indexOf("((") + 2, prop.polygon_wkt.lastIndexOf("))")).replace(/\(/g, "").replace(/\)/g, "");
+                var points = coordSection.split(",");
+                var polygonPaths = [];
+                
+                points.forEach(function(pt) {
+                    var pair = pt.trim().split(" ");
+                    if (pair.length >= 2) {
+                        var lngVal = parseFloat(pair[0]); 
+                        var latVal = parseFloat(pair[1]);
+                        if (!isNaN(latVal) && !isNaN(lngVal)) {
+                            polygonPaths.push(new naver.maps.LatLng(latVal, lngVal));
+                        }
+                    }
+                });
+                
+                if (polygonPaths.length > 0) {
+                    currentBoundaryCircle = new naver.maps.Polygon({
+                        map: map,
+                        paths: polygonPaths,
+                        fillColor: '#39FF14',     // 형광 네온 초록
+                        fillOpacity: 0.35,        // 투명도 35%
+                        strokeColor: '#39FF14',   // 테두리 네온 초록
+                        strokeOpacity: 0.90,
+                        strokeWeight: 3,          // 두께 3px
+                        clickable: false
+                    });
+                }
+            } catch (polygonErr) {
+                console.warn("⚠️ [공간 엔진] WKT 폴리곤 실시간 드로잉 실패:", polygonErr);
+            }
+        }
+        
+        // 지적도 매칭 실패 상품인 경우 백업용 가이드 원형 레이어 최종 활성화
+        if (!currentBoundaryCircle) {
+            currentBoundaryCircle = backupCircle;
+            currentBoundaryCircle.setMap(map);
         }
     });
 
-    if (map.getZoom() < 16) { 
-        map.morph(targetPos, 16); 
-    } else { 
-        map.panTo(targetPos); 
+    // 🚀 [기획안 2 분기 엔진 기동] 거리 구별 후 카메라 최적 무빙 발사
+    if (isSameTown) {
+        // 같은 동네 내 이동: 애니메이션 제거한 순간이동 처리로 드로잉 부하 소멸 및 딜레이 0초 구현
+        map.setCenter(targetPos);
+    } else {
+        // 다른 동네 장거리 이동: 기존 소프트 무빙 날아가기로 거시적 공간감 유지
+        if (map.getZoom() < 16) { 
+            map.morph(targetPos, 16); 
+        } else { 
+            map.panTo(targetPos); 
+        }
     }
-    
-    if (typeof loadTradeStatsPanel === 'function') loadTradeStatsPanel(index);
 }
 
 // =========================================================================
