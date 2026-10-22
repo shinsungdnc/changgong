@@ -680,10 +680,14 @@ function selectProperty(index, marker) {
         }
     });
 
-    // 🚀 [카메라 감성 튜닝]: 부하가 없는 선에서 사용자의 공간 인지력을 돕는 부드러운 스크롤링 기동
     if (isSameTown) {
-        // ⭕ 같은 동네 내 이동: 순간이동 대신 'panTo'를 사용하여 스르륵 부드럽게 미끄러지듯 추차
-        map.panTo(targetPos);
+        // ⭕ 같은 동네일지라도 지도를 멀리서 보고 있다면(줌 16 미만), 16레벨로 부드럽게 당겨주며 이동(morph)합니다.
+        if (map.getZoom() < 16) {
+            map.morph(targetPos, 16);
+        } else {
+            // 이미 줌 레벨이 확보된 상태라면 뚝 끊기지 않고 스르륵 밀려서 주차(panTo)합니다.
+            map.panTo(targetPos);
+        }
     } else {
         // ⭕ 다른 동네 장거리 이동: 거시적 공간감을 위해 기존대로 줌 아웃-인 비행 처리
         if (map.getZoom() < 16) { 
