@@ -611,19 +611,32 @@ function selectProperty(index, marker) {
         // [수정] 튕김을 막기 위해 현재 목록창의 스크롤 위치를 변수에 임시 박제
         var savedScrollTop = listContainer ? listContainer.scrollTop : 0;
         targetItem.classList.remove("active"); 
-        targetItem.classList.add("visited");    // 확인 매물 식별용
+        targetItem.classList.add("visited");    // 확인 매물 식별용 (은회색 테두리 클래스)
         var targetDetail = document.getElementById("detail-" + index);
         if (targetDetail) targetDetail.style.display = "none";
         if (currentBoundaryCircle) { currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }
         
+        // 🛠️ [버그 수정]: 마커의 VIP 락만 해제하고 setMap(null)을 호출하지 않습니다.
+        // 대신 마커가 필터 상태 및 현재 줌 레벨 사양에 맞게 다시 지도에 그려지도록 유도합니다.
         marker.set("isForcedVip", false);
-        marker.setMap(null);
         if (panel) panel.classList.remove("active", "expanded"); 
         
         // [수정] 필터 연산 시 HTML 리스트가 통째로 부서져 날아가는 것을 방지하는 가드 스위치
         isCameraMovingToVip = true; 
         applyFilters(); 
         isCameraMovingToVip = false; 
+
+        // 🛠️ [버그 수정 보완]: applyFilters 실행 후 현재 줌 레벨(14레벨 이상)에서 
+        // 해당 마커가 노출되어야 하는 조건(isActive)이라면 지도에 명시적으로 다시 얹어줍니다.
+        if (marker.get("isActive") === true) {
+            var currentZoom = map.getZoom();
+            var isDetailScale = (prop.town_type === "urban") ? (currentZoom >= 17) : (currentZoom >= 15);
+            
+            // 만약 클러스터링 범위 밖(상세 줌 레벨)이라면 마커를 직접 노출합니다.
+            if (isDetailScale) {
+                marker.setMap(map);
+            }
+        }
 
         // [수정] 박제해 두었던 스크롤 위치로 강제 고정 주사
         if (listContainer) { listContainer.scrollTop = savedScrollTop; }
