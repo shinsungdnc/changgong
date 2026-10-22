@@ -163,6 +163,13 @@ function initMap() {
     var listContainer = document.getElementById("property-list"); 
     if (listContainer) listContainer.innerHTML = ""; 
     markers = []; 
+
+    // 🌟 [수정] 2층, 3층 사이드바를 초기 숨김(슬라이드 아웃) 상태로 강제 락
+    var filterPanel = document.getElementById("sidebar-header");
+    var listPanel = document.getElementById("property-list-panel");
+    if (filterPanel) { filterPanel.classList.add("slide-up"); }
+    if (listPanel) { listPanel.style.display = "none"; listPanel.classList.add("slide-left"); }
+
     updateDetailSelectorOptions(); 
     
     // [기획 반영 1] 초기 로딩 시 목록 카드를 생성하지 않고 0개 유지 (DOM 트리 생성 완전 차단)
@@ -196,7 +203,7 @@ function initMap() {
         });
     });
     
-    setTimeout(function() { applyFilters(); }, 300);
+    setTimeout(function() { applyFilters(); }, 150);
 }
 
 // =========================================================================
@@ -328,9 +335,47 @@ function applyFilters() {
 
     if (isCameraMovingToVip) { return; }
 
-    // // 🛡️ [버그 방어막]: 현재 어떤 매물이 선택되어 VIP 상태라면, 지도가 움직여도 목록창(DOM)을 리셋하지 않고 그대로 유지합니다.
-    // var hasActiveVip = markers.some(function(m) { return m.get("isForcedVip") === true; });
-    // if (!hasActiveVip) { isCameraMovingToVip = false; }
+    // 🌟 [기획 가드 레이어] 2층, 3층 초기 숨김 및 줌 14레벨 기준 슬라이딩 모션 분기 제어
+    var filterPanel = document.getElementById("sidebar-header");
+    var listContainer = document.getElementById("property-list");
+
+    // 💡 줌 14 미만(초기 줌 12 포함)일 때 2, 3층을 모션과 함께 숨기고 이하 연산 전면 차단
+    if (currentZoom < 14) {
+        if (filterPanel) filterPanel.classList.add("slide-up");
+        if (listPanel) { listPanel.classList.add("slide-left"); listPanel.style.display = "none"; }
+        if (listContainer) listContainer.innerHTML = ""; 
+        if (markerClustering !== null) { markerClustering.setMap(null); markerClustering = null; }
+        
+        // 기존 광역 배지 그리기 로직 (중하단에 있던 광역 뷰 코드를 안전하게 선반영)
+        var townStats = getActiveTownCenterStats();
+        Object.keys(townStats).forEach(function(tName) {
+            var stat = townStats[tName]; 
+            // 수량이 0보다 큰 정예 데이터만 안전하게 감싸서 마커를 생성합니다.
+            if (stat && stat.count > 0) {
+                var townLatLng = new naver.maps.LatLng(stat.lat, stat.lng);
+                var townClusterHtml = ['<div class="custom-town-cluster" style="cursor:pointer; pointer-events:auto !important; z-index:9999 !important; width:64px; height:64px; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(74, 211, 255, 0.95); border:2px solid #ffffff; border-radius:50%; box-shadow:0 3px 12px rgba(0,0,0,0.3); transform:translate(-50%, -50%); box-sizing:border-box; padding:2px;">', ' <div style="font-size:11px; font-weight:700; color:#111111; line-height:1.2; text-align:center; max-width:58px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; pointer-events:none;">' + tName.replace('오송읍', '오송').replace('조치원읍', '조치원') + '</div>', ' <div style="font-size:13px; font-weight:800; color:#111111; line-height:1.2; margin-top:2px; pointer-events:none;">' + stat.count + '</div>', '</div>'].join('');
+                var vTownMarker = new naver.maps.Marker({ position: townLatLng, map: map, icon: { content: townClusterHtml, anchor: new naver.maps.Point(0, 0) }, clickable: true });
+
+                naver.maps.Event.addListener(vTownMarker, "click", function() {
+                    var targetZoom = (stat.town_type === "rural") ? 15 : 17;
+                    map.morph(townLatLng, targetZoom);
+                    var townSelector = document.getElementById("town-selector"); if (townSelector) { townSelector.value = tName; currentTown = tName; currentRi = "전체"; }
+                });
+                virtualTownMarkers.push(vTownMarker); 
+            }
+        });
+        updateTownSelectorOptions(); 
+        return; // 줌 12 등 광역 시야일 때는 이 지점에서 함수를 완전 종료시켜 하단 연산 부하를 0으로 만듦
+    }
+
+    // 💡 줌 14 이상 정밀 시야 진입 시 슬라이딩으로 나타나게 제어
+    if (listPanel && window.innerWidth > 768 && !isSidebarManuallyClosed) {
+        listPanel.style.display = "flex";
+        setTimeout(function() {
+            if (filterPanel) filterPanel.classList.remove("slide-up");
+            listPanel.classList.remove("slide-left");
+        }, 10);
+    }
 
     var listTargetProperties = [];
 
@@ -466,7 +511,7 @@ function applyFilters() {
             }
         }
     }
-    
+
     // 정밀 시야(줌 14 이상) 마커 노출 및 클러스터 타깃 분류 구역
     markers.forEach(function(marker, i) {
         var p = properties[i]; 
@@ -546,11 +591,6 @@ function updateClustering(validMarkers) {
     //     setTimeout(function() { map.setZoom(map.getZoom() + 1); }, 150);
     // });
 }
-// =========================================================================
-// 🎯 8번 블록: 개별 매물 마커 클릭 이벤트 엔진 수정
-// =========================================================================
-// 🌟 [기획 추가]: 카메라 강제 무빙 중 idle 이벤트 간섭을 원천 차단하는 물리 락(Lock) 스위치 선언
-var isCameraMovingToVip = false;
 
 // =========================================================================
 // 🎯 [8번 블록 수정완결판] 개별 매물 마커 클릭 이벤트 엔진
