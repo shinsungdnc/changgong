@@ -331,7 +331,14 @@ function applyFilters() {
     var listPanel = document.getElementById("property-list-panel");
 
     if (isCameraMovingToVip) { return; }
-    
+
+    // 🌟 [리스트 자동 빌더 방어벽]: 5번 블록 타이밍 때문에 목록창이 하얗게 비어있다면 여기서 강제로 1회 채워줍니다.
+    var listContainer = document.getElementById("property-list");
+    if (listContainer && listContainer.children.length === 0 && properties.length > 0) {
+        var allProperties = properties.map(function(p, idx) { return { prop: p, index: idx }; });
+        renderPropertyCards(allProperties);
+    }
+
     // // 🛡️ [버그 방어막]: 현재 어떤 매물이 선택되어 VIP 상태라면, 지도가 움직여도 목록창(DOM)을 리셋하지 않고 그대로 유지합니다.
     // var hasActiveVip = markers.some(function(m) { return m.get("isForcedVip") === true; });
     // if (!hasActiveVip) { isCameraMovingToVip = false; }
