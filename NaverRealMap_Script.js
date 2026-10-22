@@ -447,24 +447,21 @@ function applyFilters() {
         }
     }
 
-    // =========================================================================
-    // ⭕ [순정 복구]: 매번 새로 지우고 그리던 악습을 철폐합니다.
-    // 최초 1회 박제된 HTML 매물 카드를 필터 통과 성적표에 맞춰 초고속 show/hide 처리합니다.
-    // =========================================================================
-    markers.forEach(function(marker, i) {
-        var itemDiv = document.getElementById("item-" + i);
-        if (!itemDiv) return;
+    // ⭕ [최종 마감 1]: 카메라 비행 중 리스트 간섭 원천 차단 가드
+    if (!isCameraMovingToVip) { 
+        markers.forEach(function(marker, i) {
+            var itemDiv = document.getElementById("item-" + i);
+            if (!itemDiv) return;
 
-        // 현재 줌/위치 필터를 완벽히 통과하여 노출 대상으로 판정되었는지 대조
-        var isPassedInList = listTargetProperties.some(function(target) { return target.index === i; });
+            var isPassedInList = listTargetProperties.some(function(target) { return target.index === i; });
 
-        if (isPassedInList) {
-            itemDiv.style.display = "block"; // 원래 대장님 기획대로 즉시 표출 (스크롤 절대 이탈 없음)
-        } else {
-            itemDiv.style.display = "none";  // 필터 탈락 혹은 화면 밖 매물은 메모리 유지한 채 숨김
-        }
-    });
-
+            if (isPassedInList) {
+                itemDiv.style.display = "block"; 
+            } else {
+                itemDiv.style.display = "none";  
+            }
+        });
+    }
     // 정밀 시야(줌 14 이상) 마커 노출 및 클러스터 타깃 분류 구역
     markers.forEach(function(marker, i) {
         var p = properties[i]; 
@@ -915,14 +912,16 @@ document.addEventListener("DOMContentLoaded", function() {
         naver.maps.Event.addListener(map, "zoom_start", hidePolygonOnMove);
         naver.maps.Event.addListener(map, "dragstart", hidePolygonOnMove);
 
+    // -----------------------------------------------------------------
+    // [기획 핵심 스위치 ②] 지도가 완벽하게 멈추어 안착하면 폴리곤을 깨끗하게 재조립
+    // -----------------------------------------------------------------
+    naver.maps.Event.addListener(map, "idle", function() {
+        // 🌟 [최종 마감 2]: 마커 클릭으로 카메라가 이동 중일 때는 순정 idle 연산을 전면 무시하여 불안정성을 차단합니다!
+        if (isCameraMovingToVip) { return; } 
 
-        // -----------------------------------------------------------------
-        // [기획 핵심 스위치 ②] 지도가 완벽하게 멈추어 안착하면 폴리곤을 깨끗하게 재조립
-        // -----------------------------------------------------------------
-        naver.maps.Event.addListener(map, "idle", function() {
-            var centerLatLng = map.getCenter();
-            var currentZoom = map.getZoom();
-
+        var centerLatLng = map.getCenter();
+        var currentZoom = map.getZoom();
+        
             // [락 해제] 마우스 드래그가 무한 지속되던 엇박자 타이밍 가드를 강제로 깨워 멈춤 불량 치료
             isCameraMovingToVip = false;
 
