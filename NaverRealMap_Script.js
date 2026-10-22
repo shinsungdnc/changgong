@@ -637,14 +637,17 @@ function selectProperty(index, marker) {
         var targetDetail = document.getElementById("detail-" + index);
         if (targetDetail) targetDetail.style.display = "block";
         if (listContainer) {
-            // 🌟 3층 틀의 실제 내부 패딩 상단 라인과 카드 간의 격차만 순수하게 추출
-            var targetPosition = targetItem.getBoundingClientRect().top - listContainer.getBoundingClientRect().top + listContainer.scrollTop;
-            
-            listContainer.scrollTo({
-                top: targetPosition,
-                behavior: "smooth"
-            });
+            // 🌟 부드러운 모션을 제거하여 브라우저의 스크롤 유동 간섭을 원천 차단하고 0.001초 만에 칼정렬
+            setTimeout(function() {
+                var targetPosition = targetItem.getBoundingClientRect().top - listContainer.getBoundingClientRect().top + listContainer.scrollTop;
+                
+                listContainer.scrollTo({
+                    top: targetPosition - 12,
+                    behavior: "auto" // 💡 smooth에서 auto로 변경하여 즉시 순간 이동 처리
+                });
+            }, 0); // 딜레이를 0으로 낮춰 클릭 순간 즉시 정착시킵니다.
         }
+
     }
 
     // 마커 생존 낙인 부여 및 우측 실거래/대장 분석 명세표 즉시 드로잉 호출
