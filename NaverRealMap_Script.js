@@ -680,12 +680,12 @@ function selectProperty(index, marker) {
         }
     });
 
-    // 🚀 [기획안 2 분기 엔진 기동] 거리 구별 후 카메라 최적 무빙 발사
+    // 🚀 [카메라 감성 튜닝]: 부하가 없는 선에서 사용자의 공간 인지력을 돕는 부드러운 스크롤링 기동
     if (isSameTown) {
-        // 같은 동네 내 이동: 애니메이션 제거한 순간이동 처리로 드로잉 부하 소멸 및 딜레이 0초 구현
-        map.setCenter(targetPos);
+        // ⭕ 같은 동네 내 이동: 순간이동 대신 'panTo'를 사용하여 스르륵 부드럽게 미끄러지듯 추차
+        map.panTo(targetPos);
     } else {
-        // 다른 동네 장거리 이동: 기존 소프트 무빙 날아가기로 거시적 공간감 유지
+        // ⭕ 다른 동네 장거리 이동: 거시적 공간감을 위해 기존대로 줌 아웃-인 비행 처리
         if (map.getZoom() < 16) { 
             map.morph(targetPos, 16); 
         } else { 
@@ -921,7 +921,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
         var centerLatLng = map.getCenter();
         var currentZoom = map.getZoom();
-        
+
             // [락 해제] 마우스 드래그가 무한 지속되던 엇박자 타이밍 가드를 강제로 깨워 멈춤 불량 치료
             isCameraMovingToVip = false;
 
