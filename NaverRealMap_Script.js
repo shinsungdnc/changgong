@@ -436,10 +436,8 @@ function applyFilters() {
         }
     }
     
-    // 🛡️ [버그 해결의 핵심]: 선택된 VIP 매물이 없을 때만 목록창 카드를 새로 그립니다. (DOM 증발 차단)
-    if (!hasActiveVip) {
-        renderPropertyCards(listTargetProperties);
-    }
+    // ⭕ [수리 완결]: VIP 방어막을 걷어내고 렌더링 엔진을 정상 가동시킵니다.
+    renderPropertyCards(listTargetProperties);
     
     // 정밀 시야(줌 14 이상) 마커 노출 및 클러스터 타깃 분류 구역
     markers.forEach(function(marker, i) {
@@ -512,6 +510,9 @@ function updateClustering(validMarkers) {
 // 🌟 [기획 추가]: 카메라 강제 무빙 중 idle 이벤트 간섭을 원천 차단하는 물리 락(Lock) 스위치 선언
 var isCameraMovingToVip = false;
 
+// =========================================================================
+// 🎯 [8번 블록 수정완결판] 개별 매물 마커 클릭 이벤트 엔진
+// =========================================================================
 function selectProperty(index, marker) {
     var listContainer = document.getElementById("property-list");
     var panel = document.getElementById("right-stats-panel");
@@ -542,7 +543,7 @@ function selectProperty(index, marker) {
     markers.forEach(function(m) { m.set("isForcedVip", false); });
     isCameraMovingToVip = true;
 
-    // ② 🌟 [기획안 1 반영]: 지도 무빙 전에 상세페이지 UI 및 분석 패널 0.01초 만에 즉시 표출
+    // ② [기획안 1 반영]: 지도 무빙 전에 상세페이지 UI 및 분석 패널 0.01초 만에 즉시 표출
     if (listPanel) { listPanel.style.display = "flex"; isSidebarManuallyClosed = false; }
     if (filterPanel && listPanel) { filterPanel.classList.remove("slide-up"); listPanel.classList.remove("slide-left"); }
 
@@ -569,7 +570,7 @@ function selectProperty(index, marker) {
         center: marker.getPosition(), radius: 15, fillColor: "#39FF14", fillOpacity: 0.35, strokeColor: "#2E7D32", strokeWeight: 2 
     });
 
-    // ④ 🌟 [기획안 2 반영 - 거리 대조용 무빙 이원화 및 안착 연산 예약]
+    // ④ [기획안 2 반영 - 거리 대조용 무빙 이원화 및 안착 연산 예약]
     var targetPos = marker.getPosition(); 
     var currentCenter = map.getCenter();
     
@@ -580,7 +581,7 @@ function selectProperty(index, marker) {
     naver.maps.Event.once(map, "idle", function() {
         isCameraMovingToVip = false; // 안착 끝났으니 물리 락 해제
         
-        // 🌟 [기획안 3 반영]: 타 동네 장거리 이동이었다면 이 시점에 목록창을 새 동네 매물로 세대교체(새로고침)
+        // [기획안 3 반영]: 타 동네 장거리 이동이었다면 이 시점에 목록창을 새 동네 매물로 세대교체(새로고침)
         applyFilters(); 
 
         // 새롭게 리스트가 갱신된 후 카드를 재매칭하여 최종 주차 및 활성화 불빛 유지
