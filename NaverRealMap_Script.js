@@ -165,9 +165,10 @@ function initMap() {
     markers = []; 
     updateDetailSelectorOptions(); 
     
-    // ⭕ [순정 복구 1]: 격리되었던 매물 카드를 최초 1회 전체 빌드하여 메모리에 영구 박제합니다.
-    var allProperties = properties.map(function(p, idx) { return { prop: p, index: idx }; });
-    renderPropertyCards(allProperties);
+    // ⭕ [순정 마감]: 원본 properties 데이터를 가지고 카드를 단 1번만 깔끔하게 선행 빌드해 둡니다.
+    var allProps = [];
+    properties.forEach(function(p, idx) { allProps.push({ prop: p, index: idx }); });
+    renderPropertyCards(allProps);
 
     // [기획 반영 1] 초기 로딩 시 목록 카드를 생성하지 않고 0개 유지 (DOM 트리 생성 완전 차단)
     // 기존에 이곳에 존재하던 수백 줄의 카드 드로잉(itemDiv 생성) 로직은 하단의 독립 함수로 격리 이동되었습니다.
@@ -331,13 +332,6 @@ function applyFilters() {
     var listPanel = document.getElementById("property-list-panel");
 
     if (isCameraMovingToVip) { return; }
-
-    // 🌟 [리스트 자동 빌더 방어벽]: 5번 블록 타이밍 때문에 목록창이 하얗게 비어있다면 여기서 강제로 1회 채워줍니다.
-    var listContainer = document.getElementById("property-list");
-    if (listContainer && listContainer.children.length === 0 && properties.length > 0) {
-        var allProperties = properties.map(function(p, idx) { return { prop: p, index: idx }; });
-        renderPropertyCards(allProperties);
-    }
 
     // // 🛡️ [버그 방어막]: 현재 어떤 매물이 선택되어 VIP 상태라면, 지도가 움직여도 목록창(DOM)을 리셋하지 않고 그대로 유지합니다.
     // var hasActiveVip = markers.some(function(m) { return m.get("isForcedVip") === true; });
