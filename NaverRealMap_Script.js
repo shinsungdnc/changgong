@@ -464,6 +464,20 @@ function applyFilters() {
     
     updateTownSelectorOptions(); 
     updateClustering(validMarkersForCluster);
+
+    var activeVipIndex = -1;
+    markers.forEach(function(m, idx) {
+        if (m.get("isForcedVip") === true) { activeVipIndex = idx; }
+    });
+
+    if (activeVipIndex > -1) {
+        var vipItem = document.getElementById("item-" + activeVipIndex);
+        var vipDetail = document.getElementById("detail-" + activeVipIndex);
+        if (vipItem && vipDetail) {
+            vipItem.classList.add("active"); // 노란색 선택 불빛 복원
+            vipDetail.style.display = "block"; // 접이식 상세페이지 오픈 상태 유지
+        }
+    }    
 }
 // =========================================================================
 // 📊 줌 14레벨 이상 전용 네이버 순정 클러스터러 기동 및 배지 확대 조율 [7번 블록]
