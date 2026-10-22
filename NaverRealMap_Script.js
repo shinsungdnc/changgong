@@ -733,21 +733,11 @@ function selectProperty(index, marker) {
         marker.setMap(map);
     });
 
-    if (isSameTown) {
-        // 같은 동네일지라도 지도를 멀리서 보고 있다면(줌 16 미만), 16레벨로 부드럽게 당겨주며 이동(morph)합니다.
-        if (map.getZoom() < 16) {
-            map.morph(targetPos, 16);
-        } else {
-            // 이미 줌 레벨이 확보된 상태라면 뚝 끊기지 않고 스르륵 밀려서 주차(panTo)합니다.
-            map.panTo(targetPos);
-        }
+    // 🌟 [최종 마감]: 도시/농촌, 근거리/장거리 상관없이 무조건 최고 해상도인 18레벨로 자석처럼 줌인 주차
+    if (map.getZoom() < 18) {
+        map.morph(targetPos, 18);
     } else {
-        // 다른 동네 장거리 이동: 거시적 공간감을 위해 기존대로 줌 아웃-인 비행 처리
-        if (map.getZoom() < 16) { 
-            map.morph(targetPos, 16); 
-        } else { 
-            map.panTo(targetPos); 
-        }
+        map.panTo(targetPos);
     }
 }
 
