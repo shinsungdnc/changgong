@@ -637,8 +637,11 @@ function selectProperty(index, marker) {
         var targetDetail = document.getElementById("detail-" + index);
         if (targetDetail) targetDetail.style.display = "block";
         if (listContainer) {
+            // 🌟 3층 틀의 실제 내부 패딩 상단 라인과 카드 간의 격차만 순수하게 추출
+            var targetPosition = targetItem.getBoundingClientRect().top - listContainer.getBoundingClientRect().top + listContainer.scrollTop;
+            
             listContainer.scrollTo({
-                top: targetItem.offsetTop - listContainer.offsetTop - 10,
+                top: targetPosition,
                 behavior: "smooth"
             });
         }
