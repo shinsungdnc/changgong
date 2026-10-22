@@ -318,6 +318,22 @@ function renderPropertyCards(targetProperties) {
             '</div>'
         ].join('');
         
+        // 🎯 [기획 2] 카드 호버 인터셉터 및 마커 은회색 상태 새로고침 리스너 배치 부위
+        itemDiv.onmouseenter = function() {
+            if (marker && marker.getElement()) {
+                var mBox = marker.getElement().querySelector(".m-box");
+                if (mBox && !marker.get("isForcedVip")) { // VIP 상태가 아닐 때만 발광
+                    mBox.classList.add("m-box-hover");
+                }
+            }
+        };
+        itemDiv.onmouseleave = function() {
+            if (marker && marker.getElement()) {
+                var mBox = marker.getElement().querySelector(".m-box");
+                if (mBox) mBox.classList.remove("m-box-hover");
+            }
+        };
+
         itemDiv.onclick = function() { selectProperty(index, marker); }; 
         listFragment.appendChild(itemDiv);
     });
@@ -426,13 +442,11 @@ function applyFilters() {
 
         if (isFilterPassed) {
             if (currentZoom >= 14) {
-                // ⭕ 기획 구현 핵심 2: 마커는 살려두고, 목록창 카드만 '전체'일 때 중심점 동네(closestTown)로 격리수집
                 if (currentTown === "전체") {
                     if (p.town === closestTown) {
                         listTargetProperties.push({ prop: p, index: i });
                     }
                 } else {
-                    // 지역 필터가 특정 동네로 찍혀있을 때는 당연히 그 동네 매물만 목록창에 수집
                     listTargetProperties.push({ prop: p, index: i });
                 }
             } else {
@@ -440,6 +454,19 @@ function applyFilters() {
             }
         }
     });
+
+    // 🎯 [기획 1] 화면 중심 거리순 실시간 소팅 엔진 인터셉터 삽입 부위
+    if (currentZoom >= 14 && listTargetProperties.length > 0) {
+        var centerLatLng = map.getCenter();
+        var cLat = centerLatLng.lat();
+        var cLng = centerLatLng.lng();
+        
+        listTargetProperties.sort(function(a, b) {
+            var distA = ((a.prop.lat - cLat) * (a.prop.lat - cLat)) + ((a.prop.lng - cLng) * (a.prop.lng - cLng));
+            var distB = ((b.prop.lat - cLat) * (b.prop.lat - cLat)) + ((b.prop.lng - cLng) * (b.prop.lng - cLng));
+            return distA - distB; // 가까운 매물 우선 배치
+        });
+    }
 
     // 광역 시야(줌 14 미만) 처리 구역
     if (currentZoom < 14) {
@@ -608,10 +635,20 @@ function selectProperty(index, marker) {
 
     // 🔄 선택된 카드를 다시 클릭하여 해제할 때의 처리
     if (targetItem && targetItem.classList.contains("active")) {
-        // [수정] 튕김을 막기 위해 현재 목록창의 스크롤 위치를 변수에 임시 박제
         var savedScrollTop = listContainer ? listContainer.scrollTop : 0;
         targetItem.classList.remove("active"); 
         targetItem.classList.add("visited");    // 확인 매물 식별용 (은회색 테두리 클래스)
+        
+        // 🎯 [마커 은회색 동기화] 마커 객체 장부 및 엘리먼트에 은회색 도장 각인
+        marker.set("isVisited", true);
+        if (marker.getElement()) {
+            var mBox = marker.getElement().querySelector(".m-box");
+            if (mBox) {
+                mBox.classList.remove("m-box-vip");
+                mBox.classList.add("m-box-visited");
+            }
+        }
+        
         var targetDetail = document.getElementById("detail-" + index);
         if (targetDetail) targetDetail.style.display = "none";
         if (currentBoundaryCircle) { currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }
@@ -644,8 +681,27 @@ function selectProperty(index, marker) {
     }
 
     // ① 기존 모든 마커의 VIP 절대 권한 즉시 초기화 청소 및 카메라 물리 락 가동
-    markers.forEach(function(m) { m.set("isForcedVip", false); });
+    markers.forEach(function(m) { 
+        m.set("isForcedVip", false); 
+        // 🎯 다른 마커들의 VIP 초록색 테두리를 걷어내고 원래 은회색 또는 하늘색 사양으로 복구
+        if (m.getElement()) {
+            var mBox = m.getElement().querySelector(".m-box");
+            if (mBox) {
+                mBox.classList.remove("m-box-vip");
+                if (m.get("isVisited") === true) mBox.classList.add("m-box-visited");
+            }
+        }
+    });
     isCameraMovingToVip = true;
+
+    // 🎯 [기획 3] 클릭된 마커 엘리먼트를 찾아서 형광 네온 초록 테두리(VIP) 고정 클래스 부여
+    if (marker && marker.getElement()) {
+        var mBox = marker.getElement().querySelector(".m-box");
+        if (mBox) {
+            mBox.classList.remove("m-box-visited", "m-box-hover");
+            mBox.classList.add("m-box-vip");
+        }
+    }
 
     // ② 지도 무빙 전에 상세페이지 UI 및 분석 패널 0.01초 만에 즉시 표출
     if (listPanel) { listPanel.style.display = "flex"; isSidebarManuallyClosed = false; }
