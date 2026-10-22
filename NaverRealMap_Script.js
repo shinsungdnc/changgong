@@ -608,7 +608,10 @@ function selectProperty(index, marker) {
 
     // 🔄 선택된 카드를 다시 클릭하여 해제할 때의 처리
     if (targetItem && targetItem.classList.contains("active")) {
+        // [수정] 튕김을 막기 위해 현재 목록창의 스크롤 위치를 변수에 임시 박제
+        var savedScrollTop = listContainer ? listContainer.scrollTop : 0;
         targetItem.classList.remove("active"); 
+        targetItem.classList.add("visited");    // 확인 매물 식별용
         var targetDetail = document.getElementById("detail-" + index);
         if (targetDetail) targetDetail.style.display = "none";
         if (currentBoundaryCircle) { currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }
@@ -617,7 +620,13 @@ function selectProperty(index, marker) {
         marker.setMap(null);
         if (panel) panel.classList.remove("active", "expanded"); 
         
-        setTimeout(function() { applyFilters(); }, 50);
+        // [수정] 필터 연산 시 HTML 리스트가 통째로 부서져 날아가는 것을 방지하는 가드 스위치
+        isCameraMovingToVip = true; 
+        applyFilters(); 
+        isCameraMovingToVip = false; 
+
+        // [수정] 박제해 두었던 스크롤 위치로 강제 고정 주사
+        if (listContainer) { listContainer.scrollTop = savedScrollTop; }
         return; 
     }
 
@@ -629,7 +638,7 @@ function selectProperty(index, marker) {
     if (listPanel) { listPanel.style.display = "flex"; isSidebarManuallyClosed = false; }
     if (filterPanel && listPanel) { filterPanel.classList.remove("slide-up"); listPanel.classList.remove("slide-left"); }
 
-    // 🌟 [정밀 조율 1] 좌측 상세 카드 포커스 위치 정밀 매칭 (상단 보정값 -10으로 스크롤 딱 맞춰 고정)
+    // 🌟 [정밀 조율 1] 좌측 상세 카드 포커스 위치 정밀 매칭 (상단 보정값 -12로 스크롤 딱 맞춰 고정)
     if (targetItem) {
         document.querySelectorAll(".property-detail").forEach(function(el) { el.style.display = "none"; });
         document.querySelectorAll(".property-item").forEach(function(el) { el.classList.remove("active"); });
@@ -637,12 +646,14 @@ function selectProperty(index, marker) {
         var targetDetail = document.getElementById("detail-" + index);
         if (targetDetail) targetDetail.style.display = "block";
         if (listContainer) {
-            // 🌟 타이머 가드를 제거하고 직렬로 즉시 계산하여 브라우저의 울컥거리는 잔상 모션을 원천 차단
-            var targetPosition = targetItem.getBoundingClientRect().top - listContainer.getBoundingClientRect().top + listContainer.scrollTop;
-            
-            listContainer.scrollTo({
-                top: targetPosition - 12,
-                behavior: "auto"
+            // [수정] 상세창이 열려 카드의 최종 높이가 확정된 순간 화면을 그리도록 브라우저 렌더링 큐에 동기화
+            window.requestAnimationFrame(function() {
+                var targetPosition = targetItem.getBoundingClientRect().top - listContainer.getBoundingClientRect().top + listContainer.scrollTop;
+                
+                listContainer.scrollTo({
+                    top: targetPosition - 12,
+                    behavior: "auto" // [수정] 흔들림을 막기 위해 auto(즉시 이동)로 주차 고정
+                });
             });
         }
     }
@@ -1072,22 +1083,7 @@ document.addEventListener("DOMContentLoaded", function() {
 // 📁 10번 최종 블록: 매물 선택 VIP 상태까지 깨끗하게 박멸하는 최종 마스터 완결판
 // =========================================================================
 function resetMapToDefault() {
-    // // 🌟 [추가 기획 - VIP 절대 권한 원천 파괴]: 
-    // //     지도 위의 모든 마커를 돌면서 숨어있던 VIP 권한(isForcedVip)을 전면 취소하고 지도에서 숨김 처리!
-    // markers.forEach(function(marker) {
-    //     marker.set("isForcedVip", false);
-    //     marker.setMap(null);
-    // });
-
-    // // 🌟 [추가 기획 - 카드 리스트 불빛 및 소분류 디테일 UI 리셋]:
-    // //     선택되어 노랗게 불이 들어와 있던 매물 카드의 active 클래스와 열려있던 세부 디테일 창을 전부 파괴!
-    // document.querySelectorAll(".property-detail").forEach(function(el) { el.style.display = "none"; });
-    // document.querySelectorAll(".property-item").forEach(function(el) { el.classList.remove("active"); });
-
-    // // 1. 가이드라인 원(Circle) 및 우측 상세 브리핑 분석 패널 장부 즉시 청소
-    // if (currentBoundaryCircle) { currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }
-    // var rightPanel = document.getElementById("right-stats-panel");
-    // if (rightPanel) rightPanel.classList.remove("active", "expanded");
+    // Onlu Fillter Reset
 
     // 2. 목록창 수동 닫힘 기억 장치 해제 (첫 로딩처럼 노출 대기)
     isSidebarManuallyClosed = false;
@@ -1124,11 +1120,6 @@ function resetMapToDefault() {
     if (typeof cadastralLayer !== 'undefined' && cadastralLayer && cadastralLayer.getMap()) {
         toggleCadastral();
     }
-
-    // // 4. [줌 리셋 보장]: VIP 방어막 간섭이 완전 청소되었으므로, 최초 줌 12레벨 위치로 막힘없이 이동 지시!
-    // var initialLatLng = new naver.maps.LatLng(36.55, 127.25);
-    // map.setZoom(12);
-    // map.panTo(initialLatLng);
 
     // 5. 타이밍 가드: 지도가 목적지(줌 12)에 안전하게 안착해 멈춘 시점에 최종 12레벨 광역 필터 연산을 얹어 배지를 다시 뿜어냅니다!
     naver.maps.Event.once(map, "idle", function() {
