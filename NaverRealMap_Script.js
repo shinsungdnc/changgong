@@ -508,10 +508,16 @@ function applyFilters() {
 
     // 💡 줌 14 미만(초기 줌 12 포함)일 때 2, 3층을 모션과 함께 숨기고 이하 연산 전면 차단
     if (currentZoom < 14) {
-        if (filterPanel) filterPanel.classList.add("slide-up");
-        if (listPanel) { listPanel.classList.add("slide-left"); listPanel.style.display = "none"; }
-        if (listContainer) listContainer.innerHTML = ""; 
+        // 모바일 화면(768px 이하)이며 사용자가 마스터 버튼으로 열어둔 상태라면 락을 걸지 않음
+        if (window.innerWidth <= 768 && !isSidebarManuallyClosed) {
+            // 모바일 수동 오픈 상태 상태 유지 가드
+        } else {
+            if (filterPanel) filterPanel.classList.add("slide-up");
+            if (listPanel) { listPanel.classList.add("slide-left"); listPanel.style.display = "none"; }
+            if (listContainer) listContainer.innerHTML = ""; 
+        }
         if (markerClustering !== null) { markerClustering.setMap(null); markerClustering = null; }
+
         
         // 기존 광역 배지 그리기 로직 (중하단에 있던 광역 뷰 코드를 안전하게 선반영)
         var townStats = getActiveTownCenterStats();
@@ -781,7 +787,7 @@ function selectProperty(index, marker) {
         currentHoverPolygon = null;
         currentHoverIndex = -1;
     }
-    
+
     var listContainer = document.getElementById("property-list");
     var panel = document.getElementById("right-stats-panel");
     var listPanel = document.getElementById("property-list-panel");
@@ -1105,9 +1111,11 @@ function toggleSidebar() {
         if (filterPanel.classList.contains("slide-up")) {
             filterPanel.classList.remove("slide-up");   // 2층 필터부 노출
             listPanel.classList.remove("slide-left");   // 3층 목록창 노출
+            isSidebarManuallyClosed = false;            // 모바일 수동 열림 기억
         } else {
             filterPanel.classList.add("slide-up");     // 2층 필터부 숨김
             listPanel.classList.add("slide-left");     // 3층 목록창 숨김
+            isSidebarManuallyClosed = false;            // 모바일 수동 열림 기억
         }
         return; // 모바일 제어 마감
     }
