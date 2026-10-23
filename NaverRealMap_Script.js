@@ -215,33 +215,31 @@ function initMap() {
                     // ① 사용자가 지도 위 마커 배지에 마우스를 올렸을 때 (마커 호버 시작)
                     mBoxElement.onmouseenter = function() {
                         var targetCard = document.getElementById("item-" + index);
-                        var targetDetail = document.getElementById("detail-" + index);
+                        var targetDetail = document.getElementById("detail-" + index); // 상세창 추적
                         var listContainer = document.getElementById("property-list");
                         
                         // 지도가 드래그 이동 중이거나 VIP 카메라 워킹 중일 때는 무한 널뛰기 방지를 위해 차단
                         if (typeof isCameraMovingToVip !== 'undefined' && isCameraMovingToVip === true) return;
 
                         // [마커 자체 발광]: 마커 배지 자체를 목록 호버와 대칭을 이루도록 노란 네온 불빛 가동
-                        if (!marker.get("isForcedVip")) {
+                        if (marker.get("isForcedVip") !== true) {
                             mBoxElement.classList.add("m-box-hover");
+                            // 🎯 교정: 목록창에 해당 상세 카드가 물리적으로 존재할 때만 안전하게 열기
+                            if (targetDetail) targetDetail.style.display = "block"; 
                         }
 
                         if (targetCard && listContainer) {
                             if (!targetCard.classList.contains("active")) {
-                                // [목록창 순정 컬러 연동]: 생소한 노란색 대신, 카테고리별 고유의 순정 테두리 색상 가동
                                 var pureBorderColor = (prop.category === "토지") ? "#17612B" : (prop.category === "주택") ? "#EF5703" : "#8E24AA";
                                 targetCard.style.setProperty("border", "2px solid " + pureBorderColor, "important");
                                 targetCard.style.setProperty("box-shadow", "0 4px 12px rgba(0,0,0,0.15)", "important");
                                 
-                                // 0.3초(300ms) 동안 시선이 지긋이 머물 때만 스크롤 소환 기동 (과부하 0% 가드)
                                 if (scrollTimer) clearTimeout(scrollTimer);
                                 scrollTimer = setTimeout(function() {
                                     if (typeof isCameraMovingToVip !== 'undefined' && isCameraMovingToVip === true) return;
-                                    
-                                    // 💡 [최상단 칼주차 사양 적용]: 해당 카드를 목록창 맨 첫 번째 줄(start)로 강제 정렬
                                     targetCard.scrollIntoView({
-                                        behavior: "smooth", // 스르륵 부드럽게 미끄러지는 최고급 모션
-                                        block: "start"      // 🎯 화면 밖이든 안이든 무조건 목록창 맨 위로 자석 주차
+                                        behavior: "smooth",
+                                        block: "start"
                                     });
                                 }, 300);
                             }
@@ -252,20 +250,18 @@ function initMap() {
                     mBoxElement.onmouseleave = function() {
                         if (scrollTimer) clearTimeout(scrollTimer); // 초고속 스쳐 지나가기 탈출 시 스크롤 취소
                         
-                        // 마커 자체 노란 불빛 즉시 해제 (원래 카테고리 색상 또는 은회색 visited 테두리로 복원)
                         mBoxElement.classList.remove("m-box-hover");
 
                         var targetCard = document.getElementById("item-" + index);
-                        var targetDetail = document.getElementById("detail-" + index);
-                        
+                        var targetDetail = document.getElementById("detail-" + index); // 상세창 추적
+
                         if (targetCard) {
-                            // 목록 카드의 임시 강제 스타일을 지우고 일반 상태 또는 원래의 은회색(visited) 서식으로 원상복구
                             targetCard.style.removeProperty("border");
                             targetCard.style.removeProperty("box-shadow");
                         }
-                        
-                        // 🎯 교정: 내가 고정 선택된 VIP 본체가 아닐 때만 마우스가 나가면 상세페이지 자동 닫기
-                        if (marker && !marker.get("isForcedVip") && targetDetail) {
+
+                        // 🎯 교정: undefined 에러 원천 차단 (확실하게 VIP가 아닐 때만 닫기)
+                        if (marker.get("isForcedVip") !== true && targetDetail) {
                             targetDetail.style.display = "none";
                         }
                     };
@@ -390,31 +386,32 @@ function renderPropertyCards(targetProperties) {
             '</div>'
         ].join('');
         
-        // 🎯 [기획 2] 카드 호버 인터셉터 및 마커 은회색 상태 새로고침 리스너 배치 부위
+        // 🎯 카드 호버 인터셉터 배치 부위 최종 교정본
         itemDiv.onmouseenter = function() {
-            var targetDetail = document.getElementById("detail-" + index); // 💡 추가: 내 카드의 상세창 추적
+            var targetDetail = document.getElementById("detail-" + index); 
             
-            if (targetDetail) targetDetail.style.display = "block"; // 🎯 교정: 카드 호버 시 상세페이지 즉시 열기
+            if (marker.get("isForcedVip") !== true && targetDetail) {
+                targetDetail.style.display = "block"; // 카드 호버 시 상세페이지 열기
+            }
 
             if (marker && marker.getElement()) {
                 var mBox = marker.getElement().querySelector(".m-box");
-                if (mBox && !marker.get("isForcedVip")) { // VIP 상태가 아닐 때만 발광
+                if (mBox && marker.get("isForcedVip") !== true) {
                     mBox.classList.add("m-box-hover");
                 }
             }
         };
-        itemDiv.onmouseleave = function() {
-            var targetDetail = document.getElementById("detail-" + index); // 💡 추가: 내 카드의 상세창 추적
 
-            if (scrollTimer) clearTimeout(scrollTimer); // 초고속 스쳐 지나가기 탈출 시 스크롤 취소
-            
+        itemDiv.onmouseleave = function() {
+            var targetDetail = document.getElementById("detail-" + index);
+
             if (marker && marker.getElement()) {
                 var mBox = marker.getElement().querySelector(".m-box");
                 if (mBox) mBox.classList.remove("m-box-hover");
             }
 
-            // 🎯 교정: 내가 고정 선택된 VIP 매물이 아닐 때만 마우스가 나가면 상세페이지 즉시 닫기
-            if (marker && !marker.get("isForcedVip") && targetDetail) {
+            // 🎯 교정: 확실하게 고정 선택된 VIP 본체가 아닐 때만 상세페이지 즉시 닫기
+            if (marker.get("isForcedVip") !== true && targetDetail) {
                 targetDetail.style.display = "none";
             }
         };
