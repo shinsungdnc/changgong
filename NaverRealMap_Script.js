@@ -203,42 +203,58 @@ function initMap() {
         });
         
         // =========================================================================
-        // 🎯 [2번 수정 고도화] 마커 호버 시 목록 카드 양방향 발광 및 무부하 자석 스크롤 엔진
+        // 🎯 [최종 치료 완료] 네이버 API 버그 우회형 마커 DOM 직격 호버 연동 엔진
         // =========================================================================
-        var scrollTimer = null; // 초고속 마우스 호버링 시 발생하는 웅성거림 및 덜덜 떨림 차단 가드
+        var scrollTimer = null; 
 
-        naver.maps.Event.addListener(marker, "mouseenter", function() {
-            var targetCard = document.getElementById("item-" + index);
-            var listContainer = document.getElementById("property-list"); // 좌측 스크롤 컨테이너
-            
-            if (targetCard && listContainer) {
-                // 현재 메인 클릭 활성화(VIP)된 카드가 아닐 때만 호버 스타일 가동 (초록 테두리 가드 보존)
-                if (!targetCard.classList.contains("active")) {
-                    // ① 목록 카드 발광은 마우스가 닿는 순간 즉시 켜서 엇박자 없는 반응 속도 확보
-                    targetCard.style.setProperty("border", "2px solid #FFF200", "important");
-                    targetCard.style.setProperty("box-shadow", "0 0 10px rgba(255, 242, 0, 0.6)", "important");
+        // 지도가 마커 엘리먼트를 안전하게 디스크에 각인시킬 수 있도록 미세 타이밍 버퍼 부여
+        setTimeout(function() {
+            if (marker && marker.getElement()) {
+                // 마커 객체 내부에 박혀있는 실제 m-box HTML 요소를 직격으로 검거합니다.
+                var mBoxElement = marker.getElement().querySelector(".m-box");
+                
+                if (mBoxElement) {
+                    // ① 마우스가 지도 위 마커 배지에 진입하는 순간 (마커 호버 시작)
+                    mBoxElement.onmouseenter = function() {
+                        var targetCard = document.getElementById("item-" + index);
+                        var listContainer = document.getElementById("property-list");
+                        
+                        // 지도가 이동 중이거나 VIP 카메라 워킹 중일 때는 무한 루프 튕김 방지를 위해 차단
+                        if (typeof isCameraMovingToVip !== 'undefined' && isCameraMovingToVip === true) return;
+
+                        if (targetCard && listContainer) {
+                            if (!targetCard.classList.contains("active")) {
+                                // 1. 좌측 목록 카드의 테두리를 노란 네온 불빛으로 즉시 변경
+                                targetCard.style.setProperty("border", "2px solid #FFF200", "important");
+                                targetCard.style.setProperty("box-shadow", "0 0 10px rgba(255, 242, 0, 0.6)", "important");
+                                
+                                // 2. 0.3초(300ms) 동안 마우스가 멈춰있을 때만 자석처럼 해당 카드로 스크롤 소환
+                                if (scrollTimer) clearTimeout(scrollTimer);
+                                scrollTimer = setTimeout(function() {
+                                    if (typeof isCameraMovingToVip !== 'undefined' && isCameraMovingToVip === true) return;
+                                    
+                                    targetCard.scrollIntoView({
+                                        behavior: "smooth",
+                                        block: "nearest" // 이미 목록창에 훤히 보이고 있다면 1px도 움직이지 않는 절대 가드
+                                    });
+                                }, 300);
+                            }
+                        }
+                    };
                     
-                    // ② [디바운스 가드] 0.05초(50ms) 이상 시선이 머물 때만 브라우저 내장 스크롤 부드럽게 슥 실행
-                    if (scrollTimer) clearTimeout(scrollTimer);
-                    scrollTimer = setTimeout(function() {
-                        targetCard.scrollIntoView({
-                            behavior: "smooth", // 스르륵 미끄러지듯 이동하는 모션
-                            block: "nearest"    // 💡 화면 내에 이미 카드가 훤히 보인다면 연산 무시, 안 보일 때만 칼주차
-                        });
-                    }, 50);
+                    // ② 마우스가 지도 위 마커 배지를 탈출하는 순간 (마커 호버 끝)
+                    mBoxElement.onmouseleave = function() {
+                        if (scrollTimer) clearTimeout(scrollTimer); // 고속 드래그 탈출 시 스크롤 취소
+                        var targetCard = document.getElementById("item-" + index);
+                        if (targetCard) {
+                            // 마우스가 나가면 원래 상태(일반 테두리 또는 은회색 visited 테두리)로 완벽 복원
+                            targetCard.style.removeProperty("border");
+                            targetCard.style.removeProperty("box-shadow");
+                        }
+                    };
                 }
             }
-        });
-        
-        naver.maps.Event.addListener(marker, "mouseleave", function() {
-            if (scrollTimer) clearTimeout(scrollTimer); // 마우스가 마커를 초고속으로 탈출하면 스크롤 예약 즉시 파기
-            var targetCard = document.getElementById("item-" + index);
-            if (targetCard) {
-                // 마우스가 나가면 원래 클래스 사양(일반 또는 은회색 visited 테두리)으로 깔끔하게 원상복구
-                targetCard.style.removeProperty("border");
-                targetCard.style.removeProperty("box-shadow");
-            }
-        });
+        }, 200); // 마커 엘리먼트 안착 대기 시간 0.2초 안전 버퍼링
     });
     
     setTimeout(function() { applyFilters(); }, 150);
@@ -425,6 +441,7 @@ function applyFilters() {
 
     // 💡 줌 14 이상 정밀 시야 진입 시 슬라이딩으로 나타나게 제어
     if (listPanel && window.innerWidth > 768 && !isSidebarManuallyClosed) {
+        if (filterPanel) filterPanel.style.display = "block"; 
         listPanel.style.display = "flex";
         setTimeout(function() {
             if (filterPanel) filterPanel.classList.remove("slide-up");
