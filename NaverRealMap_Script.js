@@ -510,13 +510,15 @@ function applyFilters() {
     if (currentZoom < 14) {
         // 모바일 화면(768px 이하)이며 사용자가 마스터 버튼으로 열어둔 상태라면 락을 걸지 않음
         if (window.innerWidth <= 768 && !isSidebarManuallyClosed) {
-            // 모바일 수동 오픈 상태 상태 유지 가드
+            if (filterPanel) filterPanel.classList.remove("slide-up");
+            if (listPanel) { listPanel.classList.remove("slide-left"); listPanel.style.display = "flex"; }
         } else {
             if (filterPanel) filterPanel.classList.add("slide-up");
             if (listPanel) { listPanel.classList.add("slide-left"); listPanel.style.display = "none"; }
             if (listContainer) listContainer.innerHTML = ""; 
         }
         if (markerClustering !== null) { markerClustering.setMap(null); markerClustering = null; }
+
 
         
         // 기존 광역 배지 그리기 로직 (중하단에 있던 광역 뷰 코드를 안전하게 선반영)
