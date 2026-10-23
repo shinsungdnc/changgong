@@ -505,13 +505,13 @@ function applyFilters() {
         marker.set("isActive", isFilterPassed);
         marker.setMap(null); 
 
+        // ❌ 기존 'if (currentTown === "전체") { if (p.town === closestTown) ...' 블록을 완전히 삭제하고 
+        // 🎯 아래의 [화면 범위(Bounds) 전수 수집 가드] 딱 한 단락으로 덮어쓰기 교체합니다.
         if (isFilterPassed) {
             if (currentZoom >= 14) {
-                if (currentTown === "전체") {
-                    if (p.town === closestTown) {
-                        listTargetProperties.push({ prop: p, index: i });
-                    }
-                } else {
+                var latLng = marker.getPosition();
+                // 💡 내 4K/모바일 화면 사각형 안에 들어와서 눈에 보이는 마커는 동네 불문 100% 수집!
+                if (currentBounds && currentBounds.hasLatLng(latLng)) {
                     listTargetProperties.push({ prop: p, index: i });
                 }
             } else {
