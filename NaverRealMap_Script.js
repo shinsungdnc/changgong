@@ -19,8 +19,9 @@ var currentDealTypes = ["매매", "전세", "월세", "단기"];
 var markerClustering = null; 
 var currentBoundaryCircle = null;
 var virtualTownMarkers = []; 
-// 🌟 [기획 연동 코어]: 카메라 강제 무빙 중 중심점 이벤트 간섭을 원천 차단하는 전역 스위치
-var isCameraMovingToVip = false;
+var currentHoverPolygon = null; // 🎯 [신규] 호버 전용 노란 네온 폴리곤 변수
+var currentHoverIndex = -1;     // 🎯 [신규] 현재 호버 중인 매물 인덱스 추적 변수
+var isCameraMovingToVip = false; // 🌟 [기획 연동 코어]: 카메라 강제 무빙 중 중심점 이벤트 간섭을 원천 차단하는 전역 스위치
 
 // =========================================================================
 // 🎯 실시간 동네별 가상 중심점 및 수량 수확 계산기 [2번 블록]
@@ -226,6 +227,32 @@ function initMap() {
                             mBoxElement.classList.add("m-box-hover");
                             // 🎯 교정: 목록창에 해당 상세 카드가 물리적으로 존재할 때만 안전하게 열기
                             if (targetDetail) targetDetail.style.display = "block"; 
+                            
+                            // 🎯 [신규] 줌 레벨 17 이상이며 현재 VIP가 아닐 때 노란 네온 폴리곤 빌드
+                            if (map.getZoom() >= 17 && prop.polygon_wkt && prop.polygon_wkt.indexOf("POLYGON") !== -1) {
+                                try {
+                                    if (currentHoverPolygon) { currentHoverPolygon.setMap(null); }
+                                    var coordSection = prop.polygon_wkt.substring(prop.polygon_wkt.indexOf("((") + 2, prop.polygon_wkt.lastIndexOf("))")).replace(/\(/g, "").replace(/\)/g, "");
+                                    var points = coordSection.split(",");
+                                    var polygonPaths = [];
+                                    points.forEach(function(pt) {
+                                        var pair = pt.trim().split(" ");
+                                        if (pair.length >= 2) {
+                                            var lngVal = parseFloat(pair[0]); var latVal = parseFloat(pair[1]);
+                                            if (!isNaN(latVal) && !isNaN(lngVal)) { polygonPaths.push(new naver.maps.LatLng(latVal, lngVal)); }
+                                        }
+                                    });
+                                    if (polygonPaths.length > 0) {
+                                        currentHoverPolygon = new naver.maps.Polygon({
+                                            map: map, paths: polygonPaths,
+                                            fillColor: '#FFFF00', fillOpacity: 0.20, // 🟡 노란 네온 면 투명도 20%
+                                            strokeColor: '#FFFF00', strokeOpacity: 0.85, strokeWeight: 2, // 🟡 노란 네온 테두리 두께 2px, 투명도 85%
+                                            clickable: false
+                                        });
+                                        currentHoverIndex = index;
+                                    }
+                                } catch (e) { console.warn(e); }
+                            }
                         }
 
                         if (targetCard && listContainer) {
@@ -251,7 +278,14 @@ function initMap() {
                         if (scrollTimer) clearTimeout(scrollTimer); // 초고속 스쳐 지나가기 탈출 시 스크롤 취소
                         
                         mBoxElement.classList.remove("m-box-hover");
-
+                        
+                        // 🎯 [신규] 마우스 아웃 시 노란 네온 호버 폴리곤 즉각 삭제 및 청소
+                        if (currentHoverPolygon && currentHoverIndex === index) {
+                            currentHoverPolygon.setMap(null);
+                            currentHoverPolygon = null;
+                            currentHoverIndex = -1;
+                        }
+                        
                         var targetCard = document.getElementById("item-" + index);
                         var targetDetail = document.getElementById("detail-" + index); // 상세창 추적
 
@@ -398,9 +432,36 @@ function renderPropertyCards(targetProperties) {
                 var mBox = marker.getElement().querySelector(".m-box");
                 if (mBox && marker.get("isForcedVip") !== true) {
                     mBox.classList.add("m-box-hover");
+                    
+                    // 🎯 [신규] 리스트 호버 시 줌 레벨 17 이상이면 노란 네온 폴리곤 즉시 생성
+                    if (map.getZoom() >= 17 && prop.polygon_wkt && prop.polygon_wkt.indexOf("POLYGON") !== -1) {
+                        try {
+                            if (currentHoverPolygon) { currentHoverPolygon.setMap(null); }
+                            var coordSection = prop.polygon_wkt.substring(prop.polygon_wkt.indexOf("((") + 2, prop.polygon_wkt.lastIndexOf("))")).replace(/\(/g, "").replace(/\)/g, "");
+                            var points = coordSection.split(",");
+                            var polygonPaths = [];
+                            points.forEach(function(pt) {
+                                var pair = pt.trim().split(" ");
+                                if (pair.length >= 2) {
+                                    var lngVal = parseFloat(pair[0]); var latVal = parseFloat(pair[1]);
+                                    if (!isNaN(latVal) && !isNaN(lngVal)) { polygonPaths.push(new naver.maps.LatLng(latVal, lngVal)); }
+                                }
+                            });
+                            if (polygonPaths.length > 0) {
+                                currentHoverPolygon = new naver.maps.Polygon({
+                                    map: map, paths: polygonPaths,
+                                    fillColor: '#FFFF00', fillOpacity: 0.20, // 🟡 면 투명도 20%
+                                    strokeColor: '#FFFF00', strokeOpacity: 0.85, strokeWeight: 2, // 🟡 테두리 두께 2px, 투명도 85%
+                                    clickable: false
+                                });
+                                currentHoverIndex = index;
+                            }
+                        } catch (e) { console.warn(e); }
+                    }
                 }
             }
         };
+
 
         itemDiv.onmouseleave = function() {
             var targetDetail = document.getElementById("detail-" + index);
@@ -410,11 +471,19 @@ function renderPropertyCards(targetProperties) {
                 if (mBox) mBox.classList.remove("m-box-hover");
             }
 
+            // 🎯 [신규] 리스트 마우스 아웃 시 노란 네온 호버 폴리곤 청소
+            if (currentHoverPolygon && currentHoverIndex === index) {
+                currentHoverPolygon.setMap(null);
+                currentHoverPolygon = null;
+                currentHoverIndex = -1;
+            }
+
             // 🎯 교정: 확실하게 고정 선택된 VIP 본체가 아닐 때만 상세페이지 즉시 닫기
             if (marker.get("isForcedVip") !== true && targetDetail) {
                 targetDetail.style.display = "none";
             }
         };
+
 
         itemDiv.onclick = function() { selectProperty(index, marker); }; 
         listFragment.appendChild(itemDiv);
@@ -706,6 +775,13 @@ function updateClustering(validMarkers) {
 // 🎯 [8번 블록 기획 수복 최종 완결판] 개별 매물 마커 클릭 이벤트 엔진
 // =========================================================================
 function selectProperty(index, marker) {
+    // 🎯 [신규] 클릭 고정(VIP) 순간 임시 호버 레이어가 깔려 있다면 흔적도 없이 삭제
+    if (currentHoverPolygon) {
+        currentHoverPolygon.setMap(null);
+        currentHoverPolygon = null;
+        currentHoverIndex = -1;
+    }
+    
     var listContainer = document.getElementById("property-list");
     var panel = document.getElementById("right-stats-panel");
     var listPanel = document.getElementById("property-list-panel");
