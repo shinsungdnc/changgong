@@ -203,58 +203,67 @@ function initMap() {
         });
         
         // =========================================================================
-        // 🎯 [최종 치료 완료] 네이버 API 버그 우회형 마커 DOM 직격 호버 연동 엔진
+        // 🎯 [최종 기획 마감 완결판] 마커 노란 발광 + 목록창 순정 컬러 + 최상단 칼주차 스크롤
         // =========================================================================
         var scrollTimer = null; 
 
-        // 지도가 마커 엘리먼트를 안전하게 디스크에 각인시킬 수 있도록 미세 타이밍 버퍼 부여
         setTimeout(function() {
             if (marker && marker.getElement()) {
-                // 마커 객체 내부에 박혀있는 실제 m-box HTML 요소를 직격으로 검거합니다.
                 var mBoxElement = marker.getElement().querySelector(".m-box");
                 
                 if (mBoxElement) {
-                    // ① 마우스가 지도 위 마커 배지에 진입하는 순간 (마커 호버 시작)
+                    // ① 사용자가 지도 위 마커 배지에 마우스를 올렸을 때 (마커 호버 시작)
                     mBoxElement.onmouseenter = function() {
                         var targetCard = document.getElementById("item-" + index);
                         var listContainer = document.getElementById("property-list");
                         
-                        // 지도가 이동 중이거나 VIP 카메라 워킹 중일 때는 무한 루프 튕김 방지를 위해 차단
+                        // 지도가 드래그 이동 중이거나 VIP 카메라 워킹 중일 때는 무한 널뛰기 방지를 위해 차단
                         if (typeof isCameraMovingToVip !== 'undefined' && isCameraMovingToVip === true) return;
+
+                        // [마커 자체 발광]: 마커 배지 자체를 목록 호버와 대칭을 이루도록 노란 네온 불빛 가동
+                        if (!marker.get("isForcedVip")) {
+                            mBoxElement.classList.add("m-box-hover");
+                        }
 
                         if (targetCard && listContainer) {
                             if (!targetCard.classList.contains("active")) {
-                                // 1. 좌측 목록 카드의 테두리를 노란 네온 불빛으로 즉시 변경
-                                targetCard.style.setProperty("border", "2px solid #FFF200", "important");
-                                targetCard.style.setProperty("box-shadow", "0 0 10px rgba(255, 242, 0, 0.6)", "important");
+                                // [목록창 순정 컬러 연동]: 생소한 노란색 대신, 카테고리별 고유의 순정 테두리 색상 가동
+                                var pureBorderColor = (prop.category === "토지") ? "#17612B" : (prop.category === "주택") ? "#EF5703" : "#8E24AA";
+                                targetCard.style.setProperty("border", "2px solid " + pureBorderColor, "important");
+                                targetCard.style.setProperty("box-shadow", "0 4px 12px rgba(0,0,0,0.15)", "important");
                                 
-                                // 2. 0.3초(300ms) 동안 마우스가 멈춰있을 때만 자석처럼 해당 카드로 스크롤 소환
+                                // 0.3초(300ms) 동안 시선이 지긋이 머물 때만 스크롤 소환 기동 (과부하 0% 가드)
                                 if (scrollTimer) clearTimeout(scrollTimer);
                                 scrollTimer = setTimeout(function() {
                                     if (typeof isCameraMovingToVip !== 'undefined' && isCameraMovingToVip === true) return;
                                     
+                                    // 💡 [최상단 칼주차 사양 적용]: 해당 카드를 목록창 맨 첫 번째 줄(start)로 강제 정렬
                                     targetCard.scrollIntoView({
-                                        behavior: "smooth",
-                                        block: "nearest" // 이미 목록창에 훤히 보이고 있다면 1px도 움직이지 않는 절대 가드
+                                        behavior: "smooth", // 스르륵 부드럽게 미끄러지는 최고급 모션
+                                        block: "start"      // 🎯 화면 밖이든 안이든 무조건 목록창 맨 위로 자석 주차
                                     });
                                 }, 300);
                             }
                         }
                     };
                     
-                    // ② 마우스가 지도 위 마커 배지를 탈출하는 순간 (마커 호버 끝)
+                    // ② 사용자가 지도 위 마커 배지에서 마우스를 뗐을 때 (마커 호버 끝)
                     mBoxElement.onmouseleave = function() {
-                        if (scrollTimer) clearTimeout(scrollTimer); // 고속 드래그 탈출 시 스크롤 취소
+                        if (scrollTimer) clearTimeout(scrollTimer); // 초고속 스쳐 지나가기 탈출 시 스크롤 취소
+                        
+                        // 마커 자체 노란 불빛 즉시 해제 (원래 카테고리 색상 또는 은회색 visited 테두리로 복원)
+                        mBoxElement.classList.remove("m-box-hover");
+
                         var targetCard = document.getElementById("item-" + index);
                         if (targetCard) {
-                            // 마우스가 나가면 원래 상태(일반 테두리 또는 은회색 visited 테두리)로 완벽 복원
+                            // 목록 카드의 임시 강제 스타일을 지우고 일반 상태 또는 원래의 은회색(visited) 서식으로 원상복구
                             targetCard.style.removeProperty("border");
                             targetCard.style.removeProperty("box-shadow");
                         }
                     };
                 }
             }
-        }, 200); // 마커 엘리먼트 안착 대기 시간 0.2초 안전 버퍼링
+        }, 200); // 0.2초 안전 안착 대기 버퍼
     });
     
     setTimeout(function() { applyFilters(); }, 150);
