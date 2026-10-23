@@ -215,6 +215,7 @@ function initMap() {
                     // ① 사용자가 지도 위 마커 배지에 마우스를 올렸을 때 (마커 호버 시작)
                     mBoxElement.onmouseenter = function() {
                         var targetCard = document.getElementById("item-" + index);
+                        var targetDetail = document.getElementById("detail-" + index);
                         var listContainer = document.getElementById("property-list");
                         
                         // 지도가 드래그 이동 중이거나 VIP 카메라 워킹 중일 때는 무한 널뛰기 방지를 위해 차단
@@ -255,10 +256,17 @@ function initMap() {
                         mBoxElement.classList.remove("m-box-hover");
 
                         var targetCard = document.getElementById("item-" + index);
+                        var targetDetail = document.getElementById("detail-" + index);
+                        
                         if (targetCard) {
                             // 목록 카드의 임시 강제 스타일을 지우고 일반 상태 또는 원래의 은회색(visited) 서식으로 원상복구
                             targetCard.style.removeProperty("border");
                             targetCard.style.removeProperty("box-shadow");
+                        }
+                        
+                        // 🎯 교정: 내가 고정 선택된 VIP 본체가 아닐 때만 마우스가 나가면 상세페이지 자동 닫기
+                        if (marker && !marker.get("isForcedVip") && targetDetail) {
+                            targetDetail.style.display = "none";
                         }
                     };
                 }
@@ -384,6 +392,10 @@ function renderPropertyCards(targetProperties) {
         
         // 🎯 [기획 2] 카드 호버 인터셉터 및 마커 은회색 상태 새로고침 리스너 배치 부위
         itemDiv.onmouseenter = function() {
+            var targetDetail = document.getElementById("detail-" + index); // 💡 추가: 내 카드의 상세창 추적
+            
+            if (targetDetail) targetDetail.style.display = "block"; // 🎯 교정: 카드 호버 시 상세페이지 즉시 열기
+
             if (marker && marker.getElement()) {
                 var mBox = marker.getElement().querySelector(".m-box");
                 if (mBox && !marker.get("isForcedVip")) { // VIP 상태가 아닐 때만 발광
@@ -392,9 +404,18 @@ function renderPropertyCards(targetProperties) {
             }
         };
         itemDiv.onmouseleave = function() {
+            var targetDetail = document.getElementById("detail-" + index); // 💡 추가: 내 카드의 상세창 추적
+
+            if (scrollTimer) clearTimeout(scrollTimer); // 초고속 스쳐 지나가기 탈출 시 스크롤 취소
+            
             if (marker && marker.getElement()) {
                 var mBox = marker.getElement().querySelector(".m-box");
                 if (mBox) mBox.classList.remove("m-box-hover");
+            }
+
+            // 🎯 교정: 내가 고정 선택된 VIP 매물이 아닐 때만 마우스가 나가면 상세페이지 즉시 닫기
+            if (marker && !marker.get("isForcedVip") && targetDetail) {
+                targetDetail.style.display = "none";
             }
         };
 
