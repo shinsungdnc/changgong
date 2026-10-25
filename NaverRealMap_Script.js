@@ -504,13 +504,15 @@ function applyFilters() {
 
     if (isCameraMovingToVip) { return; }
 
-    // 💡 [줌 아웃 복귀 완치 판본]: 줌 14 미만 광역 시야 탈출 시 이중 잠금 가드 완전 정상화
+    // 💡 줌 14 미만(초기 줌 12 포함)일 때 2, 3층을 모션과 함께 숨기고 이하 연산 전면 차단
     if (currentZoom < 14) {
-        // 🔄 [교정]: 유저가 마스터 버튼으로 강제 오픈한 상태(`isSidebarManuallyClosed === false`)가 아니라면 
-        // 줌 아웃 즉시 2층, 3층 패널을 화면 밖으로 가차 없이 날려버리고 수천 개 매물 카드 DOM 트리를 즉각 청소(0개 유지)
-        if (isSidebarManuallyClosed === true) {
-            if (filterPanel) filterPanel.classList.remove("active-show");
-            if (listPanel) listPanel.classList.remove("active-show");
+        // 모바일 화면(768px 이하)이며 사용자가 마스터 버튼으로 열어둔 상태라면 락을 걸지 않음
+        if (window.innerWidth <= 768 && !isSidebarManuallyClosed) {
+            if (filterPanel) filterPanel.classList.remove("slide-up");
+            if (listPanel) { listPanel.classList.remove("slide-left"); listPanel.style.display = "flex"; }
+        } else {
+            if (filterPanel) filterPanel.classList.add("slide-up");
+            if (listPanel) { listPanel.classList.add("slide-left"); listPanel.style.display = "none"; }
             if (listContainer) listContainer.innerHTML = ""; 
         }
         
@@ -668,15 +670,14 @@ function applyFilters() {
         return;
     }
 
-    if (listPanel) {
-        if (window.innerWidth <= 768) { // 모바일 전용
-        } else {
-            if (isSidebarManuallyClosed) {
-                listPanel.style.display = "none";
-            } else {
-                listPanel.style.display = "flex";
-            }
-        }
+    // 💡 줌 14 이상 정밀 시야 진입 시 슬라이딩으로 나타나게 제어
+    if (listPanel && window.innerWidth > 768 && !isSidebarManuallyClosed) {
+        if (filterPanel) filterPanel.style.display = "block"; 
+        listPanel.style.display = "flex";
+        setTimeout(function() {
+            if (filterPanel) filterPanel.classList.remove("slide-up");
+            listPanel.classList.remove("slide-left");
+        }, 10);
     }
 
     // =========================================================================
@@ -1118,28 +1119,32 @@ function toggleSidebar() {
         statsPanel = document.getElementById("right-stats-panel"); 
         
     if (!listPanel || !filterPanel) return;
-    var currentZoom = map.getZoom();
 
-    // 💻 [PC 및 공통 버전 트랙]: 화면 밖 대기 모션 클래스로 깔끔하게 통합 제어
-    if (filterPanel.classList.contains("active-show")) { 
-        // 열려 있을 때는 전부 닫아줌
-        filterPanel.classList.remove("active-show");
-        listPanel.classList.remove("active-show");
+    // 📱 [모바일 버전 전용 트랙]: 숨김 상태에서 노출 상태로 역전 동작
+    if (window.innerWidth <= 768) {
+        if (filterPanel.classList.contains("slide-up")) {
+            filterPanel.classList.remove("slide-up");   // 2층 필터부 노출
+            listPanel.classList.remove("slide-left");   // 3층 목록창 노출
+            isSidebarManuallyClosed = false;            // 모바일 수동 열림 기억
+        } else {
+            filterPanel.classList.add("slide-up");     // 2층 필터부 숨김
+            listPanel.classList.add("slide-left");     // 3층 목록창 숨김
+            isSidebarManuallyClosed = false;            // 모바일 수동 열림 기억
+        }
+        return; // 모바일 제어 마감
+    }
+
+    // 💻 [기존 PC 버전 트랙]: 노출 상태에서 숨김 상태로 동작
+    if (listPanel.classList.contains("slide-left")) { 
+        filterPanel.classList.remove("slide-up");
+        listPanel.classList.remove("slide-left");
+        isSidebarManuallyClosed = false; 
+        if (document.querySelector(".property-item.active") && statsPanel) statsPanel.classList.add("active");
+    } else { 
+        filterPanel.classList.add("slide-up");
+        listPanel.classList.add("slide-left");
         isSidebarManuallyClosed = true; 
         if (statsPanel) statsPanel.classList.remove("active", "expanded");
-    } else { 
-        // 🛠️ [교정]: 줌 12, 13단계 광역 시야에서 사용자가 궁금해서 버튼을 누른 경우의 독립 분기
-        if (currentZoom < 14) {
-            filterPanel.classList.add("active-show"); // 2층 필터 패널만 스르륵 출현
-            listPanel.classList.remove("active-show"); // 3층 무거운 목록창 카드는 아예 안 그리도록 철저히 차단
-            isSidebarManuallyClosed = false;
-            updateTownSelectorOptions(); // 하이브리드 카운트 엔진 강제 구동하여 드롭다운 총 매물수 즉시 연동
-        } else {
-            // 줌 14레벨 이상 정밀 시야에서는 사양대로 둘 다 동시 전개
-            filterPanel.classList.add("active-show");
-            listPanel.classList.add("active-show");
-            isSidebarManuallyClosed = false; 
-        }
     }
 }
 function toggleCategory(cat) {
