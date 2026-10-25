@@ -1236,6 +1236,8 @@ function toggleSidebar() {
 
     // 📱 [모바일 버전 전용 트랙]
     if (window.innerWidth <= 768) {
+        var statsPanel = document.getElementById("right-stats-panel"); // 📊 실거래 패널 추적
+        
         if (filterPanel.classList.contains("slide-up") || filterPanel.style.display === "none") {
             filterPanel.style.display = "block";
             listPanel.style.display = "flex";
@@ -1248,6 +1250,12 @@ function toggleSidebar() {
             filterPanel.classList.add("slide-up");
             listPanel.classList.add("slide-left");
             isSidebarManuallyClosed = false;
+            
+            // 🎯 [기획 수복 핵심]: 모바일 토글 닫기 시 실거래 바텀시트(확장 모드 포함)도 한방에 동시 대피 제거!
+            if (statsPanel) {
+                statsPanel.classList.remove("active", "expanded");
+            }
+            
             setTimeout(function() {
                 if (filterPanel.classList.contains("slide-up")) filterPanel.style.display = "none";
                 if (listPanel.classList.contains("slide-left")) listPanel.style.display = "none";
