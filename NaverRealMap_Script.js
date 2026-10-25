@@ -624,7 +624,7 @@ function applyFilters() {
                 var maxTextWidth = isMobileView ? "58px" : "78px";
 
                 var townClusterHtml = [
-                    '<div class="custom-town-cluster" style="cursor:pointer; pointer-events:auto !important; z-index:9999 !important; width:' + clusterSize + '; height:' + clusterSize + '; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(74, 211, 255, 0.95); border:2.5px solid #ffffff; border-radius:50%; box-shadow:0 3px 12px rgba(0,0,0,0.3); transform:translate(-50%, -50%); box-sizing:border-box; padding:2px;">', 
+                    '<div class="custom-town-cluster" style="cursor:pointer; pointer-events:auto !important; z-index:9999 !important; width:' + clusterSize + '; height:' + clusterSize + '; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(74, 211, 255, 0.95); border:1px solid #ffffff; border-radius:50%; box-shadow:0 3px 12px rgba(0,0,0,0.3); transform:translate(-50%, -50%); box-sizing:border-box; padding:2px;">', 
                     ' <div style="font-size:' + townFontSize + '; font-weight:700; color:#111111; line-height:1.2; text-align:center; max-width:' + maxTextWidth + '; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; pointer-events:none;">' + tName.replace('조치원읍', '조치원') + '</div>', 
                     ' <div style="font-size:' + countFontSize + '; font-weight:800; color:#111111; line-height:1.2; margin-top:2px; pointer-events:none;">' + stat.count + '</div>', 
                     '</div>'
@@ -1412,15 +1412,16 @@ document.addEventListener("DOMContentLoaded", function() {
         naver.maps.Event.addListener(map, "zoom_start", hidePolygonOnMove);
         naver.maps.Event.addListener(map, "dragstart", hidePolygonOnMove);
 
-    // -----------------------------------------------------------------
-    // [기획 핵심 스위치 ②] 지도가 완벽하게 멈추어 안착하면 폴리곤을 깨끗하게 재조립
-    // -----------------------------------------------------------------
-    naver.maps.Event.addListener(map, "idle", function() {
-        // 🌟 [최종 마감 2]: 마커 클릭으로 카메라가 이동 중일 때는 순정 idle 연산을 전면 무시하여 불안정성을 차단합니다!
-        if (isCameraMovingToVip) { return; } 
+        // -----------------------------------------------------------------
+        // [기획 핵심 스위치 ②] 지도가 완벽하게 멈추어 안착하면 폴리곤을 깨끗하게 재조립
+        // -----------------------------------------------------------------
+        naver.maps.Event.addListener(map, "idle", function() {
+            // 🌟 [최종 마감 2]: 마커 클릭으로 카메라가 이동 중일 때는 순정 idle 연산을 전면 무시하여 불안정성을 차단합니다!
+            if (isCameraMovingToVip) { return; } 
 
-        var centerLatLng = map.getCenter();
-        var currentZoom = map.getZoom();
+            var centerLatLng = map.getCenter();
+            var currentZoom = map.getZoom();
+            var currentBounds = map.getBounds();
 
             // [락 해제] 마우스 드래그가 무한 지속되던 엇박자 타이밍 가드를 강제로 깨워 멈춤 불량 치료
             isCameraMovingToVip = false;
@@ -1439,63 +1440,64 @@ document.addEventListener("DOMContentLoaded", function() {
                 applyFilters();
             }
             
-            // 💡 3단계: [폴리곤 부활] 지도가 정지했으므로 현재 활성화된 VIP 매물의 네온 폴리곤을 화면에 다시 선명하게 얹음
-            var vipIndex = -1;
-            // 현재 어떤 마커가 선택 상태(VIP)인지 영구 낙인을 추적 스캔
-            markers.forEach(function(m, idx) {
-                if (m.get("isForcedVip") === true) { vipIndex = idx; }
-            });
+            // 💡 3단계: [공간 엔진 광역 필지 부활] 기존 잔상 완벽 청소
+            if (currentBoundaryCircle) { currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }
+            
+            // 📡 [신규 광역 다각형 배열 인프라 가동]
+            if (typeof globalPolygonArray === 'undefined') { window.globalPolygonArray = []; }
+            window.globalPolygonArray.forEach(function(p) { p.setMap(null); });
+            window.globalPolygonArray = [];
 
-            // 만약 선택된 VIP 매물이 있다면, 손을 뗀 제자리에 폴리곤 드로잉 장부를 재가동
-            if (vipIndex > -1 && properties[vipIndex]) {
-                var prop = properties[vipIndex];
-                var marker = markers[vipIndex];
-                
-                // 기존 폴리곤 잔상을 완벽히 청소한 후 다시 바인딩
-                if (currentBoundaryCircle) { currentBoundaryCircle.setMap(null); currentBoundaryCircle = null; }
-                
-                if (prop.polygon_wkt && prop.polygon_wkt.indexOf("POLYGON") !== -1) {
-                    try {
-                        var coordSection = prop.polygon_wkt.substring(prop.polygon_wkt.indexOf("((") + 2, prop.polygon_wkt.lastIndexOf("))")).replace(/\(/g, "").replace(/\)/g, "");
-                        var points = coordSection.split(",");
-                        var polygonPaths = [];
-                        
-                        points.forEach(function(pt) {
-                            var pair = pt.trim().split(" ");
-                            if (pair.length >= 2) {
-                                var lngVal = parseFloat(pair[0]);
-                                var latVal = parseFloat(pair[1]);
-                                if (!isNaN(latVal) && !isNaN(lngVal)) { polygonPaths.push(new naver.maps.LatLng(latVal, lngVal)); }
-                            }
-                        });
-                        
-                        if (polygonPaths.length > 0) {
-                            currentBoundaryCircle = new naver.maps.Polygon({
-                                map: map,
-                                paths: polygonPaths,
-                                fillColor: '#39FF14',
-                                fillOpacity: 0.35,
-                                strokeColor: '#39FF14',
-                                strokeOpacity: 0.90,
-                                strokeWeight: 3,
-                                clickable: false
+            // 💡 4단계: 줌 레벨 17 이상일 때 화면 안의 모든 활성화 매물 땅 모양 일제히 드로잉
+            if (currentZoom >= 17) {
+                markers.forEach(function(m, idx) {
+                    var prop = properties[idx];
+                    if (!m.get("isActive") || !prop || !prop.polygon_wkt || prop.polygon_wkt.indexOf("POLYGON") === -1) return;
+                    
+                    // 내 S26 Ultra 화면 경계 사각형 안에 들어와 눈에 보이는 정예 매물만 타깃 조사
+                    if (currentBounds && currentBounds.hasLatLng(m.getPosition())) {
+                        try {
+                            var coordSection = prop.polygon_wkt.substring(prop.polygon_wkt.indexOf("((") + 2, prop.polygon_wkt.lastIndexOf("))")).replace(/\(/g, "").replace(/\)/g, "");
+                            var points = coordSection.split(",");
+                            var polygonPaths = [];
+                            
+                            points.forEach(function(pt) {
+                                var pair = pt.trim().split(" ");
+                                if (pair.length >= 2) {
+                                    var lngVal = parseFloat(pair[0]); 
+                                    var latVal = parseFloat(pair[1]);
+                                    if (!isNaN(latVal) && !isNaN(lngVal)) { polygonPaths.push(new naver.maps.LatLng(latVal, lngVal)); }
+                                }
                             });
-                        }
-                    } catch (e) { console.warn("⚠️ 안착 시 폴리곤 복원 가드 작동:", e); }
-                }
-                
-                // 만약 지적 매칭이 없는 토지/주택일 경우 백업용 가이드 원형 레이어 기동
-                if (!currentBoundaryCircle && marker) {
-                    currentBoundaryCircle = new naver.maps.Circle({ 
-                        map: map, 
-                        center: marker.getPosition(), 
-                        radius: currentZoom === 18 ? 8 : (currentZoom === 17 ? 15 : 20), 
-                        fillColor: "#39FF14", 
-                        fillOpacity: 0.35, 
-                        strokeColor: "#2E7D32", 
-                        strokeWeight: 2 
-                    });
-                }
+                            
+                            if (polygonPaths.length > 0) {
+                                var isVip = (m.get("isForcedVip") === true);
+                                
+                                // 🎨 [컬러 매칭 분기]: 내가 콕 집은 VIP 매물은 형광 초록(3px), 주변 정예 매물들은 마스터 Cyan 블루(1.5px) 지정
+                                var polyColor = isVip ? '#39FF14' : '#4ad3ff';
+                                var polyOpacity = isVip ? 0.35 : 0.15;
+                                var polyWeight = isVip ? 3 : 1.5;
+
+                                var localPolygon = new naver.maps.Polygon({
+                                    map: map,
+                                    paths: polygonPaths,
+                                    fillColor: polyColor,
+                                    fillOpacity: polyOpacity,
+                                    strokeColor: polyColor,
+                                    strokeOpacity: 0.85,
+                                    strokeWeight: polyWeight,
+                                    clickable: false
+                                });
+                                
+                                if (isVip) {
+                                    currentBoundaryCircle = localPolygon; // VIP 추적 링크 바인딩
+                                } else {
+                                    window.globalPolygonArray.push(localPolygon); // 주변 매물 배열 적재
+                                }
+                            }
+                        } catch (e) { console.warn("⚠️ 필지 광역 복원 가드 작동:", e); }
+                    }
+                });
             }
         });
         
