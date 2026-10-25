@@ -183,10 +183,12 @@ function updateRegionSelectorOptions() {
     // [개별 용도지역] 체크박스 라벨 순차 바인딩
     sortedRegions.forEach(function(r) {
         var wrapper = document.createElement("label"); 
-        wrapper.className = "child-label active";
+        // 🎯 지목 필터와 완벽 매칭되는 클래스명 유지
+        wrapper.className = "child-label active"; 
+        
         var chk = document.createElement("input"); 
         chk.type = "checkbox"; 
-        chk.value = r; 
+        chk.value = r; // ➔ 여기에 '계획관리', '생산관리' 순수 명칭이 주입됩니다.
         chk.checked = true; 
         chk.style.display = "none";
         
@@ -194,13 +196,25 @@ function updateRegionSelectorOptions() {
             if (this.checked) { wrapper.classList.add("active"); } else { wrapper.classList.remove("active"); }
             if (!this.checked) { masterChk.checked = false; masterWrapper.classList.remove("active"); }
             
-            var checkedBoxes = container.querySelectorAll(".child-label input:checked");
-            currentRegion = Array.from(checkedBoxes).map(function(c) { return c.value; });
+            // 🎯 [지목 필터 순정 로직 복제]: 체크된 input 엘리먼트들의 value('계획관리' 등)를 명확하게 전수 수집
+            var checkedBoxes = container.querySelectorAll("input[type='checkbox']:checked");
+            
+            // 전역 currentRegion 바구니를 현재 체크된 순수 용도 명칭들로만 깔끔하게 갱신
+            var tempRegions = [];
+            checkedBoxes.forEach(function(box) {
+                // 전체 선택 체크박스(값 없음)는 제외하고 순수 용도지역 이름만 수집
+                if (box.value && box.value !== "on" && sortedRegions.indexOf(box.value) !== -1) {
+                    tempRegions.push(box.value);
+                }
+            });
+            currentRegion = tempRegions;
             
             if (currentRegion.length === sortedRegions.length) { 
                 masterChk.checked = true; 
                 masterWrapper.classList.add("active"); 
             }
+            
+            // 🎯 드디어 지목과 완벽히 동일한 조건으로 마커 리셋 함수 실행
             applyFilters();
         };
         wrapper.appendChild(chk); 
