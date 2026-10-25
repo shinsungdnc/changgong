@@ -119,78 +119,93 @@ function updateTownSelectorOptions() {
     }
 }
 // =========================================================================
-// 🗺️ [최종 완결] 주요 항목 선두 고정 + 나머지 오름차순 + 리셋 시 실시간 수량 완벽 반영 엔진
+// 🗺️ [교정 완결] 지목 필터와 동일한 로직의 용도지역 선택기 (텍스트 버그 완전 제거)
 // =========================================================================
 function updateRegionSelectorOptions() {
-    var container = document.getElementById("region-selector"); if (!container) return;
+    var container = document.getElementById("region-selector"); 
+    if (!container) return;
+    
     var regionsSet = new Set();
-    
-    // 💡 최우선 지정 항목 정렬 기준 배열 (에러 방지를 위해 가장 선두에 배치)
     var topRegions = ["계획관리", "생산관리", "보전관리", "농림"];
-    
-    // 💡 [수량 동기화 허브]: 현재 켜져 있는 카테고리에 대응하는 실시간 매물 개수 집계 장부
-    var regionCounts = {};
     
     properties.forEach(function(p) { 
         if (currentCategories.indexOf(p.category) !== -1 && p.yongdo) {
             var parts = p.yongdo.split("/");
-            // 데이터 슬라이싱 연산을 직관적이고 안전하게 정제
-            var rName = (parts && parts[0] ? parts[0].trim() : "").replace("지역", "") + "지역";
-            if (rName && rName !== "지역" && rName !== "-지역") {
+            var rName = (parts && parts[0] ? parts[0].trim() : "");
+            if (rName && rName !== "-") {
                 regionsSet.add(rName);
-                
-                // 거래방식 조건까지 대조하여 개수를 정밀하게 카운트
-                var mDeal = false;
-                currentDealTypes.forEach(function(t) { if (p.price && p.price.indexOf(t) !== -1) mDeal = true; });
-                if (mDeal) {
-                    regionCounts[rName] = (regionCounts[rName] || 0) + 1;
-                }
             }
         }
     });
     container.innerHTML = ""; 
     
-    // 🚀 하이브리드 정렬 연산 가동 (topRegions 변수가 선두에 있어 에러가 절대 나지 않습니다)
     var sortedRegions = Array.from(regionsSet).sort(function(a, b) {
-        var cleanA = a.replace("지역", ""), cleanB = b.replace("지역", "");
-        var idxA = topRegions.indexOf(cleanA), idxB = topRegions.indexOf(cleanB);
-        
+        var idxA = topRegions.indexOf(a), idxB = topRegions.indexOf(b);
         if (idxA !== -1 && idxB !== -1) return idxA - idxB;
         if (idxA !== -1) return -1;
         if (idxB !== -1) return 1;
-        
-        return cleanA.localeCompare(cleanB);
+        return a.localeCompare(b);
     });
     
-    if (currentRegion.length === 0 || currentRegion.length > sortedRegions.length) { currentRegion = [...sortedRegions]; }
-    if (sortedRegions.length === 0) { container.innerHTML = "<span style='font-size:12px; color:#999; padding:5px;'>선택된 카테고리에 용도지역 데이터가 없습니다.</span>"; return; }
+    // 지목과 완전히 동일하게 초기값 전수 수집
+    currentRegion = [...sortedRegions];
 
-    var masterWrapper = document.createElement("button"); masterWrapper.type = "button"; masterWrapper.className = "sub-filter-btn active";
-    var isMasterActive = true; masterWrapper.innerText = "전체";
-    masterWrapper.onclick = function() {
-        isMasterActive = !isMasterActive;
-        if (isMasterActive) { this.classList.add("active"); currentRegion = [...sortedRegions]; container.querySelectorAll(".child-btn").forEach(function(btn) { btn.classList.add("active"); }); } 
-        else { this.classList.remove("active"); currentRegion = []; container.querySelectorAll(".child-btn").forEach(function(btn) { btn.classList.remove("active"); }); }
+    if (sortedRegions.length === 0) { 
+        container.innerHTML = "<span style='font-size:12px; color:#999; padding:5px;'>선택된 카테고리에 용도지역 데이터가 없습니다.</span>"; 
+        return; 
+    }
+
+    // [전체 선택] 체크박스 라벨 빌드
+    var masterWrapper = document.createElement("label"); 
+    masterWrapper.className = "child-label active";
+    var masterChk = document.createElement("input"); 
+    masterChk.type = "checkbox"; 
+    masterChk.checked = true; 
+    masterChk.style.display = "none";
+    
+    masterChk.onchange = function() {
+        var isChecked = this.checked;
+        if (isChecked) { masterWrapper.classList.add("active"); } else { masterWrapper.classList.remove("active"); }
+        container.querySelectorAll(".child-label").forEach(function(lbl) {
+            var chk = lbl.querySelector("input");
+            if (chk) { 
+                chk.checked = isChecked; 
+                if (isChecked) { lbl.classList.add("active"); } else { lbl.classList.remove("active"); } 
+            }
+        });
+        currentRegion = isChecked ? [...sortedRegions] : []; 
         applyFilters();
     };
+    masterWrapper.appendChild(masterChk); 
+    masterWrapper.appendChild(document.createTextNode("전체")); 
     container.appendChild(masterWrapper);
 
+    // [개별 용도지역] 체크박스 라벨 순차 바인딩
     sortedRegions.forEach(function(r) {
-        var btn = document.createElement("button"); btn.type = "button"; 
-        var isBtnActive = (currentRegion.indexOf(r) !== -1);
-        btn.className = "sub-filter-btn child-btn" + (isBtnActive ? " active" : ""); 
+        var wrapper = document.createElement("label"); 
+        wrapper.className = "child-label active";
+        var chk = document.createElement("input"); 
+        chk.type = "checkbox"; 
+        chk.value = r; 
+        chk.checked = true; 
+        chk.style.display = "none";
         
-        // 칩 텍스트 출력 시 현재 동네 범위 내 실시간 매물 수량 괄호 (개수) 각인
-        var countText = regionCounts[r] || 0;
-        btn.innerText = r.replace("지역", "") + " (" + countText + ")";
-        
-        btn.onclick = function() {
-            var idx = currentRegion.indexOf(r);
-            if (idx > -1) { currentRegion.splice(idx, 1); this.classList.remove("active"); isMasterActive = false; masterWrapper.classList.remove("active"); } 
-            else { currentRegion.push(r); this.classList.add("active"); if (currentRegion.length === sortedRegions.length) { isMasterActive = true; masterWrapper.classList.add("active"); } }
+        chk.onchange = function() {
+            if (this.checked) { wrapper.classList.add("active"); } else { wrapper.classList.remove("active"); }
+            if (!this.checked) { masterChk.checked = false; masterWrapper.classList.remove("active"); }
+            
+            var checkedBoxes = container.querySelectorAll(".child-label input:checked");
+            currentRegion = Array.from(checkedBoxes).map(function(c) { return c.value; });
+            
+            if (currentRegion.length === sortedRegions.length) { 
+                masterChk.checked = true; 
+                masterWrapper.classList.add("active"); 
+            }
             applyFilters();
         };
-        container.appendChild(btn);
+        wrapper.appendChild(chk); 
+        wrapper.appendChild(document.createTextNode(r)); 
+        container.appendChild(wrapper);
     });
 }
 
@@ -697,7 +712,8 @@ function applyFilters() {
         var mRegion = false;
         if (p.yongdo) {
             var parts = p.yongdo.split("/");
-            var currentPRegion = (parts && parts[0] ? parts[0].trim() : "").replace("지역", "") + "지역";
+            var currentPRegion = (parts && parts[0] ? parts[0].trim() : "");
+            // 선택된 체크박스 배열에 해당 매물의 용도가 포함되어 있는지 직격 대조
             mRegion = (currentRegion.length === 0 || currentRegion.indexOf(currentPRegion) !== -1);
         } else {
             mRegion = (currentRegion.length === 0);
