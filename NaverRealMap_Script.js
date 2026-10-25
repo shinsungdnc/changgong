@@ -125,18 +125,21 @@ function updateRegionSelectorOptions() {
     var container = document.getElementById("region-selector"); if (!container) return;
     var regionsSet = new Set();
     
-    // 💡 [수량 동기화 허브]: 현재 켜져 있는 카테고리 상태에 대응하는 용도지역별 실시간 매물 개수 집계 장부
+    // 💡 최우선 지정 항목 정렬 기준 배열 (에러 방지를 위해 가장 선두에 배치)
+    var topRegions = ["계획관리", "생산관리", "보전관리", "농림"];
+    
+    // 💡 [수량 동기화 허브]: 현재 켜져 있는 카테고리에 대응하는 실시간 매물 개수 집계 장부
     var regionCounts = {};
     
     properties.forEach(function(p) { 
         if (currentCategories.indexOf(p.category) !== -1 && p.yongdo) {
             var parts = p.yongdo.split("/");
-            // 🛠️ [정밀 교정]: 오타로 깨져있던 데이터 슬라이싱 연산을 순정 결합 구조로 완벽 복구
+            // 데이터 슬라이싱 연산을 직관적이고 안전하게 정제
             var rName = (parts && parts[0] ? parts[0].trim() : "").replace("지역", "") + "지역";
             if (rName && rName !== "지역" && rName !== "-지역") {
                 regionsSet.add(rName);
                 
-                // ⚡ 리셋 시 거래방식 조건까지 교차 연산하여 실시간 개수를 카운트합니다.
+                // 거래방식 조건까지 대조하여 개수를 정밀하게 카운트
                 var mDeal = false;
                 currentDealTypes.forEach(function(t) { if (p.price && p.price.indexOf(t) !== -1) mDeal = true; });
                 if (mDeal) {
@@ -146,21 +149,16 @@ function updateRegionSelectorOptions() {
         }
     });
     container.innerHTML = ""; 
+    
+    // 🚀 하이브리드 정렬 연산 가동 (topRegions 변수가 선두에 있어 에러가 절대 나지 않습니다)
     var sortedRegions = Array.from(regionsSet).sort(function(a, b) {
         var cleanA = a.replace("지역", ""), cleanB = b.replace("지역", "");
         var idxA = topRegions.indexOf(cleanA), idxB = topRegions.indexOf(cleanB);
+        
         if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-        if (idxA !== -1) return -1; if (idxB !== -1) return 1;
-        return cleanA.localeCompare(cleanB);
-    });
-    
-    // 💡 최우선 지정 항목 (여기에 적힌 순서대로 1, 2, 3, 4등 고정)
-    var topRegions = ["계획관리", "생산관리", "보전관리", "농림"];
-    sortedRegions = Array.from(regionsSet).sort(function(a, b) {
-        var cleanA = a.replace("지역", ""), cleanB = b.replace("지역", "");
-        var idxA = topRegions.indexOf(cleanA), idxB = topRegions.indexOf(cleanB);
-        if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-        if (idxA !== -1) return -1; if (idxB !== -1) return 1;
+        if (idxA !== -1) return -1;
+        if (idxB !== -1) return 1;
+        
         return cleanA.localeCompare(cleanB);
     });
     
@@ -182,7 +180,7 @@ function updateRegionSelectorOptions() {
         var isBtnActive = (currentRegion.indexOf(r) !== -1);
         btn.className = "sub-filter-btn child-btn" + (isBtnActive ? " active" : ""); 
         
-        // 🚀 [디테일 마감]: 칩 텍스트 출력 시 현재 동네 범위 내 실시간 매물 수량 괄호 (개수) 각인!
+        // 칩 텍스트 출력 시 현재 동네 범위 내 실시간 매물 수량 괄호 (개수) 각인
         var countText = regionCounts[r] || 0;
         btn.innerText = r.replace("지역", "") + " (" + countText + ")";
         
