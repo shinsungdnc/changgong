@@ -1473,8 +1473,8 @@ document.addEventListener("DOMContentLoaded", function() {
                             if (polygonPaths.length > 0) {
                                 var isVip = (m.get("isForcedVip") === true);
                                 
-                                // 🎨 [컬러 매칭 분기]: 내가 콕 집은 VIP 매물은 형광 초록(3px), 주변 정예 매물들은 마스터 Cyan 블루(1.5px) 지정
-                                var polyColor = isVip ? '#39FF14' : '#4ad3ff';
+                                // 🎨 선택 매물(VIP)은 형광 초록(#39FF14), 주변 미리보기 매물은 PC 호버링 테마인 '노란색 네온(#FFFF00)'
+                                var polyColor = isVip ? '#39FF14' : '#FFFF00';
                                 var polyOpacity = isVip ? 0.35 : 0.15;
                                 var polyWeight = isVip ? 3 : 1.5;
 
