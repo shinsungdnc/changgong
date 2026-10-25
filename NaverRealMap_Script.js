@@ -506,6 +506,9 @@ function applyFilters() {
     var filterPanel = document.getElementById("sidebar-header");
     var listContainer = document.getElementById("property-list");
 
+// =========================================================================
+// [기존 위치] NaverRealMap_Script.js 의 applyFilters() 내부 (줌 14 미만 구역 시작점)
+// =========================================================================
     // 💡 줌 14 미만(초기 줌 12 포함)일 때 2, 3층을 모션과 함께 숨기고 이하 연산 전면 차단
     if (currentZoom < 14) {
         // 모바일 화면(768px 이하)이며 사용자가 마스터 버튼으로 열어둔 상태라면 락을 걸지 않음
@@ -519,16 +522,28 @@ function applyFilters() {
         }
         if (markerClustering !== null) { markerClustering.setMap(null); markerClustering = null; }
 
+        // 🔄 줌 아웃 시 지도 위에 유령처럼 남아있던 정밀 마커 잔상 완벽 제거
+        markers.forEach(function(marker) {
+            marker.setMap(null);
+        });
 
+        // 기존 광역 배지 잔상 완벽 청소
+        virtualTownMarkers.forEach(function(vm) { vm.setMap(null); }); 
+        virtualTownMarkers = [];
         
-        // 기존 광역 배지 그리기 로직 (중하단에 있던 광역 뷰 코드를 안전하게 선반영)
+        // 🛠️ [교정] 광역 배지 지름 64px -> 85px 대폭 확대! 
+        // 동네명 11px -> 13px / 수량 13px -> 16px(Bold)로 시원하게 스케일업!
         var townStats = getActiveTownCenterStats();
         Object.keys(townStats).forEach(function(tName) {
             var stat = townStats[tName]; 
-            // 수량이 0보다 큰 정예 데이터만 안전하게 감싸서 마커를 생성합니다.
             if (stat && stat.count > 0) {
                 var townLatLng = new naver.maps.LatLng(stat.lat, stat.lng);
-                var townClusterHtml = ['<div class="custom-town-cluster" style="cursor:pointer; pointer-events:auto !important; z-index:9999 !important; width:64px; height:64px; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(74, 211, 255, 0.95); border:2px solid #ffffff; border-radius:50%; box-shadow:0 3px 12px rgba(0,0,0,0.3); transform:translate(-50%, -50%); box-sizing:border-box; padding:2px;">', ' <div style="font-size:11px; font-weight:700; color:#111111; line-height:1.2; text-align:center; max-width:58px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; pointer-events:none;">' + tName.replace('오송읍', '오송').replace('조치원읍', '조치원') + '</div>', ' <div style="font-size:13px; font-weight:800; color:#111111; line-height:1.2; margin-top:2px; pointer-events:none;">' + stat.count + '</div>', '</div>'].join('');
+                var townClusterHtml = [
+                    '<div class="custom-town-cluster" style="cursor:pointer; pointer-events:auto !important; z-index:9999 !important; width:85px; height:85px; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(74, 211, 255, 0.95); border:2px solid #ffffff; border-radius:50%; box-shadow:0 3px 12px rgba(0,0,0,0.3); transform:translate(-50%, -50%); box-sizing:border-box; padding:2px;">', 
+                    ' <div style="font-size:13px; font-weight:700; color:#111111; line-height:1.2; text-align:center; max-width:78px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; pointer-events:none;">' + tName.replace('오송읍', '오송').replace('조치원읍', '조치원') + '</div>', 
+                    ' <div style="font-size:16px; font-weight:800; color:#111111; line-height:1.2; margin-top:3px; pointer-events:none;">' + stat.count + '</div>', 
+                    '</div>'
+                ].join('');
                 var vTownMarker = new naver.maps.Marker({ position: townLatLng, map: map, icon: { content: townClusterHtml, anchor: new naver.maps.Point(0, 0) }, clickable: true });
 
                 naver.maps.Event.addListener(vTownMarker, "click", function() {
@@ -539,8 +554,16 @@ function applyFilters() {
                 virtualTownMarkers.push(vTownMarker); 
             }
         });
+
+        // 🔔 [신규] 초기 광역 배지 렌더링이 100% 끝난 최종 라인에서 로딩 마스크 철거 기동!
+        var maskEl = document.getElementById("loading-mask");
+        if (maskEl) {
+            maskEl.style.opacity = "0";
+            setTimeout(function() { if(maskEl.parentNode) maskEl.parentNode.removeChild(maskEl); }, 250);
+        }
+
         updateTownSelectorOptions(); 
-        return; // 줌 12 등 광역 시야일 때는 이 지점에서 함수를 완전 종료시켜 하단 연산 부하를 0으로 만듦
+        return; // 줌 12, 13 광역 시야일 때는 이 지점에서 함수를 완전 종료시켜 하단 연산 부하를 0으로 만듦
     }
 
     // 💡 줌 14 이상 정밀 시야 진입 시 슬라이딩으로 나타나게 제어
@@ -742,22 +765,25 @@ function applyFilters() {
 // =========================================================================
 // 📊 줌 14레벨 이상 전용 네이버 순정 클러스터러 기동 및 배지 확대 조율 [7번 블록]
 // =========================================================================
+// =========================================================================
+// [기존 위치] NaverRealMap_Script.js 의 [7번 블록] updateClustering 구역
+// =========================================================================
 function updateClustering(validMarkers) {
     if (markerClustering !== null) { markerClustering.setMap(null); markerClustering = null; }
     if (!validMarkers || validMarkers.length === 0) return;
 
+    // 🛠 Honor [교정] 격자 그리드 사이즈 150 -> 280 대폭 확장 및 순정 배지 체급 55px 밸런스 싱크 완결
     markerClustering = new MarkerClustering({
-        minClusterSize: 2, 
+        minClusterSize: 3, // 최소 군집 크기를 3개로 상향하여 무분별한 쪼개짐 방지
         maxZoom: 17, 
         map: map, 
         markers: validMarkers, 
-        gridSize: 150, 
+        gridSize: 280, 
         disableClickZoom: false,
         icons: [
-            // 🛠️ [가독성 수복]: 파란색 순정 클러스터 배지 사이즈를 기존 44px -> 50px로 큼직하게 대폭 확대
             { 
-                content: '<div class="pure-naver-cluster" style="pointer-events: auto !important; cursor:pointer; width:50px; height:50px; line-height:48px; font-size:13px; color:#111111; text-align:center; font-weight:bold; background:rgba(74, 211, 255, 0.95); border:1px solid #ffffff; border-radius:50%; box-shadow:0 3px 10px rgba(0,0,0,0.25); box-sizing:border-box;"></div>',
-                anchor: new naver.maps.Point(25, 25) 
+                content: '<div class="pure-naver-cluster" style="pointer-events: auto !important; cursor:pointer; width:55px; height:55px; line-height:53px; font-size:14px; color:#111111; text-align:center; font-weight:bold; background:rgba(74, 211, 255, 0.95); border:2px solid #ffffff; border-radius:50%; box-shadow:0 4px 12px rgba(0,0,0,0.25); box-sizing:border-box;"></div>',
+                anchor: new naver.maps.Point(27, 27) 
             }
         ],
         stylingFunction: function(clusterMarker, count) {
@@ -1298,15 +1324,19 @@ document.addEventListener("DOMContentLoaded", function() {
         // 💡 줌 인/아웃 연속 조작 시 주변 마커들이 꼬이지 않도록 0.2초 디바운스 가드 고정 유지
         var zoomTimer = null;
         naver.maps.Event.addListener(map, "zoom_changed", function() {
-            var hasActiveVip = markers.some(function(m) { return m.get("isForcedVip") === true; });
-            if (hasActiveVip) return; // 폴리곤 노출 상태일 때는 줌 도중 클러스터러 재조립 연산을 생략하여 중심축 완벽 고정
-
+            // 🛠️ [교정] 줌 애니메이션이 역동적으로 도는 중에는 필터 연산을 멈춰 '멈칫' 병목 현상을 원천 방어
             if (zoomTimer !== null) { clearTimeout(zoomTimer); }
+            
+            var hasActiveVip = markers.some(function(m) { return m.get("isForcedVip") === true; });
+            if (hasActiveVip) return; 
+
             zoomTimer = setTimeout(function() {
-                applyFilters();
+                // 지도가 무빙을 완전히 멈추고 제자리에 '안착(idle)'했을 때만 데이터 처리를 기동하도록 유도
                 zoomTimer = null;
-            }, 200); 
+            }, 100); 
         });
+
+        // 지도를 드래그하다가 손을 뗐을 때도 VIP 상태라면 주변 연산을 건너뛰어 자연스러운 정지 보장
 
         // 지도를 드래그하다가 손을 뗐을 때도 VIP 상태라면 주변 연산을 건너뛰어 자연스러운 정지 보장
         naver.maps.Event.addListener(map, "dragend", function() { 
