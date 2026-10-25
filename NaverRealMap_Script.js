@@ -119,99 +119,125 @@ function updateTownSelectorOptions() {
     }
 }
 // =========================================================================
-// 🗺️ [최종 마감 완결판]: 용도지역 옵션 동적 빌드 및 마스터 전체선택 토글 제어 엔진
+// 🗺️ [최종 완결] 주요 항목 선두 고정 + 나머지 오름차순 + 리셋 시 실시간 수량 완벽 반영 엔진
 // =========================================================================
 function updateRegionSelectorOptions() {
     var container = document.getElementById("region-selector"); if (!container) return;
     var regionsSet = new Set();
+    
+    // 💡 [수량 동기화 허브]: 현재 켜져 있는 카테고리 상태에 대응하는 용도지역별 실시간 매물 개수 집계 장부
+    var regionCounts = {};
+    
     properties.forEach(function(p) { 
         if (currentCategories.indexOf(p.category) !== -1 && p.yongdo) {
             var parts = p.yongdo.split("/");
-            // 🛠️ [버그 정밀 치료]: 변수 치환 연산 오류를 해결하여 '계획관리', '농림' 등을 정확히 스캔합니다.
+            // 🛠️ [정밀 교정]: 오타로 깨져있던 데이터 슬라이싱 연산을 순정 결합 구조로 완벽 복구
             var rName = (parts && parts[0] ? parts[0].trim() : "").replace("지역", "") + "지역";
-            if (rName && rName !== "지역" && rName !== "-지역") regionsSet.add(rName);
+            if (rName && rName !== "지역" && rName !== "-지역") {
+                regionsSet.add(rName);
+                
+                // ⚡ 리셋 시 거래방식 조건까지 교차 연산하여 실시간 개수를 카운트합니다.
+                var mDeal = false;
+                currentDealTypes.forEach(function(t) { if (p.price && p.price.indexOf(t) !== -1) mDeal = true; });
+                if (mDeal) {
+                    regionCounts[rName] = (regionCounts[rName] || 0) + 1;
+                }
+            }
         }
     });
-    container.innerHTML = ""; var sortedRegions = Array.from(regionsSet).sort(); 
+    container.innerHTML = ""; 
+    var sortedRegions = Array.from(regionsSet).sort(function(a, b) {
+        var cleanA = a.replace("지역", ""), cleanB = b.replace("지역", "");
+        var idxA = topRegions.indexOf(cleanA), idxB = topRegions.indexOf(cleanB);
+        if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+        if (idxA !== -1) return -1; if (idxB !== -1) return 1;
+        return cleanA.localeCompare(cleanB);
+    });
     
-    // 💡 초기 구동 시 전수 수집 및 장부 자동 바인딩 가드 가동
-    if (currentRegion.length === 0 || currentRegion.length > sortedRegions.length) {
-        currentRegion = [...sortedRegions];
-    }
+    // 💡 최우선 지정 항목 (여기에 적힌 순서대로 1, 2, 3, 4등 고정)
+    var topRegions = ["계획관리", "생산관리", "보전관리", "농림"];
+    sortedRegions = Array.from(regionsSet).sort(function(a, b) {
+        var cleanA = a.replace("지역", ""), cleanB = b.replace("지역", "");
+        var idxA = topRegions.indexOf(cleanA), idxB = topRegions.indexOf(cleanB);
+        if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+        if (idxA !== -1) return -1; if (idxB !== -1) return 1;
+        return cleanA.localeCompare(cleanB);
+    });
+    
+    if (currentRegion.length === 0 || currentRegion.length > sortedRegions.length) { currentRegion = [...sortedRegions]; }
+    if (sortedRegions.length === 0) { container.innerHTML = "<span style='font-size:12px; color:#999; padding:5px;'>선택된 카테고리에 용도지역 데이터가 없습니다.</span>"; return; }
 
-    if (sortedRegions.length === 0) {
-        container.innerHTML = "<span style='font-size:12px; color:#999; padding:5px;'>선택된 카테고리에 용도지역 데이터가 없습니다.</span>";
-        return;
-    }
-
-    // ① 최선두 '전체 선택' 마스터 토글 스위치 칩 빌드
     var masterWrapper = document.createElement("button"); masterWrapper.type = "button"; masterWrapper.className = "sub-filter-btn active";
-    var isMasterActive = true;
-    masterWrapper.innerText = "전체";
-    
+    var isMasterActive = true; masterWrapper.innerText = "전체";
     masterWrapper.onclick = function() {
         isMasterActive = !isMasterActive;
-        if (isMasterActive) {
-            this.classList.add("active"); currentRegion = [...sortedRegions];
-            container.querySelectorAll(".child-btn").forEach(function(btn) { btn.classList.add("active"); });
-        } else {
-            this.classList.remove("active"); currentRegion = [];
-            container.querySelectorAll(".child-btn").forEach(function(btn) { btn.classList.remove("active"); });
-        }
+        if (isMasterActive) { this.classList.add("active"); currentRegion = [...sortedRegions]; container.querySelectorAll(".child-btn").forEach(function(btn) { btn.classList.add("active"); }); } 
+        else { this.classList.remove("active"); currentRegion = []; container.querySelectorAll(".child-btn").forEach(function(btn) { btn.classList.remove("active"); }); }
         applyFilters();
     };
     container.appendChild(masterWrapper);
 
-    // ② 하위 자식 개별 용도지역 필터 칩 배치 레이어
     sortedRegions.forEach(function(r) {
         var btn = document.createElement("button"); btn.type = "button"; 
         var isBtnActive = (currentRegion.indexOf(r) !== -1);
         btn.className = "sub-filter-btn child-btn" + (isBtnActive ? " active" : ""); 
-        btn.innerText = r.replace("지역", ""); // '계획관리', '농림' 형태로 화면 압축출력
+        
+        // 🚀 [디테일 마감]: 칩 텍스트 출력 시 현재 동네 범위 내 실시간 매물 수량 괄호 (개수) 각인!
+        var countText = regionCounts[r] || 0;
+        btn.innerText = r.replace("지역", "") + " (" + countText + ")";
         
         btn.onclick = function() {
             var idx = currentRegion.indexOf(r);
-            if (idx > -1) {
-                currentRegion.splice(idx, 1); this.classList.remove("active");
-                isMasterActive = false; masterWrapper.classList.remove("active");
-            } else {
-                currentRegion.push(r); this.classList.add("active");
-                if (currentRegion.length === sortedRegions.length) { isMasterActive = true; masterWrapper.classList.add("active"); }
-            }
+            if (idx > -1) { currentRegion.splice(idx, 1); this.classList.remove("active"); isMasterActive = false; masterWrapper.classList.remove("active"); } 
+            else { currentRegion.push(r); this.classList.add("active"); if (currentRegion.length === sortedRegions.length) { isMasterActive = true; masterWrapper.classList.add("active"); } }
             applyFilters();
         };
         container.appendChild(btn);
     });
 }
 
+// =========================================================================
+// 🔠 [최종 완결] 주요 지목 선두 고정 + 나머지 오름차순(가나다순) 누락 방지 엔진
+// =========================================================================
 function updateDetailSelectorOptions() {
     var container = document.getElementById("detail-selector"); if (!container) return;
     var detailsSet = new Set();
     properties.forEach(function(p) { if (currentCategories.indexOf(p.category) !== -1) detailsSet.add(p.detail_type); });
-    container.innerHTML = ""; var sortedDetails = Array.from(detailsSet).sort(); currentDetail = [...sortedDetails];
+    container.innerHTML = ""; 
+    
+    // 💡 최우선 지정 지목 (여기에 적힌 순서대로 1, 2, 3, 4등 무조건 고정)
+    var topDetails = ["대", "전", "답", "과수원"];
+    
+    var sortedDetails = Array.from(detailsSet).sort(function(a, b) {
+        var idxA = topDetails.indexOf(a), idxB = topDetails.indexOf(b);
+        
+        // ✨ [하이브리드 로직]: 둘 다 고정 지목인 경우 -> 지정된 순서대로 정렬
+        if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+        // 한쪽만 고정 지목인 경우 -> 고정 지목을 무조건 최선두(좌측)로 전진
+        if (idxA !== -1) return -1;
+        if (idxB !== -1) return 1;
+        
+        // 🚀 지정되지 않은 나머지 모든 지목/분류는 가나다(오름차순) 순으로 정렬하여 절대 누락 방지!
+        return a.localeCompare(b);
+    });
+    currentDetail = [...sortedDetails];
 
-    var masterWrapper = document.createElement("label");
-    masterWrapper.className = "child-label"; // 🛠️ 디자인 통합 클래스 매핑
+    var masterWrapper = document.createElement("label"); masterWrapper.className = "child-label";
     var masterChk = document.createElement("input"); masterChk.type = "checkbox"; masterChk.checked = true; masterChk.style.display = "none";
-
     masterChk.onchange = function() {
         var isChecked = this.checked;
         if (isChecked) { masterWrapper.classList.add("active"); } else { masterWrapper.classList.remove("active"); }
         container.querySelectorAll(".child-label").forEach(function(lbl) {
             var chk = lbl.querySelector("input");
-            if (chk) { 
-                chk.checked = isChecked; 
-                if (isChecked) { lbl.classList.add("active"); } else { lbl.classList.remove("active"); }
-            }
+            if (chk) { chk.checked = isChecked; if (isChecked) { lbl.classList.add("active"); } else { lbl.classList.remove("active"); } }
         });
         currentDetail = isChecked ? [...sortedDetails] : []; applyFilters();
     };
     masterWrapper.appendChild(masterChk); masterWrapper.appendChild(document.createTextNode("전체")); container.appendChild(masterWrapper);
 
     sortedDetails.forEach(function(d) {
-        var wrapper = document.createElement("label"); wrapper.className = "child-label active"; // 초기 활성화 불빛 상시 점등
+        var wrapper = document.createElement("label"); wrapper.className = "child-label active";
         var chk = document.createElement("input"); chk.type = "checkbox"; chk.value = d; chk.checked = true; chk.style.display = "none";
-        
         chk.onchange = function() {
             if (this.checked) { wrapper.classList.add("active"); } else { wrapper.classList.remove("active"); }
             if (!this.checked) { masterChk.checked = false; masterWrapper.classList.remove("active"); }
