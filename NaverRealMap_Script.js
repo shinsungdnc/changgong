@@ -119,10 +119,7 @@ function updateTownSelectorOptions() {
     }
 }
 // =========================================================================
-// 🔠 소분류 옵션 동적 빌드 및 마스터 전체선택 토글 제어 엔진 [4번 블록]
-// =========================================================================
-// =========================================================================
-// 🗺️ [기획 반영 신규]: 용도지역 옵션 동적 빌드 및 마스터 전체선택 토글 제어 엔진
+// 🗺️ [최종 마감 완결판]: 용도지역 옵션 동적 빌드 및 마스터 전체선택 토글 제어 엔진
 // =========================================================================
 function updateRegionSelectorOptions() {
     var container = document.getElementById("region-selector"); if (!container) return;
@@ -130,15 +127,28 @@ function updateRegionSelectorOptions() {
     properties.forEach(function(p) { 
         if (currentCategories.indexOf(p.category) !== -1 && p.yongdo) {
             var parts = p.yongdo.split("/");
+            // 🛠️ [버그 정밀 치료]: 변수 치환 연산 오류를 해결하여 '계획관리', '농림' 등을 정확히 스캔합니다.
             var rName = (parts && parts[0] ? parts[0].trim() : "").replace("지역", "") + "지역";
-            if (rName && rName !== "지역") regionsSet.add(rName);
+            if (rName && rName !== "지역" && rName !== "-지역") regionsSet.add(rName);
         }
     });
-    container.innerHTML = ""; var sortedRegions = Array.from(regionsSet).sort(); currentRegion = [...sortedRegions];
+    container.innerHTML = ""; var sortedRegions = Array.from(regionsSet).sort(); 
+    
+    // 💡 초기 구동 시 전수 수집 및 장부 자동 바인딩 가드 가동
+    if (currentRegion.length === 0 || currentRegion.length > sortedRegions.length) {
+        currentRegion = [...sortedRegions];
+    }
 
+    if (sortedRegions.length === 0) {
+        container.innerHTML = "<span style='font-size:12px; color:#999; padding:5px;'>선택된 카테고리에 용도지역 데이터가 없습니다.</span>";
+        return;
+    }
+
+    // ① 최선두 '전체 선택' 마스터 토글 스위치 칩 빌드
     var masterWrapper = document.createElement("button"); masterWrapper.type = "button"; masterWrapper.className = "sub-filter-btn active";
     var isMasterActive = true;
     masterWrapper.innerText = "전체";
+    
     masterWrapper.onclick = function() {
         isMasterActive = !isMasterActive;
         if (isMasterActive) {
@@ -152,8 +162,13 @@ function updateRegionSelectorOptions() {
     };
     container.appendChild(masterWrapper);
 
+    // ② 하위 자식 개별 용도지역 필터 칩 배치 레이어
     sortedRegions.forEach(function(r) {
-        var btn = document.createElement("button"); btn.type = "button"; btn.className = "sub-filter-btn child-btn active"; btn.innerText = r.replace("지역", "");
+        var btn = document.createElement("button"); btn.type = "button"; 
+        var isBtnActive = (currentRegion.indexOf(r) !== -1);
+        btn.className = "sub-filter-btn child-btn" + (isBtnActive ? " active" : ""); 
+        btn.innerText = r.replace("지역", ""); // '계획관리', '농림' 형태로 화면 압축출력
+        
         btn.onclick = function() {
             var idx = currentRegion.indexOf(r);
             if (idx > -1) {
