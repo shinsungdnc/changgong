@@ -1123,33 +1123,62 @@ function toggleSidebar() {
         
     if (!listPanel || !filterPanel) return;
 
-    // 📱 [모바일 버전 전용 트랙]: 숨김 상태에서 노출 상태로 역전 동작
+    // 📱 [모바일 버전 전용 트랙]
     if (window.innerWidth <= 768) {
-        if (filterPanel.classList.contains("slide-up")) {
-            filterPanel.classList.remove("slide-up");   // 2층 필터부 노출
-            listPanel.classList.remove("slide-left");   // 3층 목록창 노출
-            isSidebarManuallyClosed = false;            // 모바일 수동 열림 기억
+        if (filterPanel.classList.contains("slide-up") || filterPanel.style.display === "none") {
+            filterPanel.style.display = "block";
+            listPanel.style.display = "flex";
+            setTimeout(function() {
+                filterPanel.classList.remove("slide-up");
+                listPanel.classList.remove("slide-left");
+            }, 10);
+            isSidebarManuallyClosed = false;
         } else {
-            filterPanel.classList.add("slide-up");     // 2층 필터부 숨김
-            listPanel.classList.add("slide-left");     // 3층 목록창 숨김
-            isSidebarManuallyClosed = false;            // 모바일 수동 열림 기억
+            filterPanel.classList.add("slide-up");
+            listPanel.classList.add("slide-left");
+            isSidebarManuallyClosed = false;
+            setTimeout(function() {
+                if (filterPanel.classList.contains("slide-up")) filterPanel.style.display = "none";
+                if (listPanel.classList.contains("slide-left")) listPanel.style.display = "none";
+            }, 300); 
         }
-        return; // 모바일 제어 마감
+        return;
     }
 
-    // 💻 [기존 PC 버전 트랙]: 노출 상태에서 숨김 상태로 동작
-    if (listPanel.classList.contains("slide-left")) { 
-        filterPanel.classList.remove("slide-up");
-        listPanel.classList.remove("slide-left");
+    // 💻 [PC 버전 전용 트랙]
+    // 닫혀있는 상태라면 -> 디스플레이를 켜고 슬라이딩 애니메이션 실행
+    if (listPanel.classList.contains("slide-left") || listPanel.style.display === "none") { 
+        filterPanel.style.display = "block";
+        listPanel.style.display = "flex";
+        
+        setTimeout(function() {
+            filterPanel.classList.remove("slide-up");
+            listPanel.classList.remove("slide-left");
+        }, 10);
+        
         isSidebarManuallyClosed = false; 
         if (document.querySelector(".property-item.active") && statsPanel) statsPanel.classList.add("active");
-    } else { 
+    } 
+    // 열려있는 상태라면 -> 슬라이딩으로 닫고 디스플레이 완전 차단
+    else { 
         filterPanel.classList.add("slide-up");
         listPanel.classList.add("slide-left");
         isSidebarManuallyClosed = true; 
         if (statsPanel) statsPanel.classList.remove("active", "expanded");
+        
+        setTimeout(function() {
+            if (listPanel.classList.contains("slide-left")) {
+                filterPanel.style.display = "none";
+                listPanel.style.display = "none";
+            }
+        }, 300); 
+    }
+    
+    if (typeof applyFilters === 'function') {
+        applyFilters();
     }
 }
+
 function toggleCategory(cat) {
     var btn = document.getElementById(cat === "토지" ? "btn-land" : cat === "공장" ? "btn-factory" : "btn-house"), activeClass = cat === "토지" ? "active-land" : cat === "공장" ? "active-factory" : "active-house";
     var idx = currentCategories.indexOf(cat); if (idx > -1) { currentCategories.splice(idx, 1); if (btn) btn.classList.remove(activeClass); } else { currentCategories.push(cat); if (btn) btn.classList.add(activeClass); }
