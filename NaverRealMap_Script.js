@@ -168,8 +168,8 @@ function initMap() {
     // 🌟 [수정] 2층, 3층 사이드바를 초기 숨김(슬라이드 아웃) 상태로 강제 락
     var filterPanel = document.getElementById("sidebar-header");
     var listPanel = document.getElementById("property-list-panel");
-    // if (filterPanel) { filterPanel.classList.add("slide-up"); }
-    // if (listPanel) { listPanel.style.display = "none"; listPanel.classList.add("slide-left"); }
+    if (filterPanel) { filterPanel.classList.add("slide-up"); }
+    if (listPanel) { listPanel.style.display = "none"; listPanel.classList.add("slide-left"); }
 
     updateDetailSelectorOptions(); 
     
@@ -499,10 +499,12 @@ function applyFilters() {
     var currentZoom = map.getZoom(); 
     var currentBounds = map.getBounds(); 
     var listPanel = document.getElementById("property-list-panel");
-    var filterPanel = document.getElementById("sidebar-header");
-    var listContainer = document.getElementById("property-list");
 
     if (isCameraMovingToVip) { return; }
+
+    // 🌟 [기획 가드 레이어] 2층, 3층 초기 숨김 및 줌 14레벨 기준 슬라이딩 모션 분기 제어
+    var filterPanel = document.getElementById("sidebar-header");
+    var listContainer = document.getElementById("property-list");
 
     // 💡 줌 14 미만(초기 줌 12 포함)일 때 2, 3층을 모션과 함께 숨기고 이하 연산 전면 차단
     if (currentZoom < 14) {
@@ -516,19 +518,17 @@ function applyFilters() {
             if (listContainer) listContainer.innerHTML = ""; 
         }
         if (markerClustering !== null) { markerClustering.setMap(null); markerClustering = null; }
+
+
         
-        // 🛠️ [교정] 85px 거대 체급 및 명칭 13px / 수량 16px 가독성 밸런스 완벽 수복
+        // 기존 광역 배지 그리기 로직 (중하단에 있던 광역 뷰 코드를 안전하게 선반영)
         var townStats = getActiveTownCenterStats();
         Object.keys(townStats).forEach(function(tName) {
             var stat = townStats[tName]; 
+            // 수량이 0보다 큰 정예 데이터만 안전하게 감싸서 마커를 생성합니다.
             if (stat && stat.count > 0) {
                 var townLatLng = new naver.maps.LatLng(stat.lat, stat.lng);
-                var townClusterHtml = [
-                    '<div class="custom-town-cluster" style="cursor:pointer; pointer-events:auto !important; z-index:9999 !important; width:85px; height:85px; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(74, 211, 255, 0.95); border:2px solid #ffffff; border-radius:50%; box-shadow:0 4px 15px rgba(0,0,0,0.25); transform:translate(-50%, -50%); box-sizing:border-box; padding:2px;">', 
-                    ' <div style="font-size:13px; font-weight:700; color:#111111; line-height:1.2; text-align:center; max-width:78px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; pointer-events:none;">' + tName.replace('오송읍', '오송').replace('조치원읍', '조치원') + '</div>', 
-                    ' <div style="font-size:16px; font-weight:800; color:#111111; line-height:1.2; margin-top:3px; pointer-events:none;">' + stat.count + '</div>', 
-                    '</div>'
-                ].join('');
+                var townClusterHtml = ['<div class="custom-town-cluster" style="cursor:pointer; pointer-events:auto !important; z-index:9999 !important; width:64px; height:64px; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(74, 211, 255, 0.95); border:2px solid #ffffff; border-radius:50%; box-shadow:0 3px 12px rgba(0,0,0,0.3); transform:translate(-50%, -50%); box-sizing:border-box; padding:2px;">', ' <div style="font-size:11px; font-weight:700; color:#111111; line-height:1.2; text-align:center; max-width:58px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; pointer-events:none;">' + tName.replace('오송읍', '오송').replace('조치원읍', '조치원') + '</div>', ' <div style="font-size:13px; font-weight:800; color:#111111; line-height:1.2; margin-top:2px; pointer-events:none;">' + stat.count + '</div>', '</div>'].join('');
                 var vTownMarker = new naver.maps.Marker({ position: townLatLng, map: map, icon: { content: townClusterHtml, anchor: new naver.maps.Point(0, 0) }, clickable: true });
 
                 naver.maps.Event.addListener(vTownMarker, "click", function() {
@@ -539,22 +539,18 @@ function applyFilters() {
                 virtualTownMarkers.push(vTownMarker); 
             }
         });
-        
-        // 🔔 [신규 연결 부위] 초기 광역 배지 첫 드로잉 렌더링이 완벽하게 끝난 최종 라인에서 로딩 마스크 철거 기동!
-        var maskEl = document.getElementById("loading-mask");
-        if (maskEl) {
-            maskEl.style.opacity = "0";
-            setTimeout(function() { if(maskEl.parentNode) maskEl.parentNode.removeChild(maskEl); }, 250);
-        }
-
         updateTownSelectorOptions(); 
-        return; // 줌 12, 13 광역 뷰 상태 연산 마감 고정
+        return; // 줌 12 등 광역 시야일 때는 이 지점에서 함수를 완전 종료시켜 하단 연산 부하를 0으로 만듦
     }
 
-    // 💡 줌 14 이상 정밀 시야 진입 시 부드러운 슬라이딩 모션 분기 스위치 활성화
-    if (listPanel && !isSidebarManuallyClosed) {
-        if (filterPanel) filterPanel.classList.add("active-show"); 
-        listPanel.classList.add("active-show");
+    // 💡 줌 14 이상 정밀 시야 진입 시 슬라이딩으로 나타나게 제어
+    if (listPanel && window.innerWidth > 768 && !isSidebarManuallyClosed) {
+        if (filterPanel) filterPanel.style.display = "block"; 
+        listPanel.style.display = "flex";
+        setTimeout(function() {
+            if (filterPanel) filterPanel.classList.remove("slide-up");
+            listPanel.classList.remove("slide-left");
+        }, 10);
     }
 
     var listTargetProperties = [];
@@ -661,14 +657,15 @@ function applyFilters() {
         return;
     }
 
-    // 💡 줌 14 이상 정밀 시야 진입 시 슬라이딩으로 나타나게 제어
-    if (listPanel && window.innerWidth > 768 && !isSidebarManuallyClosed) {
-        if (filterPanel) filterPanel.style.display = "block"; 
-        listPanel.style.display = "flex";
-        setTimeout(function() {
-            if (filterPanel) filterPanel.classList.remove("slide-up");
-            listPanel.classList.remove("slide-left");
-        }, 10);
+    if (listPanel) {
+        if (window.innerWidth <= 768) { // 모바일 전용
+        } else {
+            if (isSidebarManuallyClosed) {
+                listPanel.style.display = "none";
+            } else {
+                listPanel.style.display = "flex";
+            }
+        }
     }
 
     // =========================================================================
@@ -749,18 +746,18 @@ function updateClustering(validMarkers) {
     if (markerClustering !== null) { markerClustering.setMap(null); markerClustering = null; }
     if (!validMarkers || validMarkers.length === 0) return;
 
-    // 🛠️ [교정] 격자 그리드 사이즈 150 -> 280 대폭 확장 및 순정 배지 체급 55px 밸런스 싱크 완결
     markerClustering = new MarkerClustering({
-        minClusterSize: 3, // 최소 뭉침 수량을 3개로 상향하여 산만함 차단 
+        minClusterSize: 2, 
         maxZoom: 17, 
         map: map, 
         markers: validMarkers, 
-        gridSize: 280, 
+        gridSize: 150, 
         disableClickZoom: false,
         icons: [
+            // 🛠️ [가독성 수복]: 파란색 순정 클러스터 배지 사이즈를 기존 44px -> 50px로 큼직하게 대폭 확대
             { 
-                content: '<div class="pure-naver-cluster" style="pointer-events: auto !important; cursor:pointer; width:55px; height:55px; line-height:53px; font-size:14px; color:#111111; text-align:center; font-weight:bold; background:rgba(74, 211, 255, 0.95); border:2px solid #ffffff; border-radius:50%; box-shadow:0 4px 12px rgba(0,0,0,0.25); box-sizing:border-box;"></div>',
-                anchor: new naver.maps.Point(27, 27) 
+                content: '<div class="pure-naver-cluster" style="pointer-events: auto !important; cursor:pointer; width:50px; height:50px; line-height:48px; font-size:13px; color:#111111; text-align:center; font-weight:bold; background:rgba(74, 211, 255, 0.95); border:1px solid #ffffff; border-radius:50%; box-shadow:0 3px 10px rgba(0,0,0,0.25); box-sizing:border-box;"></div>',
+                anchor: new naver.maps.Point(25, 25) 
             }
         ],
         stylingFunction: function(clusterMarker, count) {
