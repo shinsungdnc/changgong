@@ -515,17 +515,8 @@ function applyFilters() {
             if (listPanel) { listPanel.classList.add("slide-left"); listPanel.style.display = "none"; }
             if (listContainer) listContainer.innerHTML = ""; 
         }
-        
-        // 남아있던 순정 클러스터러 완벽 폭파 및 개별 마커 전원 지도 탈착
         if (markerClustering !== null) { markerClustering.setMap(null); markerClustering = null; }
-        markers.forEach(function(marker) {
-            marker.setMap(null);
-        });
-
-        // 광역 시야 기존 배지 잔상 완벽 청소
-        virtualTownMarkers.forEach(function(vm) { vm.setMap(null); }); 
-        virtualTownMarkers = [];
-
+        
         // 🛠️ [교정] 85px 거대 체급 및 명칭 13px / 수량 16px 가독성 밸런스 완벽 수복
         var townStats = getActiveTownCenterStats();
         Object.keys(townStats).forEach(function(tName) {
@@ -1310,17 +1301,14 @@ document.addEventListener("DOMContentLoaded", function() {
         // 💡 줌 인/아웃 연속 조작 시 주변 마커들이 꼬이지 않도록 0.2초 디바운스 가드 고정 유지
         var zoomTimer = null;
         naver.maps.Event.addListener(map, "zoom_changed", function() {
-            // 🛠️ [교정] 줌이 변경되는 역동적인 애니메이션 도중에는 무거운 필터 연산을 멈춰 '멈칫' 현상 완벽 방어
-            if (zoomTimer !== null) { clearTimeout(zoomTimer); }
-            
-            // 기존 읍면동 광역 뷰 상태이거나 무빙 중일 때는 연산을 완전 생략하여 그래픽 카드 프리징 차단
             var hasActiveVip = markers.some(function(m) { return m.get("isForcedVip") === true; });
-            if (hasActiveVip) return; 
+            if (hasActiveVip) return; // 폴리곤 노출 상태일 때는 줌 도중 클러스터러 재조립 연산을 생략하여 중심축 완벽 고정
 
+            if (zoomTimer !== null) { clearTimeout(zoomTimer); }
             zoomTimer = setTimeout(function() {
-                // 지도가 무빙을 멈추고 자석처럼 자리에 '안착(idle)'했을 때만 차분하게 필터링 기동하도록 예약
+                applyFilters();
                 zoomTimer = null;
-            }, 100); 
+            }, 200); 
         });
 
         // 지도를 드래그하다가 손을 뗐을 때도 VIP 상태라면 주변 연산을 건너뛰어 자연스러운 정지 보장
