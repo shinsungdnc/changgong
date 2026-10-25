@@ -506,9 +506,9 @@ function applyFilters() {
 
     // 💡 [줌 아웃 즉시 대피 완치 판본]: 줌 14 미만 광역 시야 탈출 시 이중 잠금 가드 완전 정상화
     if (currentZoom < 14) {
-        // 🔄 [교정]: 줌 아웃되는 찰나의 순간, 즉시 2층 필터와 3층 목록 패널에 순정 숨김 클래스를 쾅 박아 화면 밖으로 날려버림
-        if (filterPanel) { filterPanel.classList.add("slide-up"); filterPanel.style.display = "none"; }
-        if (listPanel) { listPanel.classList.add("slide-left"); listPanel.style.display = "none"; }
+        // 🔄 줌 아웃되는 찰나의 순간, 즉시 2층 필터와 3층 목록 패널 부드럽게 스르륵 밀어내 대피시킵니다.
+        if (filterPanel) filterPanel.classList.add("slide-up");
+        if (listPanel) listPanel.classList.add("slide-left");
         if (listContainer) { listContainer.innerHTML = ""; } // 수천 개 매물 카드 DOM 트리 즉각 청소 (0개 유지)
         
         // 남아있던 순정 클러스터러 완벽 폭파 및 개별 마커 전원 지도 탈착
