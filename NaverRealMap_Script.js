@@ -202,7 +202,7 @@ function updateDetailSelectorOptions() {
     container.innerHTML = ""; 
     
     // 💡 최우선 지정 지목 (여기에 적힌 순서대로 1, 2, 3, 4등 무조건 고정)
-    var topDetails = ["대", "전", "답", "과수원"];
+    var topDetails = ["대", "전", "답", "과수원", "임야"];
     
     var sortedDetails = Array.from(detailsSet).sort(function(a, b) {
         var idxA = topDetails.indexOf(a), idxB = topDetails.indexOf(b);
