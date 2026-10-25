@@ -189,38 +189,41 @@ function updateDetailSelectorOptions() {
     var detailsSet = new Set();
     properties.forEach(function(p) { if (currentCategories.indexOf(p.category) !== -1) detailsSet.add(p.detail_type); });
     container.innerHTML = ""; var sortedDetails = Array.from(detailsSet).sort(); currentDetail = [...sortedDetails];
-    var activeBg = "#ffffff", activeColor = "#004b6e", activeBorder = "#004b6e";
 
     var masterWrapper = document.createElement("label");
-    masterWrapper.style = "display:inline-flex; align-items:center; font-size:12px; font-weight:bold; cursor:pointer; padding:5px 12px; border-radius:4px; flex-shrink:0; background:" + activeBg + "; color:" + activeColor + "; border:2px solid " + activeBorder;
+    masterWrapper.className = "child-label"; // 🛠️ 디자인 통합 클래스 매핑
     var masterChk = document.createElement("input"); masterChk.type = "checkbox"; masterChk.checked = true; masterChk.style.display = "none";
 
     masterChk.onchange = function() {
         var isChecked = this.checked;
-        masterWrapper.style.background = isChecked ? activeBg : "#e9ecef"; masterWrapper.style.color = isChecked ? activeColor : "#868e96"; masterWrapper.style.border = isChecked ? "2px solid "+activeBorder : "2px solid #ced4da";
+        if (isChecked) { masterWrapper.classList.add("active"); } else { masterWrapper.classList.remove("active"); }
         container.querySelectorAll(".child-label").forEach(function(lbl) {
             var chk = lbl.querySelector("input");
-            if (chk) { chk.checked = isChecked; lbl.style.background = isChecked ? activeBg : "#e9ecef"; lbl.style.color = isChecked ? activeColor : "#868e96"; lbl.style.border = isChecked ? "2px solid "+activeBorder : "2px solid #ced4da"; }
+            if (chk) { 
+                chk.checked = isChecked; 
+                if (isChecked) { lbl.classList.add("active"); } else { lbl.classList.remove("active"); }
+            }
         });
         currentDetail = isChecked ? [...sortedDetails] : []; applyFilters();
     };
     masterWrapper.appendChild(masterChk); masterWrapper.appendChild(document.createTextNode("전체")); container.appendChild(masterWrapper);
 
     sortedDetails.forEach(function(d) {
-        var wrapper = document.createElement("label"); wrapper.className = "child-label";
-        wrapper.style = "display:inline-flex; align-items:center; font-size:12px; font-weight:bold; cursor:pointer; padding:5px 12px; border-radius:20px; flex-shrink:0; background:" + activeBg + "; color:" + activeColor + "; border:2px solid " + activeBorder;
+        var wrapper = document.createElement("label"); wrapper.className = "child-label active"; // 초기 활성화 불빛 상시 점등
         var chk = document.createElement("input"); chk.type = "checkbox"; chk.value = d; chk.checked = true; chk.style.display = "none";
+        
         chk.onchange = function() {
-            wrapper.style.background = this.checked ? activeBg : "#e9ecef"; wrapper.style.color = this.checked ? activeColor : "#868e96"; wrapper.style.border = this.checked ? "2px solid "+activeBorder : "2px solid #ced4da";
-            if (!this.checked) { masterChk.checked = false; masterWrapper.style.background = "#e9ecef"; masterWrapper.style.color = "#868e96"; masterWrapper.style.border = "2px solid #ced4da"; }
+            if (this.checked) { wrapper.classList.add("active"); } else { wrapper.classList.remove("active"); }
+            if (!this.checked) { masterChk.checked = false; masterWrapper.classList.remove("active"); }
             var checkedBoxes = container.querySelectorAll(".child-label input:checked");
             currentDetail = Array.from(checkedBoxes).map(function(c) { return c.value; });
-            if (currentDetail.length === sortedDetails.length) { masterChk.checked = true; masterWrapper.style.background = activeBg; masterWrapper.style.color = activeColor; masterWrapper.style.border = "2px solid "+activeBorder; }
+            if (currentDetail.length === sortedDetails.length) { masterChk.checked = true; masterWrapper.classList.add("active"); }
             applyFilters();
         };
         wrapper.appendChild(chk); wrapper.appendChild(document.createTextNode(d)); container.appendChild(wrapper);
     });
 }
+
 // =========================================================================
 // 🚀 초기 지도 마커 인스턴스 빌드 [5번 블록 최적화 수정완결판]
 // =========================================================================
@@ -1298,8 +1301,8 @@ function toggleMyLocation() {
 }
 function toggleCadastral() {
     var btn = document.getElementById("btn-cadastral"); if (!cadastralLayer) return;
-    if (cadastralLayer.getMap()) { cadastralLayer.setMap(null); if (btn) { btn.style.setProperty("background", "transparent", "important"); btn.style.setProperty("color", "#666666", "important"); btn.style.setProperty("border", "1px solid transparent", "important"); } } 
-    else { cadastralLayer.setMap(map); if (btn) { btn.style.setProperty("background", "#DCF65C", "important"); btn.style.setProperty("color", "#111111", "important"); btn.style.setProperty("border", "1px solid #99bd0e", "important"); } }
+    if (cadastralLayer.getMap()) { cadastralLayer.setMap(null); if (btn) { btn.style.setProperty("background", "#ffffff", "important"); btn.style.setProperty("color", "#4e5968", "important"); btn.style.setProperty("border", "1px solid rgba(0,0,0,0.08)", "important"); btn.style.setProperty("box-shadow", "0 4px 12px rgba(0,0,0,0.12)", "important"); } } 
+    else { cadastralLayer.setMap(map); if (btn) { btn.style.setProperty("background", "#DCF65C", "important"); btn.style.setProperty("color", "#111111", "important"); btn.style.setProperty("border", "1px solid #99bd0e", "important"); btn.style.setProperty("box-shadow", "0 0 14px rgba(220,246,92,0.6)", "important"); } }
 }
 function changeTown(town) {
     currentTown = town; currentRi = "전체"; var panel = document.getElementById("detail-selector"); if (panel) panel.style.display = "none";
@@ -1470,46 +1473,31 @@ document.addEventListener("DOMContentLoaded", function() {
 // 📁 10번 최종 블록: 매물 선택 VIP 상태까지 깨끗하게 박멸하는 최종 마스터 완결판
 // =========================================================================
 function resetMapToDefault() {
-    // Onlu Fillter Reset
-
-    // 2. 목록창 수동 닫힘 기억 장치 해제 (첫 로딩처럼 노출 대기)
     isSidebarManuallyClosed = false;
-
-    // 3. 행정구역 선택 드롭다운 상자 '전체' 상태로 원상복구
-    currentTown = "전체";
-    currentRi = "전체";
+    currentTown = "전체"; currentRi = "전체";
     var townSelector = document.getElementById("town-selector"); if (townSelector) townSelector.value = "전체";
     var riSelector = document.getElementById("ri-selector"); if (riSelector) { riSelector.value = "전체"; riSelector.style.display = "none"; }
 
-    // 🌟 [카테고리 버튼 순정 복구]: 꺼져 있는 카테고리가 있다면 순정 토글 함수를 원격 가동하여 On!
     if (currentCategories.indexOf("토지") === -1) toggleCategory("토지");
     if (currentCategories.indexOf("공장") === -1) toggleCategory("공장");
     if (currentCategories.indexOf("주택") === -1) toggleCategory("주택");
 
-    // 🌟 [거래유형 버튼 순정 복구]: 꺼져 있는 거래방식이 있다면 순정 토글 함수를 원격 가동하여 On!
     if (currentDealTypes.indexOf("매매") === -1) toggleDealType("매매");
     if (currentDealTypes.indexOf("전세") === -1) toggleDealType("전세");
     if (currentDealTypes.indexOf("월세") === -1) toggleDealType("월세");
     if (currentDealTypes.indexOf("단기") === -1) toggleDealType("단기");
 
-    // 🌟 [소분류 내부 칩 & 장부 완전 리셋]: 순정 엔진을 호출하여 특정 것만 선택되어 있던 데이터를 최초 '전체 선택' 상태로 복구!
-    if (typeof updateDetailSelectorOptions === 'function') {
-        updateDetailSelectorOptions();
-    }
+    // ⚡ [교정 핵심 1]: 리셋 버튼 가동 시 지역 필터 칩셋 장부 초기화 및 전체 선택 상태 재정렬
+    currentRegion = []; 
+    if (typeof updateRegionSelectorOptions === 'function') { updateRegionSelectorOptions(); }
 
-    // 🌟 ['선택' 패널 원격 닫기]: 소분류 창을 첫 로딩처럼 깔끔하게 닫음 처리!
-    var detailPanel = document.getElementById("detail-selector");
-    if (detailPanel && (detailPanel.style.display === "flex" || detailPanel.style.display !== "none" && detailPanel.style.display !== "")) {
-        toggleDetailSelectorPanel();
-    }
+    if (typeof updateDetailSelectorOptions === 'function') { updateDetailSelectorOptions(); }
 
-    // 🌟 [지적도 버튼 순정 복구]: 초기 상태가 '꺼짐'이므로 지적도가 켜져 있다면 순정 토글을 실행시켜 완전히 끕니다!
-    if (typeof cadastralLayer !== 'undefined' && cadastralLayer && cadastralLayer.getMap()) {
-        toggleCadastral();
-    }
+    // ⚡ [교정 핵심 2]: 펼쳐져 있던 지역 및 지목 상세 패널 박스를 첫 로딩처럼 깔끔하게 숨김 수납 처리
+    var regionPanel = document.getElementById("region-selector"); if (regionPanel && regionPanel.style.display === "flex") { toggleRegionSelectorPanel(); }
+    var detailPanel = document.getElementById("detail-selector"); if (detailPanel && detailPanel.style.display === "flex") { toggleDetailSelectorPanel(); }
 
-    // 5. 타이밍 가드: 지도가 목적지(줌 12)에 안전하게 안착해 멈춘 시점에 최종 12레벨 광역 필터 연산을 얹어 배지를 다시 뿜어냅니다!
-    naver.maps.Event.once(map, "idle", function() {
-        applyFilters(); 
-    });
+    if (typeof cadastralLayer !== 'undefined' && cadastralLayer && cadastralLayer.getMap()) { toggleCadastral(); }
+
+    naver.maps.Event.once(map, "idle", function() { applyFilters(); });
 }
