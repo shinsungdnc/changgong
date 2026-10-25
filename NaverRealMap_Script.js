@@ -1310,17 +1310,17 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         });
         
-        // 💡 줌 인/아웃 연속 조작 시 주변 마커들이 꼬이지 않도록 0.2초 디바운스 가드 고정 유지
+        // 💡 줌 인/아웃 연속 조작 시 주변 마커들이 꼬이지 않도록 0.1초 디바운스 가드 고정 유지
         var zoomTimer = null;
         naver.maps.Event.addListener(map, "zoom_changed", function() {
-            // 🛠️ [교정] 줌 애니메이션이 역동적으로 도는 중에는 필터 연산을 멈춰 '멈칫' 병목 현상을 원천 방어
-            if (zoomTimer !== null) { clearTimeout(zoomTimer); }
-            
             var hasActiveVip = markers.some(function(m) { return m.get("isForcedVip") === true; });
-            if (hasActiveVip) return; 
+            if (hasActiveVip) return; // 폴리곤 노출 상태일 때는 줌 도중 클러스터러 재조립 연산을 생략하여 중심축 완벽 고정
 
+            if (zoomTimer !== null) { clearTimeout(zoomTimer); }
             zoomTimer = setTimeout(function() {
-                // 지도가 무빙을 완전히 멈추고 제자리에 '안착(idle)'했을 때만 데이터 처리를 기동하도록 유도
+                // 🔄 [최종 완치 스위치]: 마우스 휠 조작(줌 변경)이 딱 끝나는 순간 
+                // applyFilters를 딜레이 없이 기동시켜 패널 대피 및 마커 렌더링을 실시간 즉시 처리합니다!
+                applyFilters();
                 zoomTimer = null;
             }, 100); 
         });
