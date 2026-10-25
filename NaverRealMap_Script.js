@@ -499,40 +499,29 @@ function applyFilters() {
     var currentZoom = map.getZoom(); 
     var currentBounds = map.getBounds(); 
     var listPanel = document.getElementById("property-list-panel");
-
-    if (isCameraMovingToVip) { return; }
-
-    // 🌟 [기획 가드 레이어] 2층, 3층 초기 숨김 및 줌 14레벨 기준 슬라이딩 모션 분기 제어
     var filterPanel = document.getElementById("sidebar-header");
     var listContainer = document.getElementById("property-list");
 
-// =========================================================================
-// [기존 위치] NaverRealMap_Script.js 의 applyFilters() 내부 (줌 14 미만 구역 시작점)
-// =========================================================================
-    // 💡 줌 14 미만(초기 줌 12 포함)일 때 2, 3층을 모션과 함께 숨기고 이하 연산 전면 차단
-    if (currentZoom < 14) {
-        // 모바일 화면(768px 이하)이며 사용자가 마스터 버튼으로 열어둔 상태라면 락을 걸지 않음
-        if (window.innerWidth <= 768 && !isSidebarManuallyClosed) {
-            if (filterPanel) filterPanel.classList.remove("slide-up");
-            if (listPanel) { listPanel.classList.remove("slide-left"); listPanel.style.display = "flex"; }
-        } else {
-            if (filterPanel) filterPanel.classList.add("slide-up");
-            if (listPanel) { listPanel.classList.add("slide-left"); listPanel.style.display = "none"; }
-            if (listContainer) listContainer.innerHTML = ""; 
-        }
-        if (markerClustering !== null) { markerClustering.setMap(null); markerClustering = null; }
+    if (isCameraMovingToVip) { return; }
 
-        // 🔄 줌 아웃 시 지도 위에 유령처럼 남아있던 정밀 마커 잔상 완벽 제거
+    // 💡 [줌 아웃 즉시 대피 완치 판본]: 줌 14 미만 광역 시야 탈출 시 이중 잠금 가드 완전 정상화
+    if (currentZoom < 14) {
+        // 🔄 [교정]: 줌 아웃되는 찰나의 순간, 즉시 2층 필터와 3층 목록 패널에 순정 숨김 클래스를 쾅 박아 화면 밖으로 날려버림
+        if (filterPanel) { filterPanel.classList.add("slide-up"); filterPanel.style.display = "none"; }
+        if (listPanel) { listPanel.classList.add("slide-left"); listPanel.style.display = "none"; }
+        if (listContainer) { listContainer.innerHTML = ""; } // 수천 개 매물 카드 DOM 트리 즉각 청소 (0개 유지)
+        
+        // 남아있던 순정 클러스터러 완벽 폭파 및 개별 마커 전원 지도 탈착
+        if (markerClustering !== null) { markerClustering.setMap(null); markerClustering = null; }
         markers.forEach(function(marker) {
             marker.setMap(null);
         });
 
-        // 기존 광역 배지 잔상 완벽 청소
+        // 광역 시야 기존 배지 잔상 완벽 청소
         virtualTownMarkers.forEach(function(vm) { vm.setMap(null); }); 
         virtualTownMarkers = [];
-        
-        // 🛠️ [교정] 광역 배지 지름 64px -> 85px 대폭 확대! 
-        // 동네명 11px -> 13px / 수량 13px -> 16px(Bold)로 시원하게 스케일업!
+
+        // 85px 거대 체급 및 명칭 13px / 수량 16px 가독성 밸런스 렌더링 시작
         var townStats = getActiveTownCenterStats();
         Object.keys(townStats).forEach(function(tName) {
             var stat = townStats[tName]; 
@@ -1337,13 +1326,33 @@ document.addEventListener("DOMContentLoaded", function() {
         });
 
         // 지도를 드래그하다가 손을 뗐을 때도 VIP 상태라면 주변 연산을 건너뛰어 자연스러운 정지 보장
-
-        // 지도를 드래그하다가 손을 뗐을 때도 VIP 상태라면 주변 연산을 건너뛰어 자연스러운 정지 보장
         naver.maps.Event.addListener(map, "dragend", function() { 
             var hasActiveVip = markers.some(function(m) { return m.get("isForcedVip") === true; });
             if (hasActiveVip) return;
             applyFilters(); 
         });
+
+        // 💡 [최종 완치 판본]: 첫 로딩 시 마스크 철거와 동시에 마커 필터 엔진을 즉시 강제 기동!
+        naver.maps.Event.once(map, "idle", function() {
+            var maskEl = document.getElementById("loading-mask");
+            if (maskEl) {
+                maskEl.style.opacity = "0";
+                setTimeout(function() { if(maskEl && maskEl.parentNode) maskEl.parentNode.removeChild(maskEl); }, 250);
+            }
+            // 🔄 [핵심 스위치]: 베일이 벗겨지는 순간 최초 1회차 필터 연산을 강제로 빵 터뜨려 
+            // 유저가 지도를 건드리지 않아도 85px 광역 배지가 화면에 즉시 선명하게 깔리도록 보장합니다.
+            applyFilters(); 
+        });
+
+        // 인터넷 지연을 대비한 1.5초 안전 타이머 백업 가드 (여기서도 엔진을 강제로 깨워줍니다)
+        setTimeout(function() {
+            var maskEl = document.getElementById("loading-mask");
+            if (maskEl) {
+                maskEl.style.opacity = "0";
+                setTimeout(function() { if(maskEl && maskEl.parentNode) maskEl.parentNode.removeChild(maskEl); }, 250);
+                applyFilters(); 
+            }
+        }, 1500);
     }
 });
 
