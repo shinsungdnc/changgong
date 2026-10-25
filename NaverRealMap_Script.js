@@ -617,12 +617,19 @@ function applyFilters() {
             var stat = townStats[tName]; 
             if (stat && stat.count > 0) {
                 var townLatLng = new naver.maps.LatLng(stat.lat, stat.lng);
+                var isMobileView = (window.innerWidth <= 768);
+                var clusterSize = isMobileView ? "64px" : "85px";
+                var townFontSize = isMobileView ? "11px" : "13px";
+                var countFontSize = isMobileView ? "13px" : "16px";
+                var maxTextWidth = isMobileView ? "58px" : "78px";
+
                 var townClusterHtml = [
-                    '<div class="custom-town-cluster" style="cursor:pointer; pointer-events:auto !important; z-index:9999 !important; width:85px; height:85px; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(74, 211, 255, 0.95); border:2px solid #ffffff; border-radius:50%; box-shadow:0 3px 12px rgba(0,0,0,0.3); transform:translate(-50%, -50%); box-sizing:border-box; padding:2px;">', 
-                    ' <div style="font-size:13px; font-weight:700; color:#111111; line-height:1.2; text-align:center; max-width:78px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; pointer-events:none;">' + tName.replace('조치원읍', '조치원') + '</div>', 
-                    ' <div style="font-size:16px; font-weight:800; color:#111111; line-height:1.2; margin-top:3px; pointer-events:none;">' + stat.count + '</div>', 
+                    '<div class="custom-town-cluster" style="cursor:pointer; pointer-events:auto !important; z-index:9999 !important; width:' + clusterSize + '; height:' + clusterSize + '; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(74, 211, 255, 0.95); border:2.5px solid #ffffff; border-radius:50%; box-shadow:0 3px 12px rgba(0,0,0,0.3); transform:translate(-50%, -50%); box-sizing:border-box; padding:2px;">', 
+                    ' <div style="font-size:' + townFontSize + '; font-weight:700; color:#111111; line-height:1.2; text-align:center; max-width:' + maxTextWidth + '; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; pointer-events:none;">' + tName.replace('조치원읍', '조치원') + '</div>', 
+                    ' <div style="font-size:' + countFontSize + '; font-weight:800; color:#111111; line-height:1.2; margin-top:2px; pointer-events:none;">' + stat.count + '</div>', 
                     '</div>'
                 ].join('');
+
                 var vTownMarker = new naver.maps.Marker({ position: townLatLng, map: map, icon: { content: townClusterHtml, anchor: new naver.maps.Point(0, 0) }, clickable: true });
 
                 naver.maps.Event.addListener(vTownMarker, "click", function() {
