@@ -122,9 +122,7 @@ function updateTownSelectorOptions() {
 // 🗺️ [교정 완결] 지목 필터와 동일한 로직의 용도지역 선택기 (텍스트 버그 완전 제거)
 // =========================================================================
 function updateRegionSelectorOptions() {
-    var container = document.getElementById("region-selector"); 
-    if (!container) return;
-    
+    var container = document.getElementById("region-selector"); if (!container) return;
     var regionsSet = new Set();
     var topRegions = ["계획관리", "생산관리", "보전관리", "농림"];
     
@@ -132,9 +130,7 @@ function updateRegionSelectorOptions() {
         if (currentCategories.indexOf(p.category) !== -1 && p.yongdo) {
             var parts = p.yongdo.split("/");
             var rName = (parts && parts[0] ? parts[0].trim() : "");
-            if (rName && rName !== "-") {
-                regionsSet.add(rName);
-            }
+            if (rName && rName !== "-") regionsSet.add(rName);
         }
     });
     container.innerHTML = ""; 
@@ -146,80 +142,35 @@ function updateRegionSelectorOptions() {
         if (idxB !== -1) return 1;
         return a.localeCompare(b);
     });
-    
-    // 지목과 완전히 동일하게 초기값 전수 수집
     currentRegion = [...sortedRegions];
 
-    if (sortedRegions.length === 0) { 
-        container.innerHTML = "<span style='font-size:12px; color:#999; padding:5px;'>선택된 카테고리에 용도지역 데이터가 없습니다.</span>"; 
-        return; 
-    }
-
-    // [전체 선택] 체크박스 라벨 빌드
-    var masterWrapper = document.createElement("label"); 
-    masterWrapper.className = "child-label active";
-    var masterChk = document.createElement("input"); 
-    masterChk.type = "checkbox"; 
-    masterChk.checked = true; 
-    masterChk.style.display = "none";
-    
+    // 🎯 지목 필터 전체 선택 checkbox 로직 완전 일치화
+    var masterWrapper = document.createElement("label"); masterWrapper.className = "child-label active";
+    var masterChk = document.createElement("input"); masterChk.type = "checkbox"; masterChk.checked = true; masterChk.style.display = "none";
     masterChk.onchange = function() {
         var isChecked = this.checked;
         if (isChecked) { masterWrapper.classList.add("active"); } else { masterWrapper.classList.remove("active"); }
         container.querySelectorAll(".child-label").forEach(function(lbl) {
             var chk = lbl.querySelector("input");
-            if (chk) { 
-                chk.checked = isChecked; 
-                if (isChecked) { lbl.classList.add("active"); } else { lbl.classList.remove("active"); } 
-            }
+            if (chk) { chk.checked = isChecked; if (isChecked) { lbl.classList.add("active"); } else { lbl.classList.remove("active"); } }
         });
-        currentRegion = isChecked ? [...sortedRegions] : []; 
-        applyFilters();
+        currentRegion = isChecked ? [...sortedRegions] : []; applyFilters();
     };
-    masterWrapper.appendChild(masterChk); 
-    masterWrapper.appendChild(document.createTextNode("전체")); 
-    container.appendChild(masterWrapper);
+    masterWrapper.appendChild(masterChk); masterWrapper.appendChild(document.createTextNode("전체")); container.appendChild(masterWrapper);
 
-    // [개별 용도지역] 체크박스 라벨 순차 바인딩
+    // 🎯 지목 필터 개별 선택 checkbox 로직 완전 일치화
     sortedRegions.forEach(function(r) {
-        var wrapper = document.createElement("label"); 
-        // 🎯 지목 필터와 완벽 매칭되는 클래스명 유지
-        wrapper.className = "child-label active"; 
-        
-        var chk = document.createElement("input"); 
-        chk.type = "checkbox"; 
-        chk.value = r; // ➔ 여기에 '계획관리', '생산관리' 순수 명칭이 주입됩니다.
-        chk.checked = true; 
-        chk.style.display = "none";
-        
+        var wrapper = document.createElement("label"); wrapper.className = "child-label active";
+        var chk = document.createElement("input"); chk.type = "checkbox"; chk.value = r; chk.checked = true; chk.style.display = "none";
         chk.onchange = function() {
             if (this.checked) { wrapper.classList.add("active"); } else { wrapper.classList.remove("active"); }
             if (!this.checked) { masterChk.checked = false; masterWrapper.classList.remove("active"); }
-            
-            // 🎯 [지목 필터 순정 로직 복제]: 체크된 input 엘리먼트들의 value('계획관리' 등)를 명확하게 전수 수집
-            var checkedBoxes = container.querySelectorAll("input[type='checkbox']:checked");
-            
-            // 전역 currentRegion 바구니를 현재 체크된 순수 용도 명칭들로만 깔끔하게 갱신
-            var tempRegions = [];
-            checkedBoxes.forEach(function(box) {
-                // 전체 선택 체크박스(값 없음)는 제외하고 순수 용도지역 이름만 수집
-                if (box.value && box.value !== "on" && sortedRegions.indexOf(box.value) !== -1) {
-                    tempRegions.push(box.value);
-                }
-            });
-            currentRegion = tempRegions;
-            
-            if (currentRegion.length === sortedRegions.length) { 
-                masterChk.checked = true; 
-                masterWrapper.classList.add("active"); 
-            }
-            
-            // 🎯 드디어 지목과 완벽히 동일한 조건으로 마커 리셋 함수 실행
+            var checkedBoxes = container.querySelectorAll(".child-label input:checked");
+            currentRegion = Array.from(checkedBoxes).map(function(c) { return c.value; });
+            if (currentRegion.length === sortedRegions.length) { masterChk.checked = true; masterWrapper.classList.add("active"); }
             applyFilters();
         };
-        wrapper.appendChild(chk); 
-        wrapper.appendChild(document.createTextNode(r)); 
-        container.appendChild(wrapper);
+        wrapper.appendChild(chk); wrapper.appendChild(document.createTextNode(r)); container.appendChild(wrapper);
     });
 }
 
@@ -722,15 +673,13 @@ function applyFilters() {
         // 🛡️ 5대 마스터 필터 동기화 레이어 (지역 선행 -> 지목 후행 순서 매핑 완결)
         var mCat = (currentCategories.indexOf(marker.get("category")) !== -1);
         
-        // 🗺️ 1순위 검사: 용도지역(지역) 매칭 조건식
+        // 🗺️ 1순위 검사: 용도지역(지역) 매칭 조건식 (지목 필터 조건식과 100% 동일화)
         var mRegion = false;
         if (p.yongdo) {
             var parts = p.yongdo.split("/");
             var currentPRegion = (parts && parts[0] ? parts[0].trim() : "");
-            // 선택된 체크박스 배열에 해당 매물의 용도가 포함되어 있는지 직격 대조
-            mRegion = (currentRegion.length === 0 || currentRegion.indexOf(currentPRegion) !== -1);
-        } else {
-            mRegion = (currentRegion.length === 0);
+            // 🎯 지목 필터와 동일하게 바구니(currentRegion) 안에 이름이 들어있는지 여부만 판단
+            mRegion = (currentRegion.indexOf(currentPRegion) !== -1);
         }
 
         // 📊 2순위 검사: 소분류(지목) 매칭 조건식
