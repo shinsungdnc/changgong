@@ -25,17 +25,29 @@ var currentHoverIndex = -1;     // 🎯 [신규] 현재 호버 중인 매물 인
 var isCameraMovingToVip = false; // 🌟 [기획 연동 코어]: 카메라 강제 무빙 중 중심점 이벤트 간섭을 원천 차단하는 전역 스위치
 
 // =========================================================================
-// 🎯 실시간 동네별 가상 중심점 및 수량 수확 계산기 [2번 블록]
+// 🎯 실시간 동네별 가상 중심점 및 수량 수확 계산기 [지역/지목 필터 수량 완벽 반영본]
 // =========================================================================
 function getActiveTownCenterStats() {
     var stats = {};
     properties.forEach(function(p) {
         var mCat = (currentCategories.indexOf(p.category) !== -1);
+        
+        // ① 지목 필터 조건 대조
         var mDet = (currentCategories.length === 0 || currentDetail.indexOf(p.detail_type) !== -1);
+        
+        // ② [수정 추가] 용도지역 필터 조건 대조 (지목과 100% 동일한 구조로 실시간 수량 동기화)
+        var mRegion = false;
+        if (p.yongdo) {
+            var parts = p.yongdo.split("/");
+            var currentPRegion = (parts && parts[0] ? parts[0].trim() : "");
+            mRegion = (currentRegion.indexOf(currentPRegion) !== -1);
+        }
+
         var mDeal = false; 
         currentDealTypes.forEach(function(t) { if (p.price && p.price.indexOf(t) !== -1) { mDeal = true; } });
 
-        if (mCat && mDet && mDeal) {
+        // 🎯 3대 마스터 필터(카테고리, 지목, 용도지역)와 거래방식을 모두 통과한 정예 매물만 숫자를 카운트합니다.
+        if (mCat && mDet && mRegion && mDeal) {
             var tName = p.town;
             if (!stats[tName]) stats[tName] = { count: 0, sumLat: 0, sumLng: 0, lat: p.lat, lng: p.lng, town_type: p.town_type };
             stats[tName].count++;
@@ -51,8 +63,9 @@ function getActiveTownCenterStats() {
     });
     return stats;
 }
+
 // =========================================================================
-// 🎛️ 하이브리드 카운트 엔진 (지역 선택 드롭다운 매물수 실시간 필터 동기화) [3번 블록]
+// 🎛️ 하이브리드 카운트 엔진 (지역/지목 선택 드롭다운 매물수 실시간 필터 100% 동기화)
 // =========================================================================
 function updateTownSelectorOptions() {
     var townSelector = document.getElementById("town-selector");
@@ -71,20 +84,24 @@ function updateTownSelectorOptions() {
     });
 
     properties.forEach(function(p) {
-        if ((currentCategories.indexOf(p.category) !== -1) && (currentCategories.length === 0 || currentDetail.indexOf(p.detail_type) !== -1)) {
+        if (currentCategories.indexOf(p.category) !== -1) {
+            var mDet = (currentCategories.length === 0 || currentDetail.indexOf(p.detail_type) !== -1);
+            
+            var mRegion = false;
+            if (p.yongdo) {
+                var parts = p.yongdo.split("/");
+                var currentPRegion = (parts && parts[0] ? parts[0].trim() : "");
+                mRegion = (currentRegion.indexOf(currentPRegion) !== -1);
+            }
+
             var mDeal = false;
             currentDealTypes.forEach(function(t) { if (p.price && p.price.indexOf(t) !== -1) mDeal = true; });
             
-            if (mDeal && p.town && p.name && p.name.indexOf(p.town) !== -1) {
-                // 읍면동 명칭 뒤편의 나머지 주소 문자열을 순수하게 추출
+            if (mDet && mRegion && mDeal && p.town && p.name && p.name.indexOf(p.town) !== -1) {
                 var remainAddr = p.name.substring(p.name.indexOf(p.town) + p.town.length).trim();
                 var tokens = remainAddr.split(" ");
-                
                 if (tokens.length > 0) {
-                    // 🛠️ [버그 치료 코어]: 마지막 지번 숫자가 아닌, 첫 번째 토큰('리' 명칭)을 정확히 검사합니다.
                     var targetToken = tokens[0].trim();
-                    
-                    // 끝 글자가 '리'로 끝나는 정예 행정구역 이름만 매칭 스캔
                     if (targetToken.lastIndexOf('리') === targetToken.length - 1 && targetToken.length > 0) {
                         var riName = targetToken;
                         if (!riCounts[p.town]) riCounts[p.town] = {};
@@ -118,6 +135,7 @@ function updateTownSelectorOptions() {
         currentRi = "전체";
     }
 }
+
 // =========================================================================
 // 🗺️ [교정 완결] 지목 필터와 동일한 로직의 용도지역 선택기 (텍스트 버그 완전 제거)
 // =========================================================================
