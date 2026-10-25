@@ -12,6 +12,7 @@ if (typeof APP_CONFIG === 'undefined') {
 
 var markers = [];
 var currentCategories = ["토지", "공장", "주택"];
+var currentRegion = [];
 var currentDetail = []; 
 var currentTown = "전체";
 var currentRi = "전체";
@@ -120,6 +121,54 @@ function updateTownSelectorOptions() {
 // =========================================================================
 // 🔠 소분류 옵션 동적 빌드 및 마스터 전체선택 토글 제어 엔진 [4번 블록]
 // =========================================================================
+// =========================================================================
+// 🗺️ [기획 반영 신규]: 용도지역 옵션 동적 빌드 및 마스터 전체선택 토글 제어 엔진
+// =========================================================================
+function updateRegionSelectorOptions() {
+    var container = document.getElementById("region-selector"); if (!container) return;
+    var regionsSet = new Set();
+    properties.forEach(function(p) { 
+        if (currentCategories.indexOf(p.category) !== -1 && p.yongdo) {
+            var parts = p.yongdo.split("/");
+            var rName = (parts && parts[0] ? parts[0].trim() : "").replace("지역", "") + "지역";
+            if (rName && rName !== "지역") regionsSet.add(rName);
+        }
+    });
+    container.innerHTML = ""; var sortedRegions = Array.from(regionsSet).sort(); currentRegion = [...sortedRegions];
+
+    var masterWrapper = document.createElement("button"); masterWrapper.type = "button"; masterWrapper.className = "sub-filter-btn active";
+    var isMasterActive = true;
+    masterWrapper.innerText = "전체";
+    masterWrapper.onclick = function() {
+        isMasterActive = !isMasterActive;
+        if (isMasterActive) {
+            this.classList.add("active"); currentRegion = [...sortedRegions];
+            container.querySelectorAll(".child-btn").forEach(function(btn) { btn.classList.add("active"); });
+        } else {
+            this.classList.remove("active"); currentRegion = [];
+            container.querySelectorAll(".child-btn").forEach(function(btn) { btn.classList.remove("active"); });
+        }
+        applyFilters();
+    };
+    container.appendChild(masterWrapper);
+
+    sortedRegions.forEach(function(r) {
+        var btn = document.createElement("button"); btn.type = "button"; btn.className = "sub-filter-btn child-btn active"; btn.innerText = r.replace("지역", "");
+        btn.onclick = function() {
+            var idx = currentRegion.indexOf(r);
+            if (idx > -1) {
+                currentRegion.splice(idx, 1); this.classList.remove("active");
+                isMasterActive = false; masterWrapper.classList.remove("active");
+            } else {
+                currentRegion.push(r); this.classList.add("active");
+                if (currentRegion.length === sortedRegions.length) { isMasterActive = true; masterWrapper.classList.add("active"); }
+            }
+            applyFilters();
+        };
+        container.appendChild(btn);
+    });
+}
+
 function updateDetailSelectorOptions() {
     var container = document.getElementById("detail-selector"); if (!container) return;
     var detailsSet = new Set();
@@ -171,6 +220,7 @@ function initMap() {
     if (filterPanel) { filterPanel.classList.add("slide-up"); }
     if (listPanel) { listPanel.style.display = "none"; listPanel.classList.add("slide-left"); }
 
+    updateRegionSelectorOptions();
     updateDetailSelectorOptions(); 
     
     // [기획 반영 1] 초기 로딩 시 목록 카드를 생성하지 않고 0개 유지 (DOM 트리 생성 완전 차단)
@@ -598,15 +648,30 @@ function applyFilters() {
             return; 
         }
 
-        // 기존 4단계 필터 식 완전 보존
+        // 🛡️ 5대 마스터 필터 동기화 레이어 (지역 선행 -> 지목 후행 순서 매핑 완결)
         var mCat = (currentCategories.indexOf(marker.get("category")) !== -1);
+        
+        // 🗺️ 1순위 검사: 용도지역(지역) 매칭 조건식
+        var mRegion = false;
+        if (p.yongdo) {
+            var parts = p.yongdo.split("/");
+            var currentPRegion = (parts && parts[0] ? parts[0].trim() : "").replace("지역", "") + "지역";
+            mRegion = (currentRegion.length === 0 || currentRegion.indexOf(currentPRegion) !== -1);
+        } else {
+            mRegion = (currentRegion.length === 0);
+        }
+
+        // 📊 2순위 검사: 소분류(지목) 매칭 조건식
         var mDet = (currentCategories.length === 0 || currentDetail.indexOf(marker.get("detail_type")) !== -1);
+        
+        // 3순위 이하 행정구역 및 거래방식 검사식 유지
         var mTown = (currentTown === "전체" || marker.get("town") === currentTown);
         var mRi = (currentRi === "전체" || (p.name && p.name.indexOf(currentRi) !== -1));
         var mDeal = false; 
         currentDealTypes.forEach(function(t) { if (p.price && p.price.indexOf(t) !== -1) mDeal = true; });
 
-        var isFilterPassed = (mCat && mDet && mTown && mRi && mDeal); 
+        // 🏁 최종 기획 통과 가드 (지역과 지목 조건이 교차 연산됨)
+        var isFilterPassed = (mCat && mRegion && mDet && mTown && mRi && mDeal); 
         
         // ⭕ 기획 구현 핵심 1: 지도 마커의 노출 여부는 순수 필터 통과 여부로만 결정 (경계 해제)
         marker.set("isActive", isFilterPassed);
@@ -1182,13 +1247,14 @@ function toggleSidebar() {
 function toggleCategory(cat) {
     var btn = document.getElementById(cat === "토지" ? "btn-land" : cat === "공장" ? "btn-factory" : "btn-house"), activeClass = cat === "토지" ? "active-land" : cat === "공장" ? "active-factory" : "active-house";
     var idx = currentCategories.indexOf(cat); if (idx > -1) { currentCategories.splice(idx, 1); if (btn) btn.classList.remove(activeClass); } else { currentCategories.push(cat); if (btn) btn.classList.add(activeClass); }
-    updateDetailSelectorOptions(); applyFilters();
+    updateRegionSelectorOptions(); updateDetailSelectorOptions(); applyFilters();
 }
 function toggleDealType(type) {
     var btnId = "btn-" + (type === "매매" ? "maemae" : type === "전세" ? "jeonse" : type === "월세" ? "wolse" : "dangi"), activeClass = "active-" + (type === "매매" ? "maemae" : type === "전세" ? "jeonse" : type === "월세" ? "wolse" : "dangi"), btn = document.getElementById(btnId);
     var idx = currentDealTypes.indexOf(type); if (idx > -1) { currentDealTypes.splice(idx, 1); if (btn) btn.classList.remove(activeClass); } else { currentDealTypes.push(type); if (btn) btn.classList.add(activeClass); }
     applyFilters();
 }
+function toggleRegionSelectorPanel() { var panel = document.getElementById("region-selector"); if (panel) panel.style.display = (panel.style.display === "none" || panel.style.display === "") ? "flex" : "none"; }
 function toggleDetailSelectorPanel() { var panel = document.getElementById("detail-selector"); if (panel) panel.style.display = (panel.style.display === "none" || panel.style.display === "") ? "flex" : "none"; }
 function closeStatsPanel(e) { if (e) e.stopPropagation(); var panel = document.getElementById("right-stats-panel"); if (!panel) return; if (window.innerWidth <= 768 && panel.classList.contains("expanded")) { panel.classList.remove("expanded"); } else { panel.classList.remove("active", "expanded"); } }
 function expandMobilePanel(e) { if (e.target.closest('.stats-close') || e.target.closest('a')) return; if (window.innerWidth <= 768) { var panel = document.getElementById("right-stats-panel"); if (panel) panel.classList.toggle("expanded"); } }
