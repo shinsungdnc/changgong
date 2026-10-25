@@ -1299,9 +1299,17 @@ function closeStatsPanel(e) { if (e) e.stopPropagation(); var panel = document.g
 function expandMobilePanel(e) { if (e.target.closest('.stats-close') || e.target.closest('a')) return; if (window.innerWidth <= 768) { var panel = document.getElementById("right-stats-panel"); if (panel) panel.classList.toggle("expanded"); } }
 
 var watchPositionId = null, myLocationMarker = null;
+// =========================================================================
+// 🧭 내 위치 추적 (모바일 대피 가드 + 햅틱 터치 진동 연동)
+// =========================================================================
 function toggleMyLocation() {
-    var btn = document.getElementById("mylocation-btn"); if (!btn) return;
-    // 🌟 [기획 보완 핵심 코어]: 모바일에서 내 위치를 누르면 엇박자 없이 즉시 2층 필터와 3층 목록창을 한방에 스르륵 숨깁니다!
+    var btn = document.getElementById("mylocation-btn"); 
+    if (!btn) return;
+
+    // 📳 갤럭시 S26 Ultra 엄지손가락 터치 순간 짧고 단호한 햅틱 진동 피드백 발사
+    if (typeof navigator.vibrate === 'function') navigator.vibrate(25);
+
+    // 📱 [모바일 버전 전용 가드]: 내 위치 기동 시 상단 필터와 리스트 장부를 안전하게 숨겨 시야 확보
     if (window.innerWidth <= 768) {
         var filterPanel = document.getElementById("sidebar-header");
         var listPanel = document.getElementById("property-list-panel");
@@ -1309,22 +1317,62 @@ function toggleMyLocation() {
         if (listPanel) listPanel.classList.add("slide-left");
         isSidebarManuallyClosed = true;
     }
-    if (watchPositionId !== null) { navigator.geolocation.clearWatch(watchPositionId); watchPositionId = null; btn.classList.remove("tracking"); if (myLocationMarker) { myLocationMarker.setMap(null); myLocationMarker = null; } alert("내 위치 추적이 종료되었습니다."); return; }
+
+    if (watchPositionId !== null) { 
+        navigator.geolocation.clearWatch(watchPositionId); 
+        watchPositionId = null; 
+        btn.classList.remove("tracking"); 
+        if (myLocationMarker) { myLocationMarker.setMap(null); myLocationMarker = null; } 
+        alert("내 위치 추적이 종료되었습니다."); 
+        return; 
+    }
+
     if (!navigator.geolocation) { alert("이 기기는 위치 정보를 지원하지 않습니다."); return; }
+
     btn.classList.add("tracking");
     watchPositionId = navigator.geolocation.watchPosition(function(pos) {
         var myLatLng = new naver.maps.LatLng(pos.coords.latitude, pos.coords.longitude);
         var myHtml = '<div style="position:relative;width:20px;height:20px;"><div style="position:absolute;width:14px;height:14px;background:#00bfff;border:3px solid #fff;border-radius:50%;box-shadow:0 0 5px rgba(0,0,0,0.5);z-index:2;"></div><div style="position:absolute;width:20px;height:20px;background:rgba(0,191,255,0.4);border-radius:50%;animation:pulse 2s infinite;z-index:1;"></div></div>';
-        if (!myLocationMarker) { myLocationMarker = new naver.maps.Marker({ position: myLatLng, map: map, icon: { content: myHtml, anchor: new naver.maps.Point(10, 10) } }); map.setZoom(16); } else { myLocationMarker.setPosition(myLatLng); }
+        
+        if (!myLocationMarker) { 
+            myLocationMarker = new naver.maps.Marker({ position: myLatLng, map: map, icon: { content: myHtml, anchor: new naver.maps.Point(10, 10) } }); 
+            map.setZoom(16); 
+        } else { 
+            myLocationMarker.setPosition(myLatLng); 
+        }
         map.panTo(myLatLng);
         if (typeof applyFilters === 'function') applyFilters();
     }, function() { alert("GPS 권한을 확인해주세요."); btn.classList.remove("tracking"); watchPositionId = null; }, { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 });
 }
+
+// =========================================================================
+// 🗺️ 지적도 편집 레이어 토글 (★모바일 대피 가드 신설 + 햅틱 터치 진동 연동)
+// =========================================================================
 function toggleCadastral() {
-    var btn = document.getElementById("btn-cadastral"); if (!cadastralLayer) return;
-    if (cadastralLayer.getMap()) { cadastralLayer.setMap(null); if (btn) { btn.style.setProperty("background", "#ffffff", "important"); btn.style.setProperty("color", "#4e5968", "important"); btn.style.setProperty("border", "1px solid rgba(0,0,0,0.08)", "important"); btn.style.setProperty("box-shadow", "0 4px 12px rgba(0,0,0,0.12)", "important"); } } 
-    else { cadastralLayer.setMap(map); if (btn) { btn.style.setProperty("background", "#DCF65C", "important"); btn.style.setProperty("color", "#111111", "important"); btn.style.setProperty("border", "1px solid #99bd0e", "important"); btn.style.setProperty("box-shadow", "0 0 14px rgba(220,246,92,0.6)", "important"); } }
+    // 📳 지적도 터치 순간에도 동일하게 경쾌한 햅틱 진동 피드백 작동
+    if (typeof navigator.vibrate === 'function') navigator.vibrate(25);
+    
+    var btn = document.getElementById("btn-cadastral"); 
+    if (!cadastralLayer) return;
+
+    // 📱 [모바일 버전 전용 가드 신설]: 지적도를 켜는 순간에도 리스트 패널을 부드럽게 숨겨서 필지 경계선 시야 100% 확보
+    if (window.innerWidth <= 768 && !cadastralLayer.getMap()) {
+        var filterPanel = document.getElementById("sidebar-header");
+        var listPanel = document.getElementById("property-list-panel");
+        if (filterPanel) filterPanel.classList.add("slide-up");
+        if (listPanel) listPanel.classList.add("slide-left");
+        isSidebarManuallyClosed = true;
+    }
+    
+    if (cadastralLayer.getMap()) { 
+        cadastralLayer.setMap(null); 
+        if (btn) btn.classList.remove("active");
+    } else { 
+        cadastralLayer.setMap(map); 
+        if (btn) btn.classList.add("active");
+    }
 }
+
 function changeTown(town) {
     currentTown = town; currentRi = "전체"; var panel = document.getElementById("detail-selector"); if (panel) panel.style.display = "none";
     if (town === "전체") { applyFilters(); } 
