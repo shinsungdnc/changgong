@@ -1491,34 +1491,41 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 // =========================================================================
-// 📁 10번 최종 블록: 매물 선택 VIP 상태까지 깨끗하게 박멸하는 최종 마스터 완결판
+// 📁 [최종 완결] 지도를 움직이지 않아도 즉시 마커를 동기화하는 리셋 엔진
 // =========================================================================
 function resetMapToDefault() {
+    // 1. 카메라 물리 락 스위치 및 수동 닫힘 상태 초기화
+    isCameraMovingToVip = false; 
     isSidebarManuallyClosed = false;
+    
     currentTown = "전체"; currentRi = "전체";
     var townSelector = document.getElementById("town-selector"); if (townSelector) townSelector.value = "전체";
     var riSelector = document.getElementById("ri-selector"); if (riSelector) { riSelector.value = "전체"; riSelector.style.display = "none"; }
 
+    // 2. 3대 카테고리 필터 강제 복원
     if (currentCategories.indexOf("토지") === -1) toggleCategory("토지");
     if (currentCategories.indexOf("공장") === -1) toggleCategory("공장");
     if (currentCategories.indexOf("주택") === -1) toggleCategory("주택");
 
+    // 3. 4대 거래방식 필터 강제 복원
     if (currentDealTypes.indexOf("매매") === -1) toggleDealType("매매");
     if (currentDealTypes.indexOf("전세") === -1) toggleDealType("전세");
     if (currentDealTypes.indexOf("월세") === -1) toggleDealType("월세");
     if (currentDealTypes.indexOf("단기") === -1) toggleDealType("단기");
 
-    // ⚡ [교정 핵심 1]: 리셋 버튼 가동 시 지역 필터 칩셋 장부 초기화 및 전체 선택 상태 재정렬
+    // 4. 지역 및 지목 상세 칩셋 배열 및 팝업창 완전 초기화
     currentRegion = []; 
     if (typeof updateRegionSelectorOptions === 'function') { updateRegionSelectorOptions(); }
-
     if (typeof updateDetailSelectorOptions === 'function') { updateDetailSelectorOptions(); }
 
-    // ⚡ [교정 핵심 2]: 펼쳐져 있던 지역 및 지목 상세 패널 박스를 첫 로딩처럼 깔끔하게 숨김 수납 처리
     var regionPanel = document.getElementById("region-selector"); if (regionPanel && regionPanel.style.display === "flex") { toggleRegionSelectorPanel(); }
     var detailPanel = document.getElementById("detail-selector"); if (detailPanel && detailPanel.style.display === "flex") { toggleDetailSelectorPanel(); }
 
     if (typeof cadastralLayer !== 'undefined' && cadastralLayer && cadastralLayer.getMap()) { toggleCadastral(); }
 
-    naver.maps.Event.once(map, "idle", function() { applyFilters(); });
+    // 5. 🎯 [완벽 완치]: 네이버 지도 idle 이벤트를 기다리지 않고 즉시 필터 엔진과 수량판을 강제 기동!
+    applyFilters(); 
+    if (typeof updateTownSelectorOptions === 'function') {
+        updateTownSelectorOptions();
+    }
 }
