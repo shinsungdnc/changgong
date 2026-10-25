@@ -504,18 +504,23 @@ function applyFilters() {
 
     if (isCameraMovingToVip) { return; }
 
-    // 💡 [교정] 줌 14 미만일 때 무조건 화면을 잠가버리던 return 차단막을 해제하고 수동 토글 감지 체제로 전환
+    // 💡 [줌 아웃 복귀 정밀 교정]: 줌 14 미만 광역 뷰로 나가는 순간의 세대교체 인프라
     if (currentZoom < 14) {
-        // 유저가 마스터 버튼으로 강제 오픈한 상태(`!isSidebarManuallyClosed`)가 아닐 때만 숨김 유지
+        // 유저가 마스터 버튼으로 강제 오픈한 상태가 아닐 때만 패널 숨김 유지
         if (isSidebarManuallyClosed === false && listPanel && !listPanel.classList.contains("active-show")) {
-            // 평상시 줌 12, 13 광역 상태일 때는 패널을 완벽하게 은폐
             if (filterPanel) filterPanel.classList.remove("active-show");
             if (listPanel) { listPanel.classList.remove("active-show"); }
             if (listContainer) listContainer.innerHTML = ""; 
         }
         
+        // 🔄 [핵심 스위치 추가]: 줌 아웃 시 남아있던 네이버 순정 클러스터러를 지도에서 즉시 파괴
         if (markerClustering !== null) { markerClustering.setMap(null); markerClustering = null; }
 
+        // 🔄 [핵심 스위치 추가]: 정밀 시야 전용으로 지도에 얹혀있던 수천 개의 마커들을 전원 셧다운(숨김)
+        markers.forEach(function(marker) {
+            marker.setMap(null);
+        });
+        
         // 광역 시야 마커 청소
         virtualTownMarkers.forEach(function(vm) { vm.setMap(null); }); 
         virtualTownMarkers = [];
