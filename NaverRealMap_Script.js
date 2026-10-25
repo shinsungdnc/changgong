@@ -1137,13 +1137,32 @@ function toggleSidebar() {
         return; // 모바일 제어 마감
     }
 
-    // 💻 [기존 PC 버전 트랙]: 노출 상태에서 숨김 상태로 동작
-    if (listPanel.classList.contains("slide-left")) { 
-        filterPanel.classList.remove("slide-up");
-        listPanel.classList.remove("slide-left");
-        isSidebarManuallyClosed = false; 
+    // 💻 [PC 및 공통 버전 트랙]: 이중 잠금을 파괴하고 광역 수량 브리핑 인프라 가동
+    if (listPanel.classList.contains("slide-left") || filterPanel.classList.contains("slide-up")) { 
+        // 🔓 닫혀있던 패널들을 열어주는 순간의 명품 연동 인터셉터
+        if (currentZoom < 14) {
+            // 🎯 [사장님 기획 스펙 완벽 이식]: 초기 줌 12, 13단계 광역 시야인 경우
+            filterPanel.style.display = "block";       // 2층 필터 인라인 락 해제
+            filterPanel.style.opacity = "1";
+            filterPanel.classList.remove("slide-up");  // 2층 필터만 위에서 아래로 스르륵 출현!
+            
+            listPanel.style.display = "none";          // 무거운 3층 목록창 카드는 연산 부하 0%를 위해 철저히 차단
+            listPanel.classList.add("slide-left");
+            
+            isSidebarManuallyClosed = false; 
+            updateTownSelectorOptions();               // 🎛️ 하이브리드 카운트 엔진을 즉시 강제 깨워 드롭다운 총 매물수 실시간 브리핑 동기화!
+        } else {
+            // 줌 14레벨 이상 정밀 시야에서는 사양대로 2층, 3층 동시 전개
+            filterPanel.style.display = "block";
+            filterPanel.style.opacity = "1";
+            listPanel.style.display = "flex";
+            filterPanel.classList.remove("slide-up");
+            listPanel.classList.remove("slide-left");
+            isSidebarManuallyClosed = false; 
+        }
         if (document.querySelector(".property-item.active") && statsPanel) statsPanel.classList.add("active");
     } else { 
+        // 열려있던 패널들을 부드럽게 화면 밖으로 닫아주는 순정 루틴
         filterPanel.classList.add("slide-up");
         listPanel.classList.add("slide-left");
         isSidebarManuallyClosed = true; 
