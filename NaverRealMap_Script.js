@@ -1481,10 +1481,10 @@ document.addEventListener("DOMContentLoaded", function() {
                             if (polygonPaths.length > 0) {
                                 var isVip = (m.get("isForcedVip") === true);
                                 
-                                // 🎨 선택 매물(VIP)은 형광 초록(#39FF14), 주변 미리보기 매물은 PC 호버링 테마인 '노란색 네온(#FFFF00)'
-                                var polyColor = isVip ? '#39FF14' : '#FFFF00';
-                                var polyOpacity = isVip ? 0.35 : 0.15;
-                                var polyWeight = isVip ? 3 : 1.5;
+                                // 🎨 [기획 반영] 선택 매물(VIP)은 형광 초록 고정, 평상시 주변 땅은 매물 종류별 고유색(prop.border) 동기화
+                                var polyColor = isVip ? '#39FF14' : prop.border;
+                                var polyOpacity = isVip ? 0.35 : 0.20;
+                                var polyWeight = isVip ? 3 : 2;
 
                                 var localPolygon = new naver.maps.Polygon({
                                     map: map,
