@@ -624,7 +624,7 @@ function applyFilters() {
                 var maxTextWidth = isMobileView ? "58px" : "78px";
 
                 var townClusterHtml = [
-                    '<div class="custom-town-cluster" style="cursor:pointer; pointer-events:auto !important; z-index:9999 !important; width:' + clusterSize + '; height:' + clusterSize + '; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(74, 211, 255, 0.95); border:1px solid #ffffff; border-radius:50%; box-shadow:0 3px 12px rgba(0,0,0,0.3); transform:translate(-50%, -50%); box-sizing:border-box; padding:2px;">', 
+                    '<div class="custom-town-cluster" style="cursor:pointer; pointer-events:auto !important; z-index:9999 !important; width:' + clusterSize + '; height:' + clusterSize + '; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(74, 211, 255, 0.95); border:2.5px solid #ffffff; border-radius:50%; box-shadow:0 3px 12px rgba(0,0,0,0.3); transform:translate(-50%, -50%); box-sizing:border-box; padding:2px;">', 
                     ' <div style="font-size:' + townFontSize + '; font-weight:700; color:#111111; line-height:1.2; text-align:center; max-width:' + maxTextWidth + '; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; pointer-events:none;">' + tName.replace('조치원읍', '조치원') + '</div>', 
                     ' <div style="font-size:' + countFontSize + '; font-weight:800; color:#111111; line-height:1.2; margin-top:2px; pointer-events:none;">' + stat.count + '</div>', 
                     '</div>'
