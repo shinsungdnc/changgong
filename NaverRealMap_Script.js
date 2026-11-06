@@ -630,12 +630,37 @@ function applyFilters() {
                     '</div>'
                 ].join('');
 
-                var vTownMarker = new naver.maps.Marker({ position: townLatLng, map: map, icon: { content: townClusterHtml, anchor: new naver.maps.Point(0, 0) }, clickable: true });
+				var vTownMarker = new naver.maps.Marker({ 
+					position: townLatLng, 
+					map: map, 
+					// 🎯 [교정]: anchor 좌표를 (0, 0)에서 배지 체급의 절반으로 수정하여 시각적 원형의 정중앙과 클릭 조준점을 완벽 동기화
+					icon: { 
+						content: townClusterHtml, 
+						anchor: (window.innerWidth <= 768) ? new naver.maps.Point(32, 32) : new naver.maps.Point(42, 42) 
+					}, 
+					clickable: true,
+					zIndex: 100 // 🥉 기본 레이어 서열 100 박제
+				});
+
+                // 🥇 [신규 추가]: 끄트머리 틈새 진입 순간 앞 배지를 깔아뭉개고 1등 레이어로 강제 노출 락 (99999 스위치)
+				naver.maps.Event.addListener(vTownMarker, "mouseover", function() {
+					if (typeof vTownMarker.setZIndex === 'function') {
+						vTownMarker.setZIndex(99999);
+					}
+				});
+
+				// 🏅 [신규 추가]: 마우스가 떠나면 다시 주변 지리적 배지들과 동등한 원래 서열로 평온하게 복귀
+				naver.maps.Event.addListener(vTownMarker, "mouseout", function() {
+					if (typeof vTownMarker.setZIndex === 'function') {
+						vTownMarker.setZIndex(100);
+					}
+				});
 
                 naver.maps.Event.addListener(vTownMarker, "click", function() {
                     var targetZoom = (stat.town_type === "rural") ? 15 : 17;
                     map.morph(townLatLng, targetZoom);
-                    var townSelector = document.getElementById("town-selector"); if (townSelector) { townSelector.value = tName; currentTown = tName; currentRi = "전체"; }
+                    var townSelector = document.getElementById("town-selector");
+                    if (townSelector) { townSelector.value = tName; currentTown = tName; currentRi = "전체"; }
                 });
                 virtualTownMarkers.push(vTownMarker); 
             }
@@ -762,7 +787,32 @@ function applyFilters() {
             if (stat.count === 0) return;
             var townLatLng = new naver.maps.LatLng(stat.lat, stat.lng);
             var townClusterHtml = ['<div class="custom-town-cluster" style="cursor:pointer; pointer-events:auto !important; z-index:9999 !important; width:64px; height:64px; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(74, 211, 255, 0.95); border:2px solid #ffffff; border-radius:50%; box-shadow:0 3px 12px rgba(0,0,0,0.3); transform:translate(-50%, -50%); box-sizing:border-box; padding:2px;">', ' <div style="font-size:11px; font-weight:700; color:#111111; line-height:1.2; text-align:center; max-width:58px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; pointer-events:none;">' + tName.replace('조치원읍', '조치원') + '</div>', ' <div style="font-size:13px; font-weight:800; color:#111111; line-height:1.2; margin-top:2px; pointer-events:none;">' + stat.count + '</div>', '</div>'].join('');
-            var vTownMarker = new naver.maps.Marker({ position: townLatLng, map: map, icon: { content: townClusterHtml, anchor: new naver.maps.Point(0, 0) }, clickable: true });
+			
+            var vTownMarker = new naver.maps.Marker({ 
+				position: townLatLng, 
+				map: map, 
+				// 🎯 [교정]: 동일하게 anchor 좌표 오차를 원형 정중앙(32px / 42px)으로 칼같이 일치시켜 판정 이탈 차단
+				icon: { 
+					content: townClusterHtml, 
+					anchor: (window.innerWidth <= 768) ? new naver.maps.Point(32, 32) : new naver.maps.Point(42, 42) 
+				}, 
+				clickable: true,
+				zIndex: 100
+			});
+
+			// 🥇 [신규 추가]: 드래그 이동 및 화면 리셋 후에도 끄트머리 틈새만 스치면 무조건 최상단 튀어나오기 가동
+			naver.maps.Event.addListener(vTownMarker, "mouseover", function() {
+				if (typeof vTownMarker.setZIndex === 'function') {
+					vTownMarker.setZIndex(99999);
+				}
+			});
+
+			// 🏅 [신규 추가]: 호버 탈출 시 기본 서열 100 복원
+			naver.maps.Event.addListener(vTownMarker, "mouseout", function() {
+				if (typeof vTownMarker.setZIndex === 'function') {
+					vTownMarker.setZIndex(100);
+				}
+			});
 
             naver.maps.Event.addListener(vTownMarker, "click", function() {
                 var targetZoom = (stat.town_type === "rural") ? 15 : 17;
