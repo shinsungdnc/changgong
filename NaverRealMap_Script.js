@@ -637,11 +637,11 @@ function applyFilters() {
 					// 이렇게 해야 눈에 보이는 초승달 틈새와 네이버 엔진의 마우스 판정 레이어가 1밀리미터의 오차도 없이 자석처럼 완벽히 싱크됩니다.
 					icon: { 
 						content: townClusterHtml, 
-						anchor: new naver.maps.Point(0, 0) 
+						anchor: new naver.maps.Point((window.innerWidth <= 768 ? 64 : 85) / 2, (window.innerWidth <= 768 ? 64 : 85) / 2)
 					}, 
 					clickable: true,
 					zIndex: 100,
-                    collide: true // 🛡️ [신규] 마커 충돌 방지 옵션 활성화 (중첩 마커가 겹쳐도 클릭 이벤트 정상 작동)
+                    collide: false
 				});
 
                 // 🥇 [신규 추가]: 끄트머리 틈새 진입 순간 앞 배지를 깔아뭉개고 1등 레이어로 강제 노출 락 (99999 스위치)
@@ -797,11 +797,11 @@ function applyFilters() {
 					// 이렇게 해야 눈에 보이는 초승달 틈새와 네이버 엔진의 마우스 판정 레이어가 1밀리미터의 오차도 없이 자석처럼 완벽히 싱크됩니다.
 					icon: { 
 						content: townClusterHtml, 
-						anchor: new naver.maps.Point(0, 0) 
+						anchor: new naver.maps.Point((window.innerWidth <= 768 ? 64 : 85) / 2, (window.innerWidth <= 768 ? 64 : 85) / 2)
 					}, 
 					clickable: true,
 					zIndex: 100,
-                    collide: true // 🛡️ [신규] 마커 충돌 방지 옵션 활성화 (중첩 마커가 겹쳐도 클릭 이벤트 정상 작동)
+                    collide: false
 				});
 
 			// 🥇 [신규 추가]: 드래그 이동 및 화면 리셋 후에도 끄트머리 틈새만 스치면 무조건 최상단 튀어나오기 가동
