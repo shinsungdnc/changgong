@@ -630,7 +630,7 @@ function applyFilters() {
                     '</div>'
                 ].join('');
 
-                var vTownMarker = new naver.maps.Marker({ position: townLatLng, map: map, icon: { content: townClusterHtml, anchor: new naver.maps.Point(0, 0) }, clickable: true });
+                var vTownMarker = new naver.maps.Marker({ position: townLatLng, map: map, icon: { content: townClusterHtml, anchor: new naver.maps.Point(0, 0) }, clickable: false });
 
                 // 🥇 [신규 추가]: 끄트머리 틈새 진입 순간 앞 배지를 깔아뭉개고 1등 레이어로 강제 노출 락 (99999 스위치)
 				naver.maps.Event.addListener(vTownMarker, "mouseover", function() {
@@ -778,7 +778,7 @@ function applyFilters() {
             var townLatLng = new naver.maps.LatLng(stat.lat, stat.lng);
             var townClusterHtml = ['<div class="custom-town-cluster" style="cursor:pointer; pointer-events:auto !important; z-index:9999 !important; width:64px; height:64px; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(74, 211, 255, 0.95); border:2px solid #ffffff; border-radius:50%; box-shadow:0 3px 12px rgba(0,0,0,0.3); transform:translate(-50%, -50%); box-sizing:border-box; padding:2px;">', ' <div style="font-size:11px; font-weight:700; color:#111111; line-height:1.2; text-align:center; max-width:58px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; pointer-events:none;">' + tName.replace('조치원읍', '조치원') + '</div>', ' <div style="font-size:13px; font-weight:800; color:#111111; line-height:1.2; margin-top:2px; pointer-events:none;">' + stat.count + '</div>', '</div>'].join('');
 			
-            var vTownMarker = new naver.maps.Marker({ position: townLatLng, map: map, icon: { content: townClusterHtml, anchor: new naver.maps.Point(0, 0) }, clickable: true });
+            var vTownMarker = new naver.maps.Marker({ position: townLatLng, map: map, icon: { content: townClusterHtml, anchor: new naver.maps.Point(0, 0) }, clickable: false });
 
 			// 🥇 [신규 추가]: 드래그 이동 및 화면 리셋 후에도 끄트머리 틈새만 스치면 무조건 최상단 튀어나오기 가동
 			naver.maps.Event.addListener(vTownMarker, "mouseover", function() {
