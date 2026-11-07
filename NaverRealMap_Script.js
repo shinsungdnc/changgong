@@ -640,7 +640,8 @@ function applyFilters() {
 						anchor: new naver.maps.Point(0, 0) 
 					}, 
 					clickable: true,
-					zIndex: 100
+					zIndex: 100,
+                    collide: false
 				});
 
                 // 🥇 [신규 추가]: 끄트머리 틈새 진입 순간 앞 배지를 깔아뭉개고 1등 레이어로 강제 노출 락 (99999 스위치)
@@ -799,7 +800,8 @@ function applyFilters() {
 						anchor: new naver.maps.Point(0, 0) 
 					}, 
 					clickable: true,
-					zIndex: 100
+					zIndex: 100,
+                    collide: false
 				});
 
 			// 🥇 [신규 추가]: 드래그 이동 및 화면 리셋 후에도 끄트머리 틈새만 스치면 무조건 최상단 튀어나오기 가동
