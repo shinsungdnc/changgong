@@ -643,25 +643,18 @@ function applyFilters() {
 					clickable: true
 				});
 
-				// 🥇 [원천 치료]: 끄트머리 틈새를 스치는 순간, 네이버 엔진을 우회하여 바깥쪽 부모 방 틀(DOM)의 zIndex를 강탈
+				// 🥇 [최종 마감]: 틈새에 마우스가 닿는 순간, 네이버 지도 전용 내장 최상위 패널(floatPane)로 레이어를 강제 관통 이송
 				naver.maps.Event.addListener(vTownMarker, "mouseover", function() {
-					if (vTownMarker && vTownMarker.getElement()) {
-						// 내 배지를 감싸고 있는 네이버 지도 내부의 최고 존엄 부모 래퍼 <div> 박스를 추적합니다.
-						var parentDiv = vTownMarker.getElement().parentNode;
-						if (parentDiv) {
-							// 브라우저 단에서 부모 레이어 자체를 서열 99999로 수직 강제 갱신합니다.
-							parentDiv.style.setProperty("z-index", "99999", "important");
-						}
+					if (vTownMarker && typeof vTownMarker.setOptions === 'function') {
+						// subpanel 속성에 'floatPane'을 강제 지정하면, 네이버 엔진이 해당 마커를 일반 마커 판에서 뜯어내어 지도 전체 최고 서열 레이어로 직격 이동시킵니다.
+						vTownMarker.setOptions({ subpanel: 'floatPane' });
 					}
 				});
 
-				// 🏅 [원천 치료]: 마우스가 떠나면 강제로 주입했던 부모 방 틀의 zIndex 스타일을 깨끗하게 삭제하여 원래 서열 복원
+				// 🏅 [최종 마감]: 마우스가 떠나면 다시 원래의 평온한 일반 매물 마커 판(overlayLayer) 서열 위치로 자동 복원
 				naver.maps.Event.addListener(vTownMarker, "mouseout", function() {
-					if (vTownMarker && vTownMarker.getElement()) {
-						var parentDiv = vTownMarker.getElement().parentNode;
-						if (parentDiv) {
-							parentDiv.style.removeProperty("z-index");
-						}
+					if (vTownMarker && typeof vTownMarker.setOptions === 'function') {
+						vTownMarker.setOptions({ subpanel: 'overlayLayer' });
 					}
 				});
 
@@ -810,25 +803,18 @@ function applyFilters() {
 					clickable: true
 				});
 
-				// 🥇 [원천 치료]: 끄트머리 틈새를 스치는 순간, 네이버 엔진을 우회하여 바깥쪽 부모 방 틀(DOM)의 zIndex를 강탈
+				// 🥇 [최종 마감]: 틈새에 마우스가 닿는 순간, 네이버 지도 전용 내장 최상위 패널(floatPane)로 레이어를 강제 관통 이송
 				naver.maps.Event.addListener(vTownMarker, "mouseover", function() {
-					if (vTownMarker && vTownMarker.getElement()) {
-						// 내 배지를 감싸고 있는 네이버 지도 내부의 최고 존엄 부모 래퍼 <div> 박스를 추적합니다.
-						var parentDiv = vTownMarker.getElement().parentNode;
-						if (parentDiv) {
-							// 브라우저 단에서 부모 레이어 자체를 서열 99999로 수직 강제 갱신합니다.
-							parentDiv.style.setProperty("z-index", "99999", "important");
-						}
+					if (vTownMarker && typeof vTownMarker.setOptions === 'function') {
+						// subpanel 속성에 'floatPane'을 강제 지정하면, 네이버 엔진이 해당 마커를 일반 마커 판에서 뜯어내어 지도 전체 최고 서열 레이어로 직격 이동시킵니다.
+						vTownMarker.setOptions({ subpanel: 'floatPane' });
 					}
 				});
 
-				// 🏅 [원천 치료]: 마우스가 떠나면 강제로 주입했던 부모 방 틀의 zIndex 스타일을 깨끗하게 삭제하여 원래 서열 복원
+				// 🏅 [최종 마감]: 마우스가 떠나면 다시 원래의 평온한 일반 매물 마커 판(overlayLayer) 서열 위치로 자동 복원
 				naver.maps.Event.addListener(vTownMarker, "mouseout", function() {
-					if (vTownMarker && vTownMarker.getElement()) {
-						var parentDiv = vTownMarker.getElement().parentNode;
-						if (parentDiv) {
-							parentDiv.style.removeProperty("z-index");
-						}
+					if (vTownMarker && typeof vTownMarker.setOptions === 'function') {
+						vTownMarker.setOptions({ subpanel: 'overlayLayer' });
 					}
 				});
 
