@@ -635,26 +635,25 @@ function applyFilters() {
 				var vTownMarker = new naver.maps.Marker({ 
 					position: townLatLng, 
 					map: map, 
-					// 🎯 앵커는 원형 정중앙 대신, 가려진 틈새(초승달 구역) 마우스 조준이 가장 잘 걸리는 (0, 0) 기본 순정 상태로 안전 롤백합니다.
+					// 🎯 [완치 1]: 앵커 좌표 오차를 원형 정중앙(32px / 42px)으로 완벽히 보정하여 가려진 틈새 조준 시 엇박자 오류 차단
 					icon: { 
 						content: townClusterHtml, 
-						anchor: new naver.maps.Point(0, 0) 
+						anchor: isMobile ? new naver.maps.Point(32, 32) : new naver.maps.Point(42, 42) 
 					}, 
 					clickable: true
 				});
 
-				// 🥇 [완치]: 마우스가 끄트머리 틈새에 닿는 즉시, 네이버 지도 API 순정 마커 서열 제어 함수 가동
+				// 🥇 마우스가 스치는 순간 최고 존엄 레이어(100000)로 가뿐하게 전면 노출
 				naver.maps.Event.addListener(vTownMarker, "mouseover", function() {
 					if (vTownMarker && typeof vTownMarker.setZIndex === 'function') {
-						// 기존의 무력했던 CSS/DOM 조작을 전부 폐기하고, 네이버 엔진이 지원하는 최고 존엄 서열 수치(100000)를 직격 주사합니다.
 						vTownMarker.setZIndex(100000);
 					}
 				});
 
-				// 🏅 [완치]: 마우스가 떠나면 다시 주변 배지들과 동일한 기본 하위 서열(100)로 깔끔하게 복원
+				// 🏅 [완치 2]: 마우스가 떠날 때 고정 수치가 아닌 'null'을 직격하여, 네이버 고유의 자동 남북 레이어 정렬 공식으로 완벽 롤백
 				naver.maps.Event.addListener(vTownMarker, "mouseout", function() {
 					if (vTownMarker && typeof vTownMarker.setZIndex === 'function') {
-						vTownMarker.setZIndex(100);
+						vTownMarker.setZIndex(null); // 🌟 이 부분이 고운동 잔상 불량을 치료하는 핵심 열쇠입니다.
 					}
 				});
 
@@ -795,26 +794,25 @@ function applyFilters() {
 				var vTownMarker = new naver.maps.Marker({ 
 					position: townLatLng, 
 					map: map, 
-					// 🎯 앵커는 원형 정중앙 대신, 가려진 틈새(초승달 구역) 마우스 조준이 가장 잘 걸리는 (0, 0) 기본 순정 상태로 안전 롤백합니다.
+					// 🎯 [완치 1]: 앵커 좌표 오차를 원형 정중앙(32px / 42px)으로 완벽히 보정하여 가려진 틈새 조준 시 엇박자 오류 차단
 					icon: { 
 						content: townClusterHtml, 
-						anchor: new naver.maps.Point(0, 0) 
+						anchor: isMobile ? new naver.maps.Point(32, 32) : new naver.maps.Point(42, 42) 
 					}, 
 					clickable: true
 				});
 
-				// 🥇 [완치]: 마우스가 끄트머리 틈새에 닿는 즉시, 네이버 지도 API 순정 마커 서열 제어 함수 가동
+				// 🥇 마우스가 스치는 순간 최고 존엄 레이어(100000)로 가뿐하게 전면 노출
 				naver.maps.Event.addListener(vTownMarker, "mouseover", function() {
 					if (vTownMarker && typeof vTownMarker.setZIndex === 'function') {
-						// 기존의 무력했던 CSS/DOM 조작을 전부 폐기하고, 네이버 엔진이 지원하는 최고 존엄 서열 수치(100000)를 직격 주사합니다.
 						vTownMarker.setZIndex(100000);
 					}
 				});
 
-				// 🏅 [완치]: 마우스가 떠나면 다시 주변 배지들과 동일한 기본 하위 서열(100)로 깔끔하게 복원
+				// 🏅 [완치 2]: 마우스가 떠날 때 고정 수치가 아닌 'null'을 직격하여, 네이버 고유의 자동 남북 레이어 정렬 공식으로 완벽 롤백
 				naver.maps.Event.addListener(vTownMarker, "mouseout", function() {
 					if (vTownMarker && typeof vTownMarker.setZIndex === 'function') {
-						vTownMarker.setZIndex(100);
+						vTownMarker.setZIndex(null); // 🌟 이 부분이 고운동 잔상 불량을 치료하는 핵심 열쇠입니다.
 					}
 				});
 
