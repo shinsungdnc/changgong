@@ -630,17 +630,25 @@ function applyFilters() {
                     '</div>'
                 ].join('');
 
-				var vTownMarker = new naver.maps.Marker({ 
-					position: townLatLng, 
-					map: map, 
-					// 🎯 [교정]: anchor 좌표를 (0, 0)에서 배지 체급의 절반으로 수정하여 시각적 원형의 정중앙과 클릭 조준점을 완벽 동기화
-					icon: { 
-						content: townClusterHtml, 
-						anchor: (window.innerWidth <= 768) ? new naver.maps.Point(32, 32) : new naver.maps.Point(42, 42) 
-					}, 
-					clickable: true,
-					zIndex: 100 // 🥉 기본 레이어 서열 100 박제
-				});
+                var isMobile = (window.innerWidth <= 768);
+                var clusterShape = {
+                    type: 'circle',
+                    // 원형의 정중앙 좌표(x, y)와 실제 감지할 반지름(r)을 체급별로 정밀 지정
+                    coord: isMobile ? [32, 32, 32] : [42, 42, 42] 
+                };
+
+                var vTownMarker = new naver.maps.Marker({ 
+                    position: townLatLng, 
+                    map: map, 
+                    icon: { 
+                        content: townClusterHtml, 
+                        anchor: isMobile ? new naver.maps.Point(32, 32) : new naver.maps.Point(42, 42) 
+                    }, 
+                    // 🌟 [핵심 보완]: 네이버 엔진에게 사각형 모서리를 무시하고 오직 원형 내부만 호버/클릭을 받으라고 선언
+                    shape: clusterShape, 
+                    clickable: true,
+                    zIndex: 100 
+                });
 
                 // 🥇 [신규 추가]: 끄트머리 틈새 진입 순간 앞 배지를 깔아뭉개고 1등 레이어로 강제 노출 락 (99999 스위치)
 				naver.maps.Event.addListener(vTownMarker, "mouseover", function() {
@@ -788,17 +796,25 @@ function applyFilters() {
             var townLatLng = new naver.maps.LatLng(stat.lat, stat.lng);
             var townClusterHtml = ['<div class="custom-town-cluster" style="cursor:pointer; pointer-events:auto !important; z-index:9999 !important; width:64px; height:64px; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(74, 211, 255, 0.95); border:2px solid #ffffff; border-radius:50%; box-shadow:0 3px 12px rgba(0,0,0,0.3); transform:translate(-50%, -50%); box-sizing:border-box; padding:2px;">', ' <div style="font-size:11px; font-weight:700; color:#111111; line-height:1.2; text-align:center; max-width:58px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; pointer-events:none;">' + tName.replace('조치원읍', '조치원') + '</div>', ' <div style="font-size:13px; font-weight:800; color:#111111; line-height:1.2; margin-top:2px; pointer-events:none;">' + stat.count + '</div>', '</div>'].join('');
 			
+            var isMobile = (window.innerWidth <= 768);
+            var clusterShape = {
+                type: 'circle',
+                // 원형의 정중앙 좌표(x, y)와 실제 감지할 반지름(r)을 체급별로 정밀 지정
+                coord: isMobile ? [32, 32, 32] : [42, 42, 42] 
+            };
+
             var vTownMarker = new naver.maps.Marker({ 
-				position: townLatLng, 
-				map: map, 
-				// 🎯 [교정]: 동일하게 anchor 좌표 오차를 원형 정중앙(32px / 42px)으로 칼같이 일치시켜 판정 이탈 차단
-				icon: { 
-					content: townClusterHtml, 
-					anchor: (window.innerWidth <= 768) ? new naver.maps.Point(32, 32) : new naver.maps.Point(42, 42) 
-				}, 
-				clickable: true,
-				zIndex: 100
-			});
+                position: townLatLng, 
+                map: map, 
+                icon: { 
+                    content: townClusterHtml, 
+                    anchor: isMobile ? new naver.maps.Point(32, 32) : new naver.maps.Point(42, 42) 
+                }, 
+                // 🌟 [핵심 보완]: 네이버 엔진에게 사각형 모서리를 무시하고 오직 원형 내부만 호버/클릭을 받으라고 선언
+                shape: clusterShape, 
+                clickable: true,
+                zIndex: 100 
+            });
 
 			// 🥇 [신규 추가]: 드래그 이동 및 화면 리셋 후에도 끄트머리 틈새만 스치면 무조건 최상단 튀어나오기 가동
 			naver.maps.Event.addListener(vTownMarker, "mouseover", function() {
