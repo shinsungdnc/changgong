@@ -643,18 +643,18 @@ function applyFilters() {
 					clickable: true
 				});
 
-				// 🥇 [최종 마감]: 틈새에 마우스가 닿는 순간, 네이버 지도 전용 내장 최상위 패널(floatPane)로 레이어를 강제 관통 이송
+				// 🥇 [완치]: 마우스가 끄트머리 틈새에 닿는 즉시, 네이버 지도 API 순정 마커 서열 제어 함수 가동
 				naver.maps.Event.addListener(vTownMarker, "mouseover", function() {
-					if (vTownMarker && typeof vTownMarker.setOptions === 'function') {
-						// subpanel 속성에 'floatPane'을 강제 지정하면, 네이버 엔진이 해당 마커를 일반 마커 판에서 뜯어내어 지도 전체 최고 서열 레이어로 직격 이동시킵니다.
-						vTownMarker.setOptions({ subpanel: 'floatPane' });
+					if (vTownMarker && typeof vTownMarker.setZIndex === 'function') {
+						// 기존의 무력했던 CSS/DOM 조작을 전부 폐기하고, 네이버 엔진이 지원하는 최고 존엄 서열 수치(100000)를 직격 주사합니다.
+						vTownMarker.setZIndex(100000);
 					}
 				});
 
-				// 🏅 [최종 마감]: 마우스가 떠나면 다시 원래의 평온한 일반 매물 마커 판(overlayLayer) 서열 위치로 자동 복원
+				// 🏅 [완치]: 마우스가 떠나면 다시 주변 배지들과 동일한 기본 하위 서열(100)로 깔끔하게 복원
 				naver.maps.Event.addListener(vTownMarker, "mouseout", function() {
-					if (vTownMarker && typeof vTownMarker.setOptions === 'function') {
-						vTownMarker.setOptions({ subpanel: 'overlayLayer' });
+					if (vTownMarker && typeof vTownMarker.setZIndex === 'function') {
+						vTownMarker.setZIndex(100);
 					}
 				});
 
@@ -803,18 +803,18 @@ function applyFilters() {
 					clickable: true
 				});
 
-				// 🥇 [최종 마감]: 틈새에 마우스가 닿는 순간, 네이버 지도 전용 내장 최상위 패널(floatPane)로 레이어를 강제 관통 이송
+				// 🥇 [완치]: 마우스가 끄트머리 틈새에 닿는 즉시, 네이버 지도 API 순정 마커 서열 제어 함수 가동
 				naver.maps.Event.addListener(vTownMarker, "mouseover", function() {
-					if (vTownMarker && typeof vTownMarker.setOptions === 'function') {
-						// subpanel 속성에 'floatPane'을 강제 지정하면, 네이버 엔진이 해당 마커를 일반 마커 판에서 뜯어내어 지도 전체 최고 서열 레이어로 직격 이동시킵니다.
-						vTownMarker.setOptions({ subpanel: 'floatPane' });
+					if (vTownMarker && typeof vTownMarker.setZIndex === 'function') {
+						// 기존의 무력했던 CSS/DOM 조작을 전부 폐기하고, 네이버 엔진이 지원하는 최고 존엄 서열 수치(100000)를 직격 주사합니다.
+						vTownMarker.setZIndex(100000);
 					}
 				});
 
-				// 🏅 [최종 마감]: 마우스가 떠나면 다시 원래의 평온한 일반 매물 마커 판(overlayLayer) 서열 위치로 자동 복원
+				// 🏅 [완치]: 마우스가 떠나면 다시 주변 배지들과 동일한 기본 하위 서열(100)로 깔끔하게 복원
 				naver.maps.Event.addListener(vTownMarker, "mouseout", function() {
-					if (vTownMarker && typeof vTownMarker.setOptions === 'function') {
-						vTownMarker.setOptions({ subpanel: 'overlayLayer' });
+					if (vTownMarker && typeof vTownMarker.setZIndex === 'function') {
+						vTownMarker.setZIndex(100);
 					}
 				});
 
