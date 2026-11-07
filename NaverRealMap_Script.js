@@ -630,37 +630,38 @@ function applyFilters() {
                     '</div>'
                 ].join('');
 
-                var isMobile = (window.innerWidth <= 768);
-                var clusterShape = {
-                    type: 'circle',
-                    // 원형의 정중앙 좌표(x, y)와 실제 감지할 반지름(r)을 체급별로 정밀 지정
-                    coord: isMobile ? [32, 32, 32] : [42, 42, 42] 
-                };
+				var isMobile = (window.innerWidth <= 768);
 
-                var vTownMarker = new naver.maps.Marker({ 
-                    position: townLatLng, 
-                    map: map, 
-                    icon: { 
-                        content: townClusterHtml, 
-                        anchor: isMobile ? new naver.maps.Point(32, 32) : new naver.maps.Point(42, 42) 
-                    }, 
-                    // 🌟 [핵심 보완]: 네이버 엔진에게 사각형 모서리를 무시하고 오직 원형 내부만 호버/클릭을 받으라고 선언
-                    shape: clusterShape, 
-                    clickable: true,
-                    zIndex: 100 
-                });
+				var vTownMarker = new naver.maps.Marker({ 
+					position: townLatLng, 
+					map: map, 
+					// 🎯 앵커는 원형 정중앙 대신, 가려진 틈새(초승달 구역) 마우스 조준이 가장 잘 걸리는 (0, 0) 기본 순정 상태로 안전 롤백합니다.
+					icon: { 
+						content: townClusterHtml, 
+						anchor: new naver.maps.Point(0, 0) 
+					}, 
+					clickable: true
+				});
 
-                // 🥇 [신규 추가]: 끄트머리 틈새 진입 순간 앞 배지를 깔아뭉개고 1등 레이어로 강제 노출 락 (99999 스위치)
+				// 🥇 [원천 치료]: 끄트머리 틈새를 스치는 순간, 네이버 엔진을 우회하여 바깥쪽 부모 방 틀(DOM)의 zIndex를 강탈
 				naver.maps.Event.addListener(vTownMarker, "mouseover", function() {
-					if (typeof vTownMarker.setZIndex === 'function') {
-						vTownMarker.setZIndex(99999);
+					if (vTownMarker && vTownMarker.getElement()) {
+						// 내 배지를 감싸고 있는 네이버 지도 내부의 최고 존엄 부모 래퍼 <div> 박스를 추적합니다.
+						var parentDiv = vTownMarker.getElement().parentNode;
+						if (parentDiv) {
+							// 브라우저 단에서 부모 레이어 자체를 서열 99999로 수직 강제 갱신합니다.
+							parentDiv.style.setProperty("z-index", "99999", "important");
+						}
 					}
 				});
 
-				// 🏅 [신규 추가]: 마우스가 떠나면 다시 주변 지리적 배지들과 동등한 원래 서열로 평온하게 복귀
+				// 🏅 [원천 치료]: 마우스가 떠나면 강제로 주입했던 부모 방 틀의 zIndex 스타일을 깨끗하게 삭제하여 원래 서열 복원
 				naver.maps.Event.addListener(vTownMarker, "mouseout", function() {
-					if (typeof vTownMarker.setZIndex === 'function') {
-						vTownMarker.setZIndex(100);
+					if (vTownMarker && vTownMarker.getElement()) {
+						var parentDiv = vTownMarker.getElement().parentNode;
+						if (parentDiv) {
+							parentDiv.style.removeProperty("z-index");
+						}
 					}
 				});
 
@@ -796,39 +797,40 @@ function applyFilters() {
             var townLatLng = new naver.maps.LatLng(stat.lat, stat.lng);
             var townClusterHtml = ['<div class="custom-town-cluster" style="cursor:pointer; pointer-events:auto !important; z-index:9999 !important; width:64px; height:64px; display:flex; flex-direction:column; align-items:center; justify-content:center; background:rgba(74, 211, 255, 0.95); border:2px solid #ffffff; border-radius:50%; box-shadow:0 3px 12px rgba(0,0,0,0.3); transform:translate(-50%, -50%); box-sizing:border-box; padding:2px;">', ' <div style="font-size:11px; font-weight:700; color:#111111; line-height:1.2; text-align:center; max-width:58px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; pointer-events:none;">' + tName.replace('조치원읍', '조치원') + '</div>', ' <div style="font-size:13px; font-weight:800; color:#111111; line-height:1.2; margin-top:2px; pointer-events:none;">' + stat.count + '</div>', '</div>'].join('');
 			
-            var isMobile = (window.innerWidth <= 768);
-            var clusterShape = {
-                type: 'circle',
-                // 원형의 정중앙 좌표(x, y)와 실제 감지할 반지름(r)을 체급별로 정밀 지정
-                coord: isMobile ? [32, 32, 32] : [42, 42, 42] 
-            };
+				var isMobile = (window.innerWidth <= 768);
 
-            var vTownMarker = new naver.maps.Marker({ 
-                position: townLatLng, 
-                map: map, 
-                icon: { 
-                    content: townClusterHtml, 
-                    anchor: isMobile ? new naver.maps.Point(32, 32) : new naver.maps.Point(42, 42) 
-                }, 
-                // 🌟 [핵심 보완]: 네이버 엔진에게 사각형 모서리를 무시하고 오직 원형 내부만 호버/클릭을 받으라고 선언
-                shape: clusterShape, 
-                clickable: true,
-                zIndex: 100 
-            });
+				var vTownMarker = new naver.maps.Marker({ 
+					position: townLatLng, 
+					map: map, 
+					// 🎯 앵커는 원형 정중앙 대신, 가려진 틈새(초승달 구역) 마우스 조준이 가장 잘 걸리는 (0, 0) 기본 순정 상태로 안전 롤백합니다.
+					icon: { 
+						content: townClusterHtml, 
+						anchor: new naver.maps.Point(0, 0) 
+					}, 
+					clickable: true
+				});
 
-			// 🥇 [신규 추가]: 드래그 이동 및 화면 리셋 후에도 끄트머리 틈새만 스치면 무조건 최상단 튀어나오기 가동
-			naver.maps.Event.addListener(vTownMarker, "mouseover", function() {
-				if (typeof vTownMarker.setZIndex === 'function') {
-					vTownMarker.setZIndex(99999);
-				}
-			});
+				// 🥇 [원천 치료]: 끄트머리 틈새를 스치는 순간, 네이버 엔진을 우회하여 바깥쪽 부모 방 틀(DOM)의 zIndex를 강탈
+				naver.maps.Event.addListener(vTownMarker, "mouseover", function() {
+					if (vTownMarker && vTownMarker.getElement()) {
+						// 내 배지를 감싸고 있는 네이버 지도 내부의 최고 존엄 부모 래퍼 <div> 박스를 추적합니다.
+						var parentDiv = vTownMarker.getElement().parentNode;
+						if (parentDiv) {
+							// 브라우저 단에서 부모 레이어 자체를 서열 99999로 수직 강제 갱신합니다.
+							parentDiv.style.setProperty("z-index", "99999", "important");
+						}
+					}
+				});
 
-			// 🏅 [신규 추가]: 호버 탈출 시 기본 서열 100 복원
-			naver.maps.Event.addListener(vTownMarker, "mouseout", function() {
-				if (typeof vTownMarker.setZIndex === 'function') {
-					vTownMarker.setZIndex(100);
-				}
-			});
+				// 🏅 [원천 치료]: 마우스가 떠나면 강제로 주입했던 부모 방 틀의 zIndex 스타일을 깨끗하게 삭제하여 원래 서열 복원
+				naver.maps.Event.addListener(vTownMarker, "mouseout", function() {
+					if (vTownMarker && vTownMarker.getElement()) {
+						var parentDiv = vTownMarker.getElement().parentNode;
+						if (parentDiv) {
+							parentDiv.style.removeProperty("z-index");
+						}
+					}
+				});
 
             naver.maps.Event.addListener(vTownMarker, "click", function() {
                 var targetZoom = (stat.town_type === "rural") ? 15 : 17;
