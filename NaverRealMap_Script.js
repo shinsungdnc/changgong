@@ -641,7 +641,7 @@ function applyFilters() {
 					}, 
 					clickable: true,
 					zIndex: 100,
-                    collide: false
+                    collide: true // 🛡️ [신규] 마커 충돌 방지 옵션 활성화 (중첩 마커가 겹쳐도 클릭 이벤트 정상 작동)
 				});
 
                 // 🥇 [신규 추가]: 끄트머리 틈새 진입 순간 앞 배지를 깔아뭉개고 1등 레이어로 강제 노출 락 (99999 스위치)
@@ -801,7 +801,7 @@ function applyFilters() {
 					}, 
 					clickable: true,
 					zIndex: 100,
-                    collide: false
+                    collide: true // 🛡️ [신규] 마커 충돌 방지 옵션 활성화 (중첩 마커가 겹쳐도 클릭 이벤트 정상 작동)
 				});
 
 			// 🥇 [신규 추가]: 드래그 이동 및 화면 리셋 후에도 끄트머리 틈새만 스치면 무조건 최상단 튀어나오기 가동
